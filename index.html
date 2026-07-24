@@ -147,7 +147,14 @@ let currentView = 'landing'; // landing | app
 let currentTab = 'generate';
 let health = null;
 let profiles = [];
-let presetVoices = { kokoro: [], qwen_custom_voice: [] };
+let presetVoices = { kokoro: [], qwen_custom_voice: []   // Qwen CustomVoice presets
+  'qwen_female_1': { bg: ['#f472b6','#db2777'], icon: '🎀', hair: 'long', emoji: '🎀' },
+  'qwen_female_2': { bg: ['#c084fc','#9333ea'], icon: '🔮', hair: 'wavy', emoji: '🔮' },
+  'qwen_female_3': { bg: ['#fb923c','#ea580c'], icon: '☀️', hair: 'curly', emoji: '☀️' },
+  'qwen_male_1':   { bg: ['#22d3ee','#0891b2'], icon: '🌊', hair: 'short', emoji: '🌊' },
+  'qwen_male_2':   { bg: ['#4ade80','#16a34a'], icon: '🌿', hair: 'medium', emoji: '🌿' },
+  'qwen_male_3':   { bg: ['#f87171','#dc2626'], icon: '🔥', hair: 'spiky', emoji: '🔥' },
+};
 let history = [];
 let effectsPresets = [];
 let availableEffects = [];
@@ -200,6 +207,24 @@ const EFFECTS_LIST = [
   { id: 'lowpass', name: 'Low-Pass', icon: '📉', params: { cutoff_hz: 3000 } },
 ];
 
+
+// ─── Voice Avatars ────────────────────────────────────────────────
+const VOICE_AVATARS = {
+  // Female voices - warm/pastel gradients
+  'af_bella':    { bg: ['#ff6b9d','#c44dff'], icon: '🎤', hair: 'long', emoji: '💜' },
+  'af_nova':     { bg: ['#ff9a56','#ff6b6b'], icon: '✨', hair: 'wavy', emoji: '⭐' },
+  'af_sarah':    { bg: ['#a78bfa','#818cf8'], icon: '🎵', hair: 'straight', emoji: '🎶' },
+  'af_heart':    { bg: ['#f472b6','#ec4899'], icon: '💖', hair: 'curly', emoji: '💕' },
+  'af_kore':     { bg: ['#34d399','#06b6d4'], icon: '🌊', hair: 'bob', emoji: '🌊' },
+  'jf_alpha':    { bg: ['#fb923c','#f43f5e'], icon: '🌸', hair: 'long', emoji: '🌸' },
+  'zf_xiaoxiao': { bg: ['#c084fc','#a855f7'], icon: '🦋', hair: 'long', emoji: '🦋' },
+  // Male voices - cool/bold gradients  
+  'am_adam':     { bg: ['#3b82f6','#1d4ed8'], icon: '🎙️', hair: 'short', emoji: '💪' },
+  'am_michael':  { bg: ['#10b981','#059669'], icon: '🎹', hair: 'short', emoji: '🎵' },
+  'am_eric':     { bg: ['#f59e0b','#d97706'], icon: '🎸', hair: 'medium', emoji: '🔥' },
+  'am_puck':     { bg: ['#6366f1','#4f46e5'], icon: '🎭', hair: 'spiky', emoji: '⚡' },
+};
+
 const TABS = [
   { id: 'generate', label: 'Generate', icon: '⚡' },
   { id: 'voices', label: 'Voices', icon: '🎤' },
@@ -246,6 +271,34 @@ async function checkHealth() {
 }
 
 // ─── Profiles ─────────────────────────────────────────────────────
+
+function getVoiceAvatar(profile) {
+  if (!profile) return { bg: ['#6b7280','#4b5563'], icon: '🎤', emoji: '🎙️' };
+  return VOICE_AVATARS[profile.preset_voice_id] || { bg: ['#6b7280','#4b5563'], icon: '🎤', emoji: '🎙️' };
+}
+
+function selectPresetVoice(voiceId, name, gender) {
+  // Find or create a profile for this preset voice
+  const existing = profiles.find(p => p.preset_voice_id === voiceId);
+  if (existing) {
+    genProfileId = existing.id;
+    genEngine = 'kokoro';
+    currentTab = 'generate';
+    render();
+  } else {
+    // Create profile for this preset
+    createProfile(name, 'en').then(() => {
+      const newProfile = profiles.find(p => p.name === name);
+      if (newProfile) {
+        genProfileId = newProfile.id;
+        genEngine = 'kokoro';
+        currentTab = 'generate';
+        render();
+      }
+    });
+  }
+}
+
 async function loadProfiles() {
   try {
     profiles = await apiFetch('/profiles');
@@ -586,6 +639,17 @@ function renderApp() {
         `).join('')}
       </nav>
       <div class="p-3 border-t border-white/5">
+        ${currentTab === 'generate' && genProfileId ? (() => {
+          const p = profiles.find(pr => pr.id === genProfileId);
+          const av = getVoiceAvatar(p);
+          return p ? `<div class="flex items-center gap-3 mb-3 p-2 rounded-xl bg-white/[0.03]">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm text-white font-bold shrink-0" style="background:linear-gradient(135deg,${av.bg[0]},${av.bg[1]})">${p.name[0]}</div>
+            <div class="min-w-0">
+              <div class="text-xs font-semibold truncate">${av.emoji} ${p.name}</div>
+              <div class="text-[10px] text-gray-500">${LANGUAGES[p.language] || p.language}</div>
+            </div>
+          </div>` : '';
+        })() : ''}
         <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
           <span class="status-dot ${sseConnected ? 'status-connected' : 'status-disconnected'}"></span>
           ${sseConnected ? (health?.gpu_type || 'Connected') : 'Disconnected'}
@@ -602,6 +666,14 @@ function renderApp() {
       <div class="sticky top-0 z-40 glass-strong border-b border-white/5 px-6 py-3 flex items-center justify-between">
         <div class="flex items-center gap-4">
           <h2 class="font-bold text-lg">${TABS.find(t => t.id === currentTab)?.icon || ''} ${TABS.find(t => t.id === currentTab)?.label || ''}</h2>
+        ${currentTab === 'generate' && genProfileId ? (() => {
+          const p = profiles.find(pr => pr.id === genProfileId);
+          const av = p ? (VOICE_AVATARS[p.preset_voice_id] || { bg: ['#6b7280','#4b5563'], emoji: '🎙️' }) : null;
+          return av ? `<div class="flex items-center gap-2 ml-4 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/10">
+            <div class="w-6 h-6 rounded-lg flex items-center justify-center text-xs text-white font-bold" style="background:linear-gradient(135deg,${av.bg[0]},${av.bg[1]})">${p?.name[0] || '?'}</div>
+            <span class="text-xs text-gray-400">${p?.name || ''}</span>
+          </div>` : '';
+        })() : ''}
         </div>
         <div class="flex items-center gap-3">
           ${activeTasks.length ? `<div class="flex items-center gap-2 text-xs text-amber-400 px-3 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20"><div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>${activeTasks.length} generating...</div>` : ''}
@@ -644,9 +716,19 @@ function renderGenerateTab(engineLangs) {
     <div class="grid md:grid-cols-2 gap-4">
       <div class="glass-subtle rounded-2xl p-5">
         <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">Voice Profile</label>
+        <div class="flex items-center gap-2 mb-2">
+          ${(() => {
+            const p = profiles.find(pr => pr.id === genProfileId);
+            const av = getVoiceAvatar(p);
+            return p ? `<div class="w-8 h-8 rounded-xl flex items-center justify-center text-sm text-white font-bold" style="background:linear-gradient(135deg,${av.bg[0]},${av.bg[1]})">${p.name[0]}</div><span class="text-sm font-semibold">${av.emoji} ${p.name}</span>` : '';
+          })()}
+        </div>
         <select id="profile-select" class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm" onchange="genProfileId=this.value">
           <option value="" disabled>No profile selected — pick one below</option>
-          ${profiles.map(p => `<option value="${p.id}" ${genProfileId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+          ${profiles.map(p => {
+            const av = VOICE_AVATARS[p.preset_voice_id] || { bg: ['#6b7280','#4b5563'], emoji: '🎙️' };
+            return `<option value="${p.id}" ${genProfileId === p.id ? 'selected' : ''}>${av.emoji} ${p.name} — ${LANGUAGES[p.language] || p.language}</option>`;
+          }).join('')}
         </select>
         <div class="text-[11px] text-gray-600 mt-2">
           ${presetVoices.kokoro.length || presetVoices.qwen_custom_voice.length ? `📦 ${presetVoices.kokoro.length + presetVoices.qwen_custom_voice.length} preset voices available` : 'Create a voice profile to clone voices'}
@@ -723,6 +805,46 @@ function renderGenerateTab(engineLangs) {
 function renderVoicesTab() {
   return `
   <div class="max-w-4xl mx-auto space-y-6">
+    <!-- Voice Gallery -->
+    <div class="glass-subtle rounded-2xl p-6">
+      <h3 class="font-bold mb-4">Voice Gallery</h3>
+      <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
+        ${Object.entries(VOICE_AVATARS).map(([vid, av]) => {
+          const preset = (presetVoices.kokoro || []).find(v => v.voice_id === vid) || 
+                         (presetVoices.qwen_custom_voice || []).find(v => v.voice_id === vid);
+          const name = preset ? preset.name : vid;
+          const gender = preset ? preset.gender : '?';
+          return `
+          <div class="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition cursor-pointer card-hover"
+               onclick="selectPresetVoice('${vid}','${name}','${gender}')">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white font-bold shadow-lg"
+                 style="background:linear-gradient(135deg,${av.bg[0]},${av.bg[1]})">
+              ${name[0]}
+            </div>
+            <div class="text-xs font-medium text-center">${name}</div>
+            <div class="text-[10px] text-gray-500">${gender}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="text-[11px] text-gray-600 mt-3">Click a voice to use it for generation</div>
+    </div>
+
+    <!-- Language Badges -->
+    <div class="glass-subtle rounded-2xl p-5">
+      <h3 class="font-bold mb-3 text-sm">Supported Languages</h3>
+      <div class="flex flex-wrap gap-2">
+        ${Object.entries(LANGUAGES).map(([code, name]) => {
+          const colors = {
+            en: '#3b82f6', ja: '#f472b6', zh: '#c084fc', ko: '#f59e0b',
+            fr: '#3b82f6', es: '#f97316', de: '#10b981', ru: '#ef4444',
+            ar: '#06b6d4', hi: '#f59e0b', pt: '#10b981', it: '#3b82f6',
+          };
+          const c = colors[code] || '#6b7280';
+          return `<span class="text-xs px-2.5 py-1 rounded-full font-medium" style="background:${c}15;color:${c};border:1px solid ${c}30">${name}</span>`;
+        }).join('')}
+      </div>
+    </div>
+
     <!-- Create Profile -->
     <div class="glass-subtle rounded-2xl p-6">
       <h3 class="font-bold mb-4">Create Voice Profile</h3>
@@ -747,13 +869,17 @@ function renderVoicesTab() {
         </div>
       ` : `
         <div class="space-y-3">
-          ${profiles.map(p => `
+          ${profiles.map(p => {
+            const av = VOICE_AVATARS[p.preset_voice_id] || { bg: ['#6b7280','#4b5563'], icon: '🎤', emoji: '🎙️' };
+            return `
             <div class="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.05] transition">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-400 font-bold text-sm">${p.name[0]}</div>
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-lg" style="background:linear-gradient(135deg,${av.bg[0]},${av.bg[1]})">
+                  <span>${p.name[0]}</span>
+                </div>
                 <div>
-                  <div class="font-semibold text-sm">${p.name}</div>
-                  <div class="text-xs text-gray-500">${LANGUAGES[p.language] || p.language} • ${p.description || 'No description'}</div>
+                  <div class="font-semibold text-sm flex items-center gap-1.5">${p.name} <span class="text-xs">${av.emoji}</span></div>
+                  <div class="text-xs text-gray-500">${LANGUAGES[p.language] || p.language} • ${p.description || (p.preset_voice_id ? 'Preset voice' : 'Cloned voice')}</div>
                 </div>
               </div>
               <div class="flex items-center gap-2">
