@@ -175,9 +175,74 @@ function renderApp(){
 }
 
 function renderGenerate(){
-  const av=profiles.find(p=>p.id===genProfileId)?getAvatar(profiles.find(p=>p.id===genProfileId)):null;
-  return '<div class="max-w-3xl mx-auto space-y-6 slide-up"><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><div class="flex items-center gap-3 mb-4"><button onclick="useEdgeTTS=false;render()" class="px-4 py-2 rounded-xl text-sm font-semibold '+(!useEdgeTTS?'bg-[#0f0e0d] text-white':'bg-surface-100 text-surface-600 hover:bg-surface-200')+' transition">🎤 Local TTS</button><button onclick="useEdgeTTS=true;loadEdgeVoices();render()" class="px-4 py-2 rounded-xl text-sm font-semibold '+(useEdgeTTS?'bg-[#0f0e0d] text-white':'bg-surface-100 text-surface-600 hover:bg-surface-200')+' transition">🌐 Edge TTS <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 ml-1">FREE</span></button></div>'+(useEdgeTTS?renderEdgeTTSForm():'<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 block">Voice</label>');<div class="flex items-center gap-3 mb-3">'+(av?'<div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:linear-gradient(135deg,'+av.bg[0]+','+av.bg[1]+')">'+av.emoji+'</div><span class="font-semibold text-sm">'+av.label+'</span>':'<div class="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center text-surface-400">🎙️</div><span class="text-sm text-surface-400">Select a voice</span>')+'</div><select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm" onchange="genProfileId=this.value">'+profiles.map(p=>{const a=getAvatar(p);return '<option value="'+p.id+'"'+(genProfileId===p.id?' selected':'')+'>'+a.emoji+' '+p.name+' — '+(LANGUAGES[p.language]||p.language)+'</option>';}).join('')+'</select></div><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><div class="flex items-center justify-between mb-3"><label class="text-xs font-semibold text-surface-400 uppercase tracking-wider">Text to Speak</label><span class="text-xs text-surface-400">'+genText.length.toLocaleString()+' chars</span></div><textarea rows="6" placeholder="Type or paste your text here..." class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm resize-none leading-relaxed" oninput="genText=this.value">'+genText+'</textarea></div><div class="flex flex-wrap gap-3"><button onclick="generateSpeech()"'+(isGenerating||!genText.trim()?' disabled':'')+' class="btn-primary px-8 py-3 rounded-xl flex items-center gap-2">'+(isGenerating?'<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...':'⚡ Generate Speech')+'</button><button onclick="genInstruct=prompt(\'Delivery instruction:\',genInstruct)||\'\';render()" class="btn-secondary px-5 py-3 rounded-xl text-sm">🎛️ Delivery</button></div></div>';
+  var av=profiles.find(function(p){return p.id===genProfileId;});
+  var avData=av?getAvatar(av):null;
+  var h='<div class="max-w-3xl mx-auto space-y-6 slide-up">';
+
+  // Voice card
+  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
+
+  // TTS mode toggle
+  h+='<div class="flex items-center gap-3 mb-4">';
+  h+='<button onclick="useEdgeTTS=false;render()" class="px-4 py-2 rounded-xl text-sm font-semibold '+(useEdgeTTS?'bg-surface-100 text-surface-600 hover:bg-surface-200':'bg-[#0f0e0d] text-white')+' transition">🎤 Local TTS</button>';
+  h+='<button onclick="useEdgeTTS=true;loadEdgeVoices();render()" class="px-4 py-2 rounded-xl text-sm font-semibold '+(useEdgeTTS?'bg-[#0f0e0d] text-white':'bg-surface-100 text-surface-600 hover:bg-surface-200')+' transition">🌐 Edge TTS <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 ml-1">FREE</span></button>';
+  h+='</div>';
+
+  if(useEdgeTTS){
+    // Edge TTS mode
+    h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 block">Edge TTS Voice</label>';
+    h+='<select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm mb-4" onchange="edgeVoice=this.value">';
+    for(var lang in edgeTTSVoices){
+      var voices=edgeTTSVoices[lang];
+      for(var i=0;i<voices.length;i++){
+        var v=voices[i];
+        h+='<option value="'+v.id+'"'+(edgeVoice===v.id?' selected':'')+'>'+lang.toUpperCase()+' • '+v.name+' ('+v.gender+') — '+v.label+'</option>';
+      }
+    }
+    if(Object.keys(edgeTTSVoices).length===0)h+='<option>Loading voices...</option>';
+    h+='</select>';
+    h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 block">Text</label>';
+    h+='<textarea id="edge-text" rows="4" placeholder="Type your text..." class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm resize-none leading-relaxed mb-4"></textarea>';
+    h+='<button onclick="generateEdgeTTS(document.getElementById(\'edge-text\').value,edgeVoice)" class="btn-primary px-8 py-3 rounded-xl">⚡ Generate with Edge TTS</button>';
+  } else {
+    // Local TTS mode
+    h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 block">Voice</label>';
+    h+='<div class="flex items-center gap-3 mb-3">';
+    if(avData){
+      h+='<div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:linear-gradient(135deg,'+avData.bg[0]+','+avData.bg[1]+')">'+avData.emoji+'</div>';
+      h+='<span class="font-semibold text-sm">'+avData.label+'</span>';
+    } else {
+      h+='<div class="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center text-surface-400">🎙️</div>';
+      h+='<span class="text-sm text-surface-400">Select a voice</span>';
+    }
+    h+='</div>';
+    h+='<select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm" onchange="genProfileId=this.value">';
+    for(var i=0;i<profiles.length;i++){
+      var p=profiles[i];var pa=getAvatar(p);
+      h+='<option value="'+p.id+'"'+(genProfileId===p.id?' selected':'')+'>'+pa.emoji+' '+p.name+' — '+(LANGUAGES[p.language]||p.language)+'</option>';
+    }
+    h+='</select>';
+  }
+  h+='</div>';
+
+  // Text input card
+  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
+  h+='<div class="flex items-center justify-between mb-3">';
+  h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider">Text to Speak</label>';
+  h+='<span class="text-xs text-surface-400">'+genText.length.toLocaleString()+' chars</span>';
+  h+='</div>';
+  h+='<textarea rows="6" placeholder="Type or paste your text here..." class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm resize-none leading-relaxed" oninput="genText=this.value">'+genText+'</textarea>';
+  h+='</div>';
+
+  // Actions
+  h+='<div class="flex flex-wrap gap-3">';
+  h+='<button onclick="useEdgeTTS?generateEdgeTTS(document.getElementById(\'edge-text\').value,edgeVoice):generateSpeech()"'+(isGenerating||!genText.trim()?' disabled':'')+' class="btn-primary px-8 py-3 rounded-xl flex items-center gap-2">'+(isGenerating?'<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...':'⚡ Generate Speech')+'</button>';
+  h+='</div>';
+
+  h+='</div>';
+  return h;
 }
+
 
 function renderVoices(){
   var h='<div class="max-w-4xl mx-auto space-y-6 slide-up">';
