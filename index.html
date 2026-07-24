@@ -249,6 +249,12 @@ async function checkHealth() {
 async function loadProfiles() {
   try {
     profiles = await apiFetch('/profiles');
+    if (profiles.length > 0 && !genProfileId) {
+      genProfileId = profiles[0].id;
+    }
+    // Update the select element if it exists
+    const sel = document.getElementById('profile-select');
+    if (sel && genProfileId) sel.value = genProfileId;
   } catch { profiles = []; }
   render();
 }
@@ -279,12 +285,17 @@ async function deleteProfile(id) {
 // ─── Generate ─────────────────────────────────────────────────────
 async function generateSpeech() {
   if (!genText.trim() || isGenerating) return;
+  if (!genProfileId) {
+    alert('Please select a voice profile first.');
+    return;
+  }
   isGenerating = true;
   render();
 
+  const textToSend = genText;
   try {
     const body = {
-      text: genText,
+      text: textToSend,
       engine: genEngine,
       language: genLanguage,
       normalize: genNormalize,
@@ -311,7 +322,7 @@ async function generateSpeech() {
 async function pollGeneration(id) {
   const maxAttempts = 120;
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 3000));
     try {
       const data = await apiFetch('/history?limit=50');
       const items = data.items || data.generations || data || [];
@@ -593,7 +604,7 @@ function renderApp() {
           <h2 class="font-bold text-lg">${TABS.find(t => t.id === currentTab)?.icon || ''} ${TABS.find(t => t.id === currentTab)?.label || ''}</h2>
         </div>
         <div class="flex items-center gap-3">
-          ${activeTasks.length ? `<div class="flex items-center gap-2 text-xs text-amber-400"><div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>${activeTasks.length} generating...</div>` : ''}
+          ${activeTasks.length ? `<div class="flex items-center gap-2 text-xs text-amber-400 px-3 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20"><div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>${activeTasks.length} generating...</div>` : ''}
           <button onclick="checkHealth()" class="btn-ghost text-xs">Refresh</button>
         </div>
       </div>
@@ -634,7 +645,7 @@ function renderGenerateTab(engineLangs) {
       <div class="glass-subtle rounded-2xl p-5">
         <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">Voice Profile</label>
         <select id="profile-select" class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm" onchange="genProfileId=this.value">
-          <option value="">No profile (use engine default)</option>
+          <option value="" disabled>No profile selected — pick one below</option>
           ${profiles.map(p => `<option value="${p.id}" ${genProfileId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
         </select>
         <div class="text-[11px] text-gray-600 mt-2">
