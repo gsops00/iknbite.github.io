@@ -30,6 +30,7 @@
     .card-shadow-sm { box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.06), 0px 1px 2px 0px rgba(0,0,0,0.04), 0px 2px 4px 0px rgba(0,0,0,0.04); }
     .btn-primary { background: #0f0e0d; color: white; padding: 10px 24px; border-radius: 12px; font-weight: 600; font-size: 14px; transition: all 0.2s; cursor: pointer; border: none; }
     .btn-primary:hover { background: #262626; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
     .btn-secondary { background: white; color: #0f0e0d; padding: 10px 24px; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid #e5e5e5; transition: all 0.2s; cursor: pointer; }
     .btn-secondary:hover { background: #f5f5f5; }
     .dark .btn-primary { background: #f5f5f5; color: #0f0e0d; }
@@ -38,8 +39,8 @@
     .dark .btn-secondary:hover { background: #404040; }
     .voice-card { background: white; border: 1px solid #e5e5e5; border-radius: 16px; overflow: hidden; transition: all 0.3s; cursor: pointer; }
     .voice-card:hover { box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.02), 0px 8px 24px -4px rgba(0,0,0,0.12); transform: translateY(-2px); }
-    .dark .voice-card { background: #262626; border-color: #404040; }
-    .dark .voice-card:hover { border-color: #525252; }
+    .dark .voice-card { background: #1a1a1a; border-color: #333; }
+    .dark .voice-card:hover { border-color: #555; }
     textarea:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 2px #4c6ef5; }
     .slide-up { animation: slideUp 0.4s ease-out both; }
     @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
@@ -50,72 +51,76 @@
     .tab-pill.active { background: #0f0e0d; color: white; }
     .dark .tab-pill:hover { background: #404040; color: #e5e5e5; }
     .dark .tab-pill.active { background: #e5e5e5; color: #0f0e0d; }
-    .dark body, .dark { background: #0f0f0f; color: #e5e5e5; }
-    .dark .bg-surface-50 { background: #262626; }
-    .dark .border-surface-200 { border-color: #404040; }
-    .hidden { display: none !important; }
+    .avatar-ring { box-shadow: 0 0 0 3px #4c6ef5, 0 0 0 5px rgba(76,110,245,0.3); }
     @keyframes pulse-glow { 0%,100%{box-shadow:0 0 0 0 rgba(76,110,245,0.4)} 50%{box-shadow:0 0 0 8px rgba(76,110,245,0)} }
     .pulse-glow { animation: pulse-glow 2s infinite; }
-    .avatar-ring { box-shadow: 0 0 0 3px #4c6ef5, 0 0 0 5px rgba(76,110,245,0.3); }
+    .gen-wave { display:flex; align-items:flex-end; gap:2px; height:24px; }
+    .gen-wave span { display:block; width:3px; background:#4c6ef5; border-radius:2px; animation: waveAnim 0.8s ease-in-out infinite; }
+    .gen-wave span:nth-child(2) { animation-delay:0.1s; }
+    .gen-wave span:nth-child(3) { animation-delay:0.2s; }
+    .gen-wave span:nth-child(4) { animation-delay:0.3s; }
+    @keyframes waveAnim { 0%,100%{height:4px} 50%{height:20px} }
   </style>
 </head>
 <body class="bg-[#fafafa] dark:bg-[#0f0f0f] text-[#0f0e0d] dark:text-[#e5e5e5] min-h-screen">
   <div id="app"></div>
 
 <script>
-var DEFAULT_API = 'http://localhost:8000';
 var EDGE_TTS_API = localStorage.getItem('iknbite_edge_tts_url') || 'http://localhost:5050';
-var API = localStorage.getItem('iknbite_api_url') || DEFAULT_API;
+var API = localStorage.getItem('iknbite_api_url') || 'http://localhost:8000';
 var isDark = localStorage.getItem('iknbite_dark') === 'true';
 var currentView = 'landing';
 var currentTab = 'generate';
-var health = null;
-var profiles = [];
-var history = [];
-var isGenerating = false;
 var genText = '';
-var genProfileId = '';
-var genEdgeVoice = 'en-US-AvaNeural';
-var edgeTTSVoices = {};
 var currentCharacter = null;
+var isGenerating = false;
 var generationAudioUrl = null;
 var generationStatus = '';
+var edgeTTSVoices = {};
+var webSpeechVoices = [];
+var selectedSpeechVoice = null;
+var edgeConnected = false;
+var backendConnected = false;
+var profiles = [];
+var history = [];
+var favorites = JSON.parse(localStorage.getItem('iknbite_favs') || '[]');
+var charLangFilter = 'all';
 
 var CHARACTER_VOICES = [
-  {id:'ava',name:'Ava',desc:'Warm American female',avatar:'👩',color:['#f472b6','#ec4899'],edge:'en-US-AvaNeural',lang:'en'},
-  {id:'andrew',name:'Andrew',desc:'Deep American male',avatar:'👨',color:['#3b82f6','#2563eb'],edge:'en-US-AndrewNeural',lang:'en'},
-  {id:'brian',name:'Brian',desc:'Natural friendly male',avatar:'🧑',color:['#10b981','#059669'],edge:'en-US-BrianNeural',lang:'en'},
-  {id:'emma',name:'Emma',desc:'Bright cheerful female',avatar:'👧',color:['#fbbf24','#f59e0b'],edge:'en-US-EmmaNeural',lang:'en'},
-  {id:'jenny',name:'Jenny',desc:'Friendly female',avatar:'👩‍💼',color:['#a78bfa','#8b5cf6'],edge:'en-US-JennyNeural',lang:'en'},
-  {id:'guy',name:'Guy',desc:'Casual laid-back male',avatar:'🧔',color:['#6b7280','#4b5563'],edge:'en-US-GuyNeural',lang:'en'},
-  {id:'aria',name:'Aria',desc:'Expressive dramatic female',avatar:'🎭',color:['#ef4444','#dc2626'],edge:'en-US-AriaNeural',lang:'en'},
-  {id:'davis',name:'Davis',desc:'Strong authoritative male',avatar:'💪',color:['#1e293b','#0f172a'],edge:'en-US-DavisNeural',lang:'en'},
-  {id:'sonia',name:'Sonia',desc:'Elegant British female',avatar:'👩‍🦰',color:['#be185d','#9d174d'],edge:'en-GB-SoniaNeural',lang:'en'},
-  {id:'ryan',name:'Ryan',desc:'Confident British male',avatar:'🎩',color:['#0891b2','#0e7490'],edge:'en-GB-RyanNeural',lang:'en'},
-  {id:'natasha',name:'Natasha',desc:'Australian female',avatar:'🦘',color:['#16a34a','#15803d'],edge:'en-AU-NatashaNeural',lang:'en'},
-  {id:'neerja',name:'Neerja',desc:'Indian female',avatar:'🇮🇳',color:['#f59e0b','#d97706'],edge:'en-IN-NeerjaNeural',lang:'en'},
-  {id:'nanami',name:'Nanami',desc:'Soft Japanese female',avatar:'🌸',color:['#fb923c','#ea580c'],edge:'ja-JP-NanamiNeural',lang:'ja'},
-  {id:'keita',name:'Keita',desc:'Cool Japanese male',avatar:'⚔️',color:['#f87171','#dc2626'],edge:'ja-JP-KeitaNeural',lang:'ja'},
-  {id:'xiaoxiao',name:'Xiaoxiao',desc:'Sweet Chinese female',avatar:'🦋',color:['#c084fc','#9333ea'],edge:'zh-CN-XiaoxiaoNeural',lang:'zh'},
-  {id:'yunxi',name:'Yunxi',desc:'Gentle Chinese male',avatar:'🐉',color:['#60a5fa','#2563eb'],edge:'zh-CN-YunxiNeural',lang:'zh'},
-  {id:'sunhi',name:'SunHi',desc:'Clear Korean female',avatar:'🇰🇷',color:['#f472b6','#db2777'],edge:'ko-KR-SunHiNeural',lang:'ko'},
-  {id:'injoon',name:'InJoon',desc:'Calm Korean male',avatar:'🎮',color:['#6366f1','#4f46e5'],edge:'ko-KR-InJoonNeural',lang:'ko'},
-  {id:'denise',name:'Denise',desc:'Charming French female',avatar:'🗼',color:['#60a5fa','#2563eb'],edge:'fr-FR-DeniseNeural',lang:'fr'},
-  {id:'henri',name:'Henri',desc:'Sophisticated French male',avatar:'🥐',color:['#a855f7','#7e22ce'],edge:'fr-FR-HenriNeural',lang:'fr'},
-  {id:'elvira',name:'Elvira',desc:'Warm Spanish female',avatar:'💃',color:['#fde047','#eab308'],edge:'es-ES-ElviraNeural',lang:'es'},
-  {id:'alvaro',name:'Alvaro',desc:'Friendly Spanish male',avatar:'🎸',color:['#22c55e','#16a34a'],edge:'es-ES-AlvaroNeural',lang:'es'},
-  {id:'zariyah',name:'Zariyah',desc:'Gentle Arabic female',avatar:'🌙',color:['#fbbf24','#d97706'],edge:'ar-SA-ZariyahNeural',lang:'ar'},
-  {id:'hamed',name:'Hamed',desc:'Deep Arabic male',avatar:'🕌',color:['#f97316','#c2410c'],edge:'ar-SA-HamedNeural',lang:'ar'},
-  {id:'swara',name:'Swara',desc:'Melodious Hindi female',avatar:'🪷',color:['#f59e0b','#b45309'],edge:'hi-IN-SwaraNeural',lang:'hi'},
-  {id:'madhur',name:'Madhur',desc:'Rich Hindi male',avatar:'🕉️',color:['#ea580c','#9a3412'],edge:'hi-IN-MadhurNeural',lang:'hi'},
-  {id:'katja',name:'Katja',desc:'Clear German female',avatar:'🇩🇪',color:['#10b981','#059669'],edge:'de-DE-KatjaNeural',lang:'de'},
-  {id:'conrad',name:'Conrad',desc:'Strong German male',avatar:'🏔️',color:['#059669','#047857'],edge:'de-DE-ConradNeural',lang:'de'},
-  {id:'francisca',name:'Francisca',desc:'Warm Brazilian female',avatar:'🇧🇷',color:['#4ade80','#16a34a'],edge:'pt-BR-FranciscaNeural',lang:'pt'},
-  {id:'antonio',name:'Antonio',desc:'Friendly Brazilian male',avatar:'🌴',color:['#22c55e','#15803d'],edge:'pt-BR-AntonioNeural',lang:'pt'},
-  {id:'elsa',name:'Elsa',desc:'Expressive Italian female',avatar:'🇮🇹',color:['#34d399','#059669'],edge:'it-IT-ElsaNeural',lang:'it'},
-  {id:'diego',name:'Diego',desc:'Passionate Italian male',avatar:'🍝',color:['#10b981','#047857'],edge:'it-IT-DiegoNeural',lang:'it'},
-  {id:'svetlana',name:'Svetlana',desc:'Graceful Russian female',avatar:'❄️',color:['#93c5fd','#60a5fa'],edge:'ru-RU-SvetlanaNeural',lang:'ru'},
-  {id:'dmitry',name:'Dmitry',desc:'Strong Russian male',avatar:'🐻',color:['#3b82f6','#1d4ed8'],edge:'ru-RU-DmitryNeural',lang:'ru'}
+  {id:'ava',name:'Ava',desc:'Warm American female',avatar:'👩',color:['#f472b6','#ec4899'],lang:'en',rate:1.0,pitch:1.1},
+  {id:'andrew',name:'Andrew',desc:'Deep American male',avatar:'👨',color:['#3b82f6','#2563eb'],lang:'en',rate:0.95,pitch:0.85},
+  {id:'brian',name:'Brian',desc:'Natural friendly male',avatar:'🧑',color:['#10b981','#059669'],lang:'en',rate:1.0,pitch:0.95},
+  {id:'emma',name:'Emma',desc:'Bright cheerful female',avatar:'👧',color:['#fbbf24','#f59e0b'],lang:'en',rate:1.05,pitch:1.15},
+  {id:'jenny',name:'Jenny',desc:'Friendly female',avatar:'👩‍💼',color:['#a78bfa','#8b5cf6'],lang:'en',rate:1.0,pitch:1.1},
+  {id:'guy',name:'Guy',desc:'Casual laid-back male',avatar:'🧔',color:['#6b7280','#4b5563'],lang:'en',rate:0.95,pitch:0.9},
+  {id:'aria',name:'Aria',desc:'Expressive dramatic female',avatar:'🎭',color:['#ef4444','#dc2626'],lang:'en',rate:1.0,pitch:1.2},
+  {id:'davis',name:'Davis',desc:'Strong authoritative male',avatar:'💪',color:['#1e293b','#0f172a'],lang:'en',rate:0.9,pitch:0.8},
+  {id:'sonia',name:'Sonia',desc:'Elegant British female',avatar:'👩‍🦰',color:['#be185d','#9d174d'],lang:'en',rate:1.0,pitch:1.05},
+  {id:'ryan',name:'Ryan',desc:'Confident British male',avatar:'🎩',color:['#0891b2','#0e7490'],lang:'en',rate:0.95,pitch:0.9},
+  {id:'natasha',name:'Natasha',desc:'Australian female',avatar:'🦘',color:['#16a34a','#15803d'],lang:'en',rate:1.0,pitch:1.1},
+  {id:'neerja',name:'Neerja',desc:'Indian female',avatar:'🇮🇳',color:['#f59e0b','#d97706'],lang:'en',rate:1.0,pitch:1.1},
+  {id:'nanami',name:'Nanami',desc:'Soft Japanese female',avatar:'🌸',color:['#fb923c','#ea580c'],lang:'ja',rate:1.0,pitch:1.2},
+  {id:'keita',name:'Keita',desc:'Cool Japanese male',avatar:'⚔️',color:['#f87171','#dc2626'],lang:'ja',rate:0.95,pitch:0.85},
+  {id:'xiaoxiao',name:'Xiaoxiao',desc:'Sweet Chinese female',avatar:'🦋',color:['#c084fc','#9333ea'],lang:'zh',rate:1.0,pitch:1.15},
+  {id:'yunxi',name:'Yunxi',desc:'Gentle Chinese male',avatar:'🐉',color:['#60a5fa','#2563eb'],lang:'zh',rate:0.95,pitch:0.9},
+  {id:'sunhi',name:'SunHi',desc:'Clear Korean female',avatar:'🇰🇷',color:['#f472b6','#db2777'],lang:'ko',rate:1.0,pitch:1.1},
+  {id:'injoon',name:'InJoon',desc:'Calm Korean male',avatar:'🎮',color:['#6366f1','#4f46e5'],lang:'ko',rate:0.95,pitch:0.85},
+  {id:'denise',name:'Denise',desc:'Charming French female',avatar:'🗼',color:['#60a5fa','#2563eb'],lang:'fr',rate:1.0,pitch:1.1},
+  {id:'henri',name:'Henri',desc:'Sophisticated French male',avatar:'🥐',color:['#a855f7','#7e22ce'],lang:'fr',rate:0.95,pitch:0.9},
+  {id:'elvira',name:'Elvira',desc:'Warm Spanish female',avatar:'💃',color:['#fde047','#eab308'],lang:'es',rate:1.0,pitch:1.1},
+  {id:'alvaro',name:'Alvaro',desc:'Friendly Spanish male',avatar:'🎸',color:['#22c55e','#16a34a'],lang:'es',rate:1.0,pitch:0.9},
+  {id:'zariyah',name:'Zariyah',desc:'Gentle Arabic female',avatar:'🌙',color:['#fbbf24','#d97706'],lang:'ar',rate:0.95,pitch:1.1},
+  {id:'hamed',name:'Hamed',desc:'Deep Arabic male',avatar:'🕌',color:['#f97316','#c2410c'],lang:'ar',rate:0.9,pitch:0.8},
+  {id:'swara',name:'Swara',desc:'Melodious Hindi female',avatar:'🪷',color:['#f59e0b','#b45309'],lang:'hi',rate:1.0,pitch:1.1},
+  {id:'madhur',name:'Madhur',desc:'Rich Hindi male',avatar:'🕉️',color:['#ea580c','#9a3412'],lang:'hi',rate:0.95,pitch:0.85},
+  {id:'katja',name:'Katja',desc:'Clear German female',avatar:'🇩🇪',color:['#10b981','#059669'],lang:'de',rate:1.0,pitch:1.1},
+  {id:'conrad',name:'Conrad',desc:'Strong German male',avatar:'🏔️',color:['#059669','#047857'],lang:'de',rate:0.9,pitch:0.85},
+  {id:'francisca',name:'Francisca',desc:'Warm Brazilian female',avatar:'🇧🇷',color:['#4ade80','#16a34a'],lang:'pt',rate:1.0,pitch:1.1},
+  {id:'antonio',name:'Antonio',desc:'Friendly Brazilian male',avatar:'🌴',color:['#22c55e','#15803d'],lang:'pt',rate:1.0,pitch:0.9},
+  {id:'elsa',name:'Elsa',desc:'Expressive Italian female',avatar:'🇮🇹',color:['#34d399','#059669'],lang:'it',rate:1.0,pitch:1.1},
+  {id:'diego',name:'Diego',desc:'Passionate Italian male',avatar:'🍝',color:['#10b981','#047857'],lang:'it',rate:1.0,pitch:0.9},
+  {id:'svetlana',name:'Svetlana',desc:'Graceful Russian female',avatar:'❄️',color:['#93c5fd','#60a5fa'],lang:'ru',rate:0.95,pitch:1.1},
+  {id:'dmitry',name:'Dmitry',desc:'Strong Russian male',avatar:'🐻',color:['#3b82f6','#1d4ed8'],lang:'ru',rate:0.9,pitch:0.8}
 ];
 
 var LANGUAGES = {en:'English',ja:'Japanese',zh:'Chinese',ko:'Korean',fr:'French',es:'Spanish',de:'German',ru:'Russian',ar:'Arabic',hi:'Hindi',pt:'Portuguese',it:'Italian'};
@@ -123,10 +128,8 @@ var LANGUAGES = {en:'English',ja:'Japanese',zh:'Chinese',ko:'Korean',fr:'French'
 function applyTheme() {
   if (isDark) {
     document.documentElement.classList.add('dark');
-    document.body.className = 'bg-[#0f0f0f] text-[#e5e5e5] min-h-screen';
   } else {
     document.documentElement.classList.remove('dark');
-    document.body.className = 'bg-[#fafafa] text-[#0f0e0d] min-h-screen';
   }
 }
 
@@ -137,64 +140,89 @@ function toggleDark() {
   render();
 }
 
-function apiFetch(path, opts) {
-  opts = opts || {};
-  return fetch(API + path, {
-    method: opts.method || 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    body: opts.body || undefined
-  }).then(function(r) {
-    if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || r.statusText); }).catch(function(err) { if (err.message) throw err; throw new Error(r.statusText); });
-    return r.json();
-  });
+function toggleFav(cid) {
+  var idx = favorites.indexOf(cid);
+  if (idx >= 0) favorites.splice(idx, 1);
+  else favorites.push(cid);
+  localStorage.setItem('iknbite_favs', JSON.stringify(favorites));
+  render();
 }
 
-function checkHealth() {
-  return fetch(API + '/health').then(function(r) {
-    if (!r.ok) throw new Error('not ok');
-    return r.json();
-  }).then(function(d) {
-    health = d;
-    render();
-  }).catch(function() {
-    health = null;
-    render();
-  });
+function isFav(cid) { return favorites.indexOf(cid) >= 0; }
+
+function cb() { return isDark ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-surface-200'; }
+function ct() { return isDark ? 'text-white' : 'text-surface-900'; }
+function cs() { return isDark ? 'text-surface-400' : 'text-surface-500'; }
+function ci() { return isDark ? 'bg-[#262626] border-[#404040]' : 'bg-surface-50 border-surface-200'; }
+function cvc() { return isDark ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-surface-200'; }
+
+function findBrowserVoice(lang) {
+  var langMap = {en:'en',ja:'ja',zh:'zh',ko:'ko',fr:'fr',es:'es',de:'de',ru:'ru',ar:'ar',hi:'hi',pt:'pt',it:'it'};
+  var target = langMap[lang] || 'en';
+  var best = null;
+  for (var i = 0; i < webSpeechVoices.length; i++) {
+    var v = webSpeechVoices[i];
+    if (v.lang.indexOf(target) === 0) {
+      if (!best) best = v;
+      if (v.localService) best = v;
+      if (v.lang === target + '-' + target.toUpperCase()) { best = v; break; }
+    }
+  }
+  return best;
 }
 
-function loadProfiles() {
-  return apiFetch('/profiles').then(function(d) {
-    profiles = d || [];
-    if (profiles.length > 0 && !genProfileId) genProfileId = profiles[0].id;
+function generateSpeech(text, character) {
+  if (!text || !text.trim() || isGenerating) return;
+  isGenerating = true;
+  generationStatus = 'generating';
+  generationAudioUrl = null;
+  render();
+
+  var char = character || currentCharacter;
+  var lang = char ? char.lang : 'en';
+  var rate = char ? (char.rate || 1.0) : 1.0;
+  var pitch = char ? (char.pitch || 1.0) : 1.0;
+
+  var voice = findBrowserVoice(lang);
+  if (!voice) {
+    voice = findBrowserVoice('en');
+  }
+
+  var utterance = new SpeechSynthesisUtterance(text);
+  if (voice) utterance.voice = voice;
+  utterance.rate = rate;
+  utterance.pitch = pitch;
+  utterance.volume = 1.0;
+  utterance.lang = lang;
+
+  utterance.onend = function() {
+    generationStatus = 'done';
+    isGenerating = false;
     render();
-  }).catch(function() {
-    profiles = [];
-  });
+  };
+  utterance.onerror = function(e) {
+    console.error('Speech error:', e);
+    generationStatus = 'error';
+    isGenerating = false;
+    render();
+  };
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+
+  generationStatus = 'speaking';
+  render();
 }
 
-function loadEdgeVoices() {
-  return fetch(EDGE_TTS_API + '/voices').then(function(r) {
-    if (!r.ok) throw new Error('no');
-    return r.json();
-  }).then(function(d) {
-    edgeTTSVoices = d || {};
-    render();
-  }).catch(function() {
-    edgeTTSVoices = {};
-  });
+function stopSpeech() {
+  window.speechSynthesis.cancel();
+  isGenerating = false;
+  generationStatus = 'stopped';
+  render();
 }
 
-function loadHistory() {
-  return apiFetch('/history?limit=50').then(function(d) {
-    history = (d && d.items) ? d.items : (d || []);
-    render();
-  }).catch(function() {
-    history = [];
-  });
-}
-
-function generateEdgeTTS(text, voice) {
-  if (!text.trim() || isGenerating) return;
+function generateEdgeTTS(text, voiceId) {
+  if (!text || !text.trim() || isGenerating) return;
   isGenerating = true;
   generationStatus = 'generating';
   generationAudioUrl = null;
@@ -202,7 +230,7 @@ function generateEdgeTTS(text, voice) {
   fetch(EDGE_TTS_API + '/tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text, voice: voice || genEdgeVoice })
+    body: JSON.stringify({ text: text, voice: voiceId || 'en-US-AvaNeural' })
   }).then(function(r) {
     if (!r.ok) throw new Error('TTS failed');
     return r.blob();
@@ -223,17 +251,15 @@ function generateEdgeTTS(text, voice) {
 }
 
 function selectCharacter(cid) {
-  var c = null;
   for (var i = 0; i < CHARACTER_VOICES.length; i++) {
-    if (CHARACTER_VOICES[i].id === cid) { c = CHARACTER_VOICES[i]; break; }
-  }
-  if (c) {
-    currentCharacter = c;
-    genEdgeVoice = c.edge;
-    currentTab = 'generate';
-    generationAudioUrl = null;
-    generationStatus = '';
-    render();
+    if (CHARACTER_VOICES[i].id === cid) {
+      currentCharacter = CHARACTER_VOICES[i];
+      generationAudioUrl = null;
+      generationStatus = '';
+      currentTab = 'generate';
+      render();
+      return;
+    }
   }
 }
 
@@ -244,45 +270,39 @@ function clearCharacter() {
   render();
 }
 
-function selectEdgeVoice(voiceId) {
-  genEdgeVoice = voiceId;
-  currentCharacter = null;
-  generationAudioUrl = null;
-  generationStatus = '';
-  render();
-}
-
-function createProfile() {
-  var nameEl = document.getElementById('np-name');
-  var langEl = document.getElementById('np-lang');
-  var name = nameEl ? nameEl.value.trim() : '';
-  var lang = langEl ? langEl.value : 'en';
-  if (!name) return;
-  apiFetch('/profiles', {
-    method: 'POST',
-    body: JSON.stringify({ name: name, language: lang })
-  }).then(function() {
-    return loadProfiles();
-  }).catch(function(e) {
-    alert('Failed: ' + e.message);
+function checkEdgeTTS() {
+  return fetch(EDGE_TTS_API + '/voices').then(function(r) {
+    if (!r.ok) throw new Error('no');
+    return r.json();
+  }).then(function(d) {
+    edgeTTSVoices = d || {};
+    edgeConnected = true;
+    render();
+  }).catch(function() {
+    edgeTTSVoices = {};
+    edgeConnected = false;
   });
 }
 
-function deleteProfile(id) {
-  if (!confirm('Delete this profile?')) return;
-  apiFetch('/profiles/' + id, { method: 'DELETE' }).then(function() {
-    return loadProfiles();
-  }).catch(function(e) {
-    alert('Failed: ' + e.message);
+function checkBackend() {
+  return fetch(API + '/health').then(function(r) {
+    if (!r.ok) throw new Error('no');
+    return r.json();
+  }).then(function(d) {
+    backendConnected = true;
+    render();
+  }).catch(function() {
+    backendConnected = false;
   });
 }
 
-function downloadAudio() {
-  if (!generationAudioUrl) return;
-  var a = document.createElement('a');
-  a.href = generationAudioUrl;
-  a.download = 'iknbite-speech.mp3';
-  a.click();
+function loadWebSpeechVoices() {
+  webSpeechVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  if (webSpeechVoices.length === 0 && window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = function() {
+      webSpeechVoices = window.speechSynthesis.getVoices();
+    };
+  }
 }
 
 function render() {
@@ -297,118 +317,102 @@ function render() {
 
 function renderNav() {
   var bg = isDark ? 'bg-[#0f0f0f]/90 border-[#262626]' : 'bg-white/80 border-surface-200';
-  var textMain = isDark ? 'text-white' : 'text-surface-900';
-  var textSub = isDark ? 'text-surface-400' : 'text-surface-500';
   return '<nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b ' + bg + '">'
-    + '<div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">'
-    + '<div class="flex items-center gap-2">'
+    + '<div class="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">'
+    + '<div class="flex items-center gap-2 cursor-pointer" onclick="currentView=\'landing\';render()">'
     + '<span class="text-xl">🎙️</span>'
-    + '<span class="font-bold text-lg ' + textMain + '">iknbite</span>'
-    + '<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Free</span>'
+    + '<span class="font-bold text-lg ' + ct() + '">iknbite</span>'
+    + '<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>'
     + '</div>'
-    + '<div class="flex items-center gap-3">'
-    + '<button onclick="toggleDark()" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-surface-100 dark:hover:bg-surface-800 transition text-lg">' + (isDark ? '☀️' : '🌙') + '</button>'
-    + '<a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-surface-100 dark:hover:bg-surface-800 transition text-lg">⭐</a>'
-    + '</div>'
-    + '</div></nav>';
+    + '<div class="flex items-center gap-2">'
+    + '<button onclick="toggleDark()" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-100 dark:hover:bg-surface-800 transition text-base">' + (isDark ? '☀️' : '🌙') + '</button>'
+    + '<a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-100 dark:hover:bg-surface-800 transition text-base">⭐</a>'
+    + '</div></div></nav>';
 }
 
 function renderLanding() {
-  var tBg = isDark ? 'bg-[#0f0f0f]' : 'bg-[#fafafa]';
-  var tMain = isDark ? 'text-white' : 'text-surface-900';
-  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
-  var cardBg = isDark ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-surface-200';
-  var statBg = isDark ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-surface-200';
-
   var waveformBars = '';
-  for (var i = 0; i < 30; i++) {
-    var h = 4 + Math.floor(Math.random() * 16);
-    waveformBars += '<div class="waveform-bar bg-brand-500" style="height:' + h + 'px;animation-delay:' + (i * 0.05) + 's"></div>';
+  for (var i = 0; i < 40; i++) {
+    var wh = 4 + Math.floor(Math.random() * 16);
+    waveformBars += '<div class="waveform-bar bg-brand-500" style="height:' + wh + 'px;animation-delay:' + (i * 0.04) + 's"></div>';
   }
 
-  var engineCards = '';
   var engines = [
-    {icon:'⚡',name:'Edge TTS',desc:'400+ Microsoft neural voices, free forever',badge:'Recommended',color:'emerald'},
-    {icon:'🎵',name:'Kokoro',desc:'82M params, 50 voices, runs on CPU',badge:'Fast',color:'blue'},
-    {icon:'🎯',name:'Chatterbox',desc:'23 languages, voice cloning',badge:'Multilingual',color:'purple'},
-    {icon:'🔥',name:'Qwen3-TTS',desc:'High quality, voice cloning support',badge:'Quality',color:'orange'},
-    {icon:'💎',name:'LuxTTS',desc:'48kHz audio, 150x realtime speed',badge:'Pro',color:'cyan'},
-    {icon:'🧠',name:'Hume TADA',desc:'700s+ coherent audio generation',badge:'Long',color:'red'}
+    {icon:'🌐',name:'Web Speech',desc:'Built-in browser TTS — works instantly, no server',badge:'Instant',color:'emerald'},
+    {icon:'🗣️',name:'Edge TTS',desc:'400+ Microsoft neural voices, free forever',badge:'400+ Voices',color:'blue'},
+    {icon:'⚡',name:'Kokoro',desc:'82M params, 50 voices, runs on CPU',badge:'Fast',color:'purple'},
+    {icon:'🎯',name:'Chatterbox',desc:'23 languages, voice cloning',badge:'Multilingual',color:'orange'},
+    {icon:'🔥',name:'Qwen3-TTS',desc:'High quality, voice cloning support',badge:'Quality',color:'red'},
+    {icon:'💎',name:'LuxTTS',desc:'48kHz audio, 150x realtime speed',badge:'Pro',color:'cyan'}
   ];
+  var engineCards = '';
   for (var e = 0; e < engines.length; e++) {
     var eng = engines[e];
-    engineCards += '<div class="' + cardBg + ' rounded-2xl p-5 card-shadow-sm hover:card-shadow transition-all">'
+    engineCards += '<div class="' + cb() + ' rounded-2xl p-5 card-shadow-sm">'
       + '<div class="flex items-center gap-3 mb-2">'
       + '<span class="text-2xl">' + eng.icon + '</span>'
-      + '<div><div class="font-bold text-sm">' + eng.name + '</div>'
+      + '<div><div class="font-bold text-sm ' + ct() + '">' + eng.name + '</div>'
       + '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-' + eng.color + '-100 text-' + eng.color + '-700 dark:bg-' + eng.color + '-900/30 dark:text-' + eng.color + '-400">' + eng.badge + '</span></div>'
       + '</div>'
-      + '<p class="text-xs ' + tSub + ' leading-relaxed">' + eng.desc + '</p>'
+      + '<p class="text-xs ' + cs() + ' leading-relaxed">' + eng.desc + '</p>'
       + '</div>';
   }
 
-  var stats = [
-    {val:'6',label:'TTS Engines'},
-    {val:'12',label:'Languages'},
-    {val:'34',label:'Characters'},
-    {val:'$0',label:'API Keys'}
-  ];
+  var stats = [{val:'6',label:'TTS Engines'},{val:'12',label:'Languages'},{val:'34',label:'Characters'},{val:'$0',label:'API Keys'}];
   var statCards = '';
   for (var s = 0; s < stats.length; s++) {
-    statCards += '<div class="' + statBg + ' rounded-2xl p-5 card-shadow-sm text-center">'
-      + '<div class="text-3xl font-black">' + stats[s].val + '</div>'
-      + '<div class="text-xs ' + tSub + ' mt-1 uppercase tracking-wider">' + stats[s].label + '</div>'
+    statCards += '<div class="' + cvc() + ' rounded-2xl p-4 card-shadow-sm text-center">'
+      + '<div class="text-2xl md:text-3xl font-black ' + ct() + '">' + stats[s].val + '</div>'
+      + '<div class="text-[10px] md:text-xs ' + cs() + ' mt-1 uppercase tracking-wider">' + stats[s].label + '</div>'
       + '</div>';
   }
 
   return renderNav()
-    + '<div class="min-h-screen ' + tBg + '">'
-    + '<section class="pt-28 pb-16 px-6 max-w-5xl mx-auto text-center slide-up">'
-    + '<div class="inline-flex items-center gap-2 ' + cardBg + ' border rounded-full px-4 py-2 mb-8 text-sm ' + tSub + ' card-shadow-sm">'
+    + '<div class="min-h-screen">'
+    + '<section class="pt-24 pb-12 px-4 md:px-6 max-w-5xl mx-auto text-center slide-up">'
+    + '<div class="inline-flex items-center gap-2 ' + cb() + ' border rounded-full px-4 py-2 mb-6 text-sm ' + cs() + ' card-shadow-sm">'
     + '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>'
-    + 'Free & Open Source — No API Keys Required'
+    + 'Free & Open Source — Works in Your Browser'
     + '</div>'
-    + '<h1 class="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight ' + tMain + '">'
+    + '<h1 class="text-4xl md:text-7xl font-black tracking-tight mb-4 leading-tight ' + ct() + '">'
     + 'AI Voice Studio<br>'
     + '<span class="bg-gradient-to-r from-brand-600 via-purple-500 to-pink-500 bg-clip-text text-transparent">For Everyone</span>'
     + '</h1>'
-    + '<p class="text-lg ' + tSub + ' max-w-2xl mx-auto mb-10">'
-    + 'Generate natural speech in 12 languages with 34 character voices.<br>Free forever — no sign-up, no API keys.'
+    + '<p class="text-base md:text-lg ' + cs() + ' max-w-xl mx-auto mb-8">'
+    + 'Generate natural speech in 12 languages with 34 character voices.<br>No sign-up. No API keys. Just works.'
     + '</p>'
-    + '<div class="flex items-center justify-center gap-4 mb-16">'
-    + '<button onclick="currentView=\'app\';currentTab=\'generate\';render()" class="btn-primary text-base px-8 py-3.5 rounded-2xl">⚡ Start Generating</button>'
-    + '<a href="#engines" class="btn-secondary text-base px-8 py-3.5 rounded-2xl">See Engines ↓</a>'
+    + '<div class="flex items-center justify-center gap-3 mb-12">'
+    + '<button onclick="currentView=\'app\';currentTab=\'generate\';render()" class="btn-primary text-base px-8 py-3 rounded-2xl">⚡ Start Generating</button>'
+    + '<a href="#engines" class="btn-secondary text-base px-8 py-3 rounded-2xl">See Engines ↓</a>'
     + '</div>'
-    + '<div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">' + statCards + '</div>'
+    + '<div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto">' + statCards + '</div>'
     + '</section>'
-    + '<div class="flex items-end justify-center gap-1 h-12 mb-16 opacity-30">' + waveformBars + '</div>'
-    + '<section id="engines" class="py-16 px-6 max-w-6xl mx-auto">'
-    + '<div class="text-center mb-12">'
-    + '<h2 class="text-3xl font-bold mb-2 ' + tMain + '">Open Source Engines</h2>'
-    + '<p class="' + tSub + '">Choose the right engine for your use case</p>'
+    + '<div class="flex items-end justify-center gap-1 h-10 mb-12 opacity-30 overflow-hidden">' + waveformBars + '</div>'
+    + '<section id="engines" class="py-12 px-4 md:px-6 max-w-5xl mx-auto">'
+    + '<div class="text-center mb-8">'
+    + '<h2 class="text-2xl md:text-3xl font-bold mb-2 ' + ct() + '">Open Source Engines</h2>'
+    + '<p class="' + cs() + '">Choose the right engine for your use case</p>'
     + '</div>'
-    + '<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">' + engineCards + '</div>'
+    + '<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">' + engineCards + '</div>'
     + '</section>'
-    + '<section class="py-16 px-6 max-w-5xl mx-auto text-center">'
-    + '<div class="' + cardBg + ' border rounded-3xl p-10 card-shadow">'
-    + '<h2 class="text-2xl font-bold mb-3 ' + tMain + '">Ready to create?</h2>'
-    + '<p class="' + tSub + ' mb-6">Start generating speech in seconds. No installation needed.</p>'
-    + '<button onclick="currentView=\'app\';currentTab=\'generate\';render()" class="btn-primary text-base px-8 py-3.5 rounded-2xl">⚡ Open Studio</button>'
+    + '<section class="py-12 px-4 md:px-6 max-w-3xl mx-auto text-center">'
+    + '<div class="' + cb() + ' border rounded-3xl p-8 card-shadow">'
+    + '<h2 class="text-xl md:text-2xl font-bold mb-3 ' + ct() + '">Ready to create?</h2>'
+    + '<p class="' + cs() + ' mb-5 text-sm">Start generating speech in seconds. Just click a character and type.</p>'
+    + '<button onclick="currentView=\'app\';currentTab=\'generate\';render()" class="btn-primary text-base px-8 py-3 rounded-2xl">⚡ Open Studio</button>'
     + '</div>'
     + '</section>'
-    + '<footer class="py-8 text-center text-xs ' + tSub + ' border-t ' + (isDark ? 'border-[#262626]' : 'border-surface-200') + '">'
+    + '<footer class="py-6 text-center text-xs ' + cs() + ' border-t ' + (isDark ? 'border-[#262626]' : 'border-surface-200') + '">'
     + 'iknbite — Free & Open Source AI Voice Studio'
     + '</footer>'
     + '</div>';
 }
 
 function renderApp() {
-  var tBg = isDark ? 'bg-[#0f0f0f]' : 'bg-[#fafafa]';
   var tabs = [
     {id:'generate',label:'Generate',icon:'⚡'},
     {id:'voices',label:'Voices',icon:'🎤'},
     {id:'transcribe',label:'Transcribe',icon:'📝'},
-    {id:'history',label:'History',icon:'🕐'},
     {id:'settings',label:'Settings',icon:'⚙️'}
   ];
   var tabHtml = '';
@@ -421,168 +425,145 @@ function renderApp() {
   if (currentTab === 'generate') content = renderGenerate();
   else if (currentTab === 'voices') content = renderVoices();
   else if (currentTab === 'transcribe') content = renderTranscribe();
-  else if (currentTab === 'history') content = renderHistory();
   else content = renderSettings();
 
   return renderNav()
-    + '<div class="min-h-screen ' + tBg + '">'
-    + '<div class="pt-20 px-6 max-w-6xl mx-auto pb-12">'
-    + '<div class="flex items-center gap-1 mb-6 border-b ' + (isDark ? 'border-[#333]' : 'border-surface-200') + ' pb-0 overflow-x-auto">' + tabHtml + '</div>'
-    + '<div class="pt-6">' + content + '</div>'
-    + '</div>'
-    + '</div>';
+    + '<div class="min-h-screen">'
+    + '<div class="pt-16 px-4 md:px-6 max-w-5xl mx-auto pb-12">'
+    + '<div class="flex items-center gap-1 mb-5 border-b ' + (isDark ? 'border-[#333]' : 'border-surface-200') + ' pb-0 overflow-x-auto">' + tabHtml + '</div>'
+    + '<div class="pt-4">' + content + '</div>'
+    + '</div></div>';
 }
 
 function renderGenerate() {
-  var tBg = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
-  var tBdr = isDark ? 'border-[#333]' : 'border-surface-200';
-  var tText = isDark ? 'text-white' : 'text-surface-900';
-  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
-  var tInput = isDark ? 'bg-[#262626] border-[#404040]' : 'bg-surface-50 border-surface-200';
+  var h = '<div class="max-w-2xl mx-auto space-y-4 slide-up">';
 
-  var h = '<div class="max-w-3xl mx-auto space-y-4 slide-up">';
-
-  // Character Voice Picker
+  // Character picker
   if (!currentCharacter) {
-    h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-5 card-shadow-sm">';
-    h += '<h3 class="font-bold mb-1 ' + tText + '">Choose a Character</h3>';
-    h += '<p class="text-xs ' + tSub + ' mb-3">34 voices across 12 languages — or use Edge TTS directly</p>';
+    h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
+    h += '<div class="flex items-center justify-between mb-3">';
+    h += '<div><h3 class="font-bold text-sm ' + ct() + '">Choose a Character</h3>';
+    h += '<p class="text-xs ' + cs() + '">34 voices · speaks instantly in your browser</p></div>';
+    if (favorites.length > 0) {
+      h += '<span class="text-xs ' + cs() + '">' + favorites.length + ' ★</span>';
+    }
+    h += '</div>';
 
     // Language filter
-    var charLangs = {en:'English',ja:'Japanese',zh:'Chinese',ko:'Korean',fr:'French',es:'Spanish',ar:'Arabic',hi:'Hindi',de:'German',pt:'Portuguese',it:'Italian',ru:'Russian'};
-    var filterHtml = '<div class="flex flex-wrap gap-1.5 mb-3">';
-    filterHtml += '<button onclick="filterCharLang(\'all\')" id="cf-all" class="text-[10px] px-2 py-1 rounded-full font-medium bg-surface-900 text-white dark:bg-white dark:text-surface-900">All</button>';
-    for (var lang in charLangs) {
-      filterHtml += '<button onclick="filterCharLang(\'' + lang + '\')" id="cf-' + lang + '" class="text-[10px] px-2 py-1 rounded-full font-medium ' + tInput + ' ' + tSub + ' hover:opacity-80">' + charLangs[lang] + '</button>';
+    var langLabels = {all:'All',en:'English',ja:'Japanese',zh:'Chinese',ko:'Korean',fr:'French',es:'Spanish',ar:'Arabic',hi:'Hindi',de:'German',pt:'Portuguese',it:'Italian',ru:'Russian'};
+    h += '<div class="flex flex-wrap gap-1 mb-3">';
+    for (var lk in langLabels) {
+      var isActive = charLangFilter === lk;
+      h += '<button onclick="charLangFilter=\'' + lk + '\';render()" class="text-[10px] px-2 py-1 rounded-full font-medium transition ' + (isActive ? 'bg-surface-900 text-white dark:bg-white dark:text-surface-900' : ci() + ' border ' + cs()) + '">' + langLabels[lk] + '</button>';
     }
-    filterHtml += '</div>';
-    h += filterHtml;
+    h += '</div>';
 
-    h += '<div id="char-grid" class="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-2">';
+    h += '<div class="grid grid-cols-4 md:grid-cols-7 lg:grid-cols-9 gap-2">';
     for (var i = 0; i < CHARACTER_VOICES.length; i++) {
       var c = CHARACTER_VOICES[i];
-      h += '<button onclick="selectCharacter(\'' + c.id + '\')" class="voice-card flex flex-col items-center gap-1.5 p-2 transition-all hover:scale-105 active:scale-95" data-lang="' + c.lang + '">';
+      if (charLangFilter !== 'all' && c.lang !== charLangFilter) continue;
+      h += '<button onclick="selectCharacter(\'' + c.id + '\')" class="voice-card flex flex-col items-center gap-1.5 p-2">';
       h += '<div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg text-white font-bold shadow-sm" style="background:linear-gradient(135deg,' + c.color[0] + ',' + c.color[1] + ')">' + c.avatar + '</div>';
-      h += '<div class="text-[9px] font-medium ' + tSub + ' truncate w-full text-center">' + c.name + '</div>';
+      h += '<div class="text-[9px] font-medium ' + cs() + ' text-center truncate w-full">' + c.name + '</div>';
       h += '</button>';
     }
     h += '</div></div>';
   }
 
-  // Active Voice Card
-  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-5 card-shadow-sm">';
+  // Active voice card
+  h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
   if (currentCharacter) {
     h += '<div class="flex items-center gap-3">';
     h += '<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl text-white font-bold shadow-md avatar-ring" style="background:linear-gradient(135deg,' + currentCharacter.color[0] + ',' + currentCharacter.color[1] + ')">' + currentCharacter.avatar + '</div>';
-    h += '<div class="flex-1"><div class="font-bold text-sm ' + tText + '">' + currentCharacter.name + '</div>';
-    h += '<div class="text-xs ' + tSub + '">' + currentCharacter.desc + ' · ' + (LANGUAGES[currentCharacter.lang] || currentCharacter.lang) + '</div></div>';
-    h += '<button onclick="clearCharacter()" class="text-xs ' + tSub + ' hover:text-red-500 px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">✕ Change</button>';
+    h += '<div class="flex-1 min-w-0">';
+    h += '<div class="flex items-center gap-2"><span class="font-bold text-sm ' + ct() + '">' + currentCharacter.name + '</span>';
+    h += '<button onclick="toggleFav(\'' + currentCharacter.id + '\')" class="text-xs">' + (isFav(currentCharacter.id) ? '★' : '☆') + '</button></div>';
+    h += '<div class="text-xs ' + cs() + '">' + currentCharacter.desc + ' · ' + (LANGUAGES[currentCharacter.lang] || currentCharacter.lang) + '</div>';
+    h += '</div>';
+    h += '<button onclick="clearCharacter()" class="text-xs ' + cs() + ' hover:text-red-500 px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">✕</button>';
     h += '</div>';
   } else {
     h += '<div class="flex items-center gap-3">';
-    h += '<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-surface-100 dark:bg-surface-800">🌐</div>';
-    h += '<div class="flex-1"><div class="font-bold text-sm ' + tText + '">Edge TTS</div>';
-    h += '<div class="text-xs ' + tSub + '">' + genEdgeVoice + '</div></div>';
-    h += '<button onclick="currentCharacter=null;render()" class="text-xs text-brand-600 hover:text-brand-700 px-3 py-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 transition">Pick Character ↑</button>';
+    h += '<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-surface-100 dark:bg-surface-800">🎙️</div>';
+    h += '<div class="flex-1"><div class="font-bold text-sm ' + ct() + '">Browser TTS</div>';
+    h += '<div class="text-xs ' + cs() + '">Uses your device\'s built-in voices</div></div>';
+    h += '<button onclick="currentTab=\'voices\';render()" class="text-xs text-brand-600 hover:text-brand-700 px-2 py-1 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 transition">Pick ↑</button>';
     h += '</div>';
-
-    // Edge TTS voice selector
-    h += '<select class="w-full ' + tInput + ' border rounded-xl px-4 py-3 text-sm mt-3" onchange="genEdgeVoice=this.value;currentCharacter=null">';
-    for (var lang in edgeTTSVoices) {
-      var voices = edgeTTSVoices[lang];
-      for (var vi = 0; vi < voices.length; vi++) {
-        var v = voices[vi];
-        h += '<option value="' + v.id + '"' + (genEdgeVoice === v.id ? ' selected' : '') + '>' + lang.toUpperCase() + ' · ' + v.name + ' (' + v.gender + ') — ' + v.label + '</option>';
-      }
-    }
-    if (Object.keys(edgeTTSVoices).length === 0) h += '<option>Loading voices...</option>';
-    h += '</select>';
   }
   h += '</div>';
 
-  // Text Input
-  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-5 card-shadow-sm">';
-  h += '<div class="flex items-center justify-between mb-3">';
-  h += '<label class="text-xs font-semibold ' + tSub + ' uppercase tracking-wider">Text to Speak</label>';
-  h += '<span class="text-xs ' + tSub + '">' + genText.length.toLocaleString() + ' chars</span>';
+  // Text input
+  h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
+  h += '<div class="flex items-center justify-between mb-2">';
+  h += '<label class="text-xs font-semibold ' + cs() + ' uppercase tracking-wider">Text to Speak</label>';
+  h += '<span class="text-xs ' + cs() + '">' + genText.length.toLocaleString() + ' chars</span>';
   h += '</div>';
-  h += '<textarea id="gen-textarea" rows="6" placeholder="Type or paste your text here..." class="w-full ' + tInput + ' border rounded-xl px-4 py-3 text-sm resize-none leading-relaxed" oninput="genText=this.value">' + genText + '</textarea>';
+  h += '<textarea id="gen-textarea" rows="5" placeholder="Type or paste your text here..." class="w-full ' + ci() + ' border rounded-xl px-4 py-3 text-sm resize-none leading-relaxed" oninput="genText=this.value">' + genText + '</textarea>';
   h += '</div>';
 
-  // Audio Player (after generation)
-  if (generationAudioUrl) {
-    h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-5 card-shadow-sm">';
+  // Status / Audio
+  if (generationStatus === 'generating') {
+    h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
+    h += '<div class="flex items-center gap-3">';
+    h += '<div class="gen-wave"><span></span><span></span><span></span><span></span></div>';
+    h += '<span class="text-sm font-medium ' + ct() + '">Generating speech...</span>';
+    h += '</div></div>';
+  } else if (generationStatus === 'speaking') {
+    h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
+    h += '<div class="flex items-center gap-3">';
+    h += '<div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 pulse-glow">🔊</div>';
+    h += '<div class="flex-1"><span class="text-sm font-medium ' + ct() + '">Speaking now...</span></div>';
+    h += '<button onclick="stopSpeech()" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400 transition">⏹ Stop</button>';
+    h += '</div></div>';
+  } else if (generationStatus === 'done' && generationAudioUrl) {
+    h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
     h += '<div class="flex items-center gap-3 mb-3">';
     h += '<div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">✓</div>';
-    h += '<span class="font-bold text-sm ' + tText + '">Generated</span>';
-    h += '<span class="text-xs ' + tSub + '">' + genEdgeVoice + '</span>';
+    h += '<span class="font-bold text-sm ' + ct() + '">Generated</span>';
     h += '</div>';
-    h += '<audio id="gen-audio" controls autoplay class="w-full h-10" src="' + generationAudioUrl + '"></audio>';
-    h += '<div class="flex gap-2 mt-3">';
-    h += '<button onclick="downloadAudio()" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition">⬇ Download MP3</button>';
-    h += '<button onclick="generationAudioUrl=null;generationStatus=\'\';render()" class="text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition">Clear</button>';
-    h += '</div>';
-    h += '</div>';
+    h += '<audio id="gen-audio" controls class="w-full h-10" src="' + generationAudioUrl + '"></audio>';
+    h += '<div class="flex gap-2 mt-2">';
+    h += '<button onclick="downloadAudio()" class="text-xs font-medium px-3 py-1.5 rounded-lg ' + ci() + ' border hover:opacity-80 transition">⬇ Download</button>';
+    h += '<button onclick="generationAudioUrl=null;generationStatus=\'\';render()" class="text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition">✕ Clear</button>';
+    h += '</div></div>';
+  } else if (generationStatus === 'done' && !generationAudioUrl) {
+    h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
+    h += '<div class="flex items-center gap-3">';
+    h += '<div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">✓</div>';
+    h += '<span class="text-sm ' + ct() + '">Speech completed</span>';
+    h += '</div></div>';
+  } else if (generationStatus === 'error') {
+    h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
+    h += '<div class="flex items-center gap-3">';
+    h += '<div class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500">✗</div>';
+    h += '<span class="text-sm text-red-500">Generation failed — try again</span>';
+    h += '</div></div>';
   }
 
   // Actions
-  h += '<div class="flex flex-wrap gap-3">';
+  h += '<div class="flex flex-wrap gap-2">';
   if (isGenerating) {
-    h += '<button disabled class="btn-primary px-8 py-3 rounded-xl opacity-70 cursor-wait">';
-    h += '<div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...</div>';
-    h += '</button>';
+    h += '<button disabled class="btn-primary px-6 py-3 rounded-xl text-sm"><div class="gen-wave"><span></span><span></span><span></span><span></span></div></button>';
+    h += '<button onclick="stopSpeech()" class="btn-secondary px-5 py-3 rounded-xl text-sm text-red-500">⏹ Stop</button>';
   } else {
-    var voiceLabel = currentCharacter ? currentCharacter.name : 'Edge TTS';
-    h += '<button onclick="generateEdgeTTS(genText, genEdgeVoice)"' + (!genText.trim() ? ' disabled style="opacity:0.5;cursor:not-allowed"' : '') + ' class="btn-primary px-8 py-3 rounded-xl">⚡ Generate with ' + voiceLabel + '</button>';
+    var voiceLabel = currentCharacter ? currentCharacter.name : 'Speak';
+    h += '<button onclick="generateSpeech(genText)"' + (!genText.trim() ? ' disabled' : '') + ' class="btn-primary px-6 py-3 rounded-xl text-sm">🔊 ' + voiceLabel + '</button>';
+    h += '<button onclick="genText=\'\';generationAudioUrl=null;generationStatus=\'\';render()" class="btn-secondary px-4 py-3 rounded-xl text-sm">Clear</button>';
   }
-  h += '<button onclick="genText=\'\';generationAudioUrl=null;generationStatus=\'\';render()" class="btn-secondary px-5 py-3 rounded-xl text-sm">Clear</button>';
   h += '</div>';
 
   h += '</div>';
   return h;
 }
 
-function filterCharLang(lang) {
-  var buttons = document.querySelectorAll('[id^="cf-"]');
-  for (var i = 0; i < buttons.length; i++) {
-    buttons[i].className = buttons[i].className.replace(/bg-surface-900 text-white|dark:bg-white dark:text-surface-900/g, '');
-    if (!buttons[i].className.includes('bg-')) {
-      buttons[i].classList.add(isDark ? 'bg-[#262626]' : 'bg-surface-50');
-      buttons[i].classList.add(isDark ? 'text-surface-400' : 'text-surface-500');
-    }
-  }
-  var activeBtn = document.getElementById('cf-' + lang);
-  if (activeBtn) {
-    activeBtn.className = activeBtn.className.replace(/bg-\[#262626\]|bg-surface-50|text-surface-400|text-surface-500/g, '');
-    activeBtn.classList.add('bg-surface-900', 'text-white');
-    if (isDark) { activeBtn.classList.remove('bg-surface-900', 'text-white'); activeBtn.classList.add('bg-white', 'text-surface-900'); }
-  }
-
-  var cards = document.querySelectorAll('#char-grid .voice-card');
-  for (var j = 0; j < cards.length; j++) {
-    var cardLang = cards[j].getAttribute('data-lang');
-    if (lang === 'all' || cardLang === lang) {
-      cards[j].style.display = '';
-    } else {
-      cards[j].style.display = 'none';
-    }
-  }
-}
-
 function renderVoices() {
-  var tBg = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
-  var tBdr = isDark ? 'border-[#333]' : 'border-surface-200';
-  var tText = isDark ? 'text-white' : 'text-surface-900';
-  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
-  var tInput = isDark ? 'bg-[#262626] border-[#404040]' : 'bg-surface-50 border-surface-200';
+  var h = '<div class="max-w-4xl mx-auto space-y-4 slide-up">';
 
-  var h = '<div class="max-w-4xl mx-auto space-y-6 slide-up">';
-
-  // Character Gallery
-  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
+  // Character gallery
+  h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
   h += '<div class="flex items-center justify-between mb-4">';
-  h += '<h3 class="font-bold ' + tText + '">Character Voices</h3>';
-  h += '<span class="text-xs ' + tSub + '">' + CHARACTER_VOICES.length + ' characters</span>';
+  h += '<h3 class="font-bold ' + ct() + '">Character Voices</h3>';
+  h += '<span class="text-xs ' + cs() + '">' + CHARACTER_VOICES.length + ' characters · 12 languages</span>';
   h += '</div>';
 
   var charGroups = {};
@@ -596,80 +577,69 @@ function renderVoices() {
   for (var gl in charGroups) {
     var chars = charGroups[gl];
     h += '<div class="mb-4">';
-    h += '<div class="text-xs font-semibold ' + tSub + ' uppercase tracking-wider mb-2">' + gl + ' <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 font-normal">' + chars.length + '</span></div>';
+    h += '<div class="text-xs font-semibold ' + cs() + ' uppercase tracking-wider mb-2">' + gl + ' <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 font-normal">' + chars.length + '</span></div>';
     h += '<div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">';
     for (var ci = 0; ci < chars.length; ci++) {
       var ch = chars[ci];
       h += '<button onclick="selectCharacter(\'' + ch.id + '\')" class="voice-card flex flex-col items-center gap-2 p-3">';
       h += '<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl text-white font-bold" style="background:linear-gradient(135deg,' + ch.color[0] + ',' + ch.color[1] + ')">' + ch.avatar + '</div>';
-      h += '<div class="text-[11px] font-medium ' + tSub + ' text-center">' + ch.name + '</div>';
+      h += '<div class="text-[11px] font-medium ' + cs() + ' text-center">' + ch.name + '</div>';
       h += '</button>';
     }
     h += '</div></div>';
   }
   h += '</div>';
 
-  // Voice Profiles (from backend)
-  if (profiles.length > 0) {
-    h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
-    h += '<div class="flex items-center justify-between mb-4">';
-    h += '<h3 class="font-bold ' + tText + '">Your Voice Profiles</h3>';
-    h += '<span class="text-xs ' + tSub + '">' + profiles.length + ' profiles</span>';
-    h += '</div>';
-    h += '<div class="grid grid-cols-2 md:grid-cols-4 gap-2">';
-    for (var pi = 0; pi < profiles.length; pi++) {
-      var p = profiles[pi];
-      h += '<div class="voice-card p-3 flex flex-col items-center gap-2">';
-      h += '<div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-gradient-to-br from-brand-400 to-brand-600 text-white font-bold">' + p.name.charAt(0).toUpperCase() + '</div>';
-      h += '<div class="text-xs font-medium ' + tSub + ' text-center">' + p.name + '</div>';
-      h += '<div class="text-[10px] ' + tSub + '">' + (LANGUAGES[p.language] || p.language) + '</div>';
-      h += '<div class="flex gap-1 mt-1">';
-      h += '<button onclick="selectProfileGen(\'' + p.id + '\')" class="text-[10px] px-2 py-0.5 rounded bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">Use</button>';
-      h += '<button onclick="deleteProfile(\'' + p.id + '\')" class="text-[10px] px-2 py-0.5 rounded bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400">Del</button>';
-      h += '</div>';
-      h += '</div>';
+  // Browser voices info
+  h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-2 ' + ct() + '">Browser Voices</h3>';
+  h += '<p class="text-xs ' + cs() + ' mb-3">Your device has ' + webSpeechVoices.length + ' built-in voices. Characters use the closest matching voice for their language.</p>';
+  var langVoices = {};
+  for (var vi = 0; vi < webSpeechVoices.length; vi++) {
+    var v = webSpeechVoices[vi];
+    var shortLang = v.lang.split('-')[0];
+    if (!langVoices[shortLang]) langVoices[shortLang] = 0;
+    langVoices[shortLang]++;
+  }
+  h += '<div class="flex flex-wrap gap-2">';
+  for (var lk2 in langVoices) {
+    h += '<span class="text-[10px] px-2 py-1 rounded-full ' + ci() + ' border ' + cs() + '">' + lk2.toUpperCase() + ': ' + langVoices[lk2] + ' voices</span>';
+  }
+  h += '</div></div>';
+
+  // Favorites
+  if (favorites.length > 0) {
+    h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
+    h += '<h3 class="font-bold mb-3 ' + ct() + '">★ Favorites</h3>';
+    h += '<div class="flex flex-wrap gap-2">';
+    for (var fi = 0; fi < favorites.length; fi++) {
+      var favChar = null;
+      for (var fj = 0; fj < CHARACTER_VOICES.length; fj++) {
+        if (CHARACTER_VOICES[fj].id === favorites[fi]) { favChar = CHARACTER_VOICES[fj]; break; }
+      }
+      if (favChar) {
+        h += '<button onclick="selectCharacter(\'' + favChar.id + '\')" class="voice-card flex items-center gap-2 p-2">';
+        h += '<div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm text-white font-bold" style="background:linear-gradient(135deg,' + favChar.color[0] + ',' + favChar.color[1] + ')">' + favChar.avatar + '</div>';
+        h += '<span class="text-xs font-medium ' + ct() + '">' + favChar.name + '</span>';
+        h += '</button>';
+      }
     }
     h += '</div></div>';
   }
-
-  // Create Profile
-  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
-  h += '<h3 class="font-bold mb-3 ' + tText + '">Create Voice Profile</h3>';
-  h += '<div class="flex gap-3">';
-  h += '<input id="np-name" placeholder="Profile name" class="flex-1 ' + tInput + ' border rounded-xl px-4 py-2.5 text-sm">';
-  h += '<select id="np-lang" class="' + tInput + ' border rounded-xl px-4 py-2.5 text-sm">';
-  for (var lk in LANGUAGES) {
-    h += '<option value="' + lk + '">' + LANGUAGES[lk] + '</option>';
-  }
-  h += '</select>';
-  h += '<button onclick="createProfile()" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Create</button>';
-  h += '</div></div>';
 
   h += '</div>';
   return h;
 }
 
-function selectProfileGen(pid) {
-  genProfileId = pid;
-  currentTab = 'generate';
-  currentCharacter = null;
-  render();
-}
-
 function renderTranscribe() {
-  var tBg = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
-  var tBdr = isDark ? 'border-[#333]' : 'border-surface-200';
-  var tText = isDark ? 'text-white' : 'text-surface-900';
-  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
-
-  return '<div class="max-w-2xl mx-auto text-center slide-up">'
-    + '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-10 card-shadow-sm">'
+  return '<div class="max-w-xl mx-auto text-center slide-up">'
+    + '<div class="' + cb() + ' border rounded-2xl p-8 card-shadow-sm">'
     + '<div class="text-4xl mb-3">📝</div>'
-    + '<h3 class="text-lg font-bold mb-2 ' + tText + '">Speech-to-Text</h3>'
-    + '<p class="text-sm ' + tSub + ' mb-6">Upload audio for instant transcription</p>'
+    + '<h3 class="text-lg font-bold mb-2 ' + ct() + '">Speech-to-Text</h3>'
+    + '<p class="text-sm ' + cs() + ' mb-5">Upload audio for instant transcription</p>'
     + '<input type="file" id="tf" accept=".wav,.mp3,.m4a,.ogg,.flac,.aac,.webm" class="hidden" onchange="if(this.files[0])doTranscribe(this.files[0])">'
-    + '<label for="tf" class="block border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl p-10 cursor-pointer hover:border-brand-300 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition">'
-    + '<div class="' + tSub + '">'
+    + '<label for="tf" class="block border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl p-8 cursor-pointer hover:border-brand-300 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition">'
+    + '<div class="' + cs() + '">'
     + '<div class="text-3xl mb-2">📁</div>'
     + '<p class="text-sm">Click to upload audio</p>'
     + '<p class="text-xs text-surface-300 mt-1">WAV, MP3, M4A, OGG, FLAC, AAC, WebM</p>'
@@ -690,101 +660,62 @@ function doTranscribe(file) {
     isGenerating = false;
     render();
   }).catch(function(e) {
-    alert('Transcription failed: ' + e.message);
+    alert('Transcription requires the Voicebox backend running locally.\n\nStart it with: python -m backend.main');
     isGenerating = false;
     render();
   });
 }
 
-function renderHistory() {
-  var tBg = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
-  var tBdr = isDark ? 'border-[#333]' : 'border-surface-200';
-  var tText = isDark ? 'text-white' : 'text-surface-900';
-  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
+function renderSettings() {
+  var h = '<div class="max-w-lg mx-auto space-y-4 slide-up">';
 
-  var h = '<div class="max-w-3xl mx-auto space-y-3 slide-up">';
-  h += '<div class="flex items-center justify-between mb-2">';
-  h += '<h3 class="font-bold ' + tText + '">History</h3>';
-  h += '<button onclick="loadHistory()" class="text-sm text-brand-600 hover:underline">Refresh</button>';
+  h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-2 ' + ct() + '">Edge TTS Server <span class="text-xs font-normal text-emerald-600 dark:text-emerald-400">Optional</span></h3>';
+  h += '<p class="text-xs ' + cs() + ' mb-3">For higher quality voices, run the Edge TTS server locally</p>';
+  h += '<input id="edge-url" value="' + EDGE_TTS_API + '" class="w-full ' + ci() + ' border rounded-xl px-4 py-2.5 text-sm font-mono mb-2">';
+  h += '<button onclick="EDGE_TTS_API=document.getElementById(\'edge-url\').value;localStorage.setItem(\'iknbite_edge_tts_url\',EDGE_TTS_API);checkEdgeTTS()" class="btn-secondary px-4 py-2 rounded-xl text-sm">Reconnect</button>';
   h += '</div>';
 
-  if (history.length === 0) {
-    h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-10 text-center card-shadow-sm">';
-    h += '<div class="text-4xl mb-3">🕐</div>';
-    h += '<p class="' + tSub + ' text-sm">No generations yet</p>';
-    h += '</div>';
-  } else {
-    for (var i = 0; i < history.length; i++) {
-      var g = history[i];
-      var statusClass = g.status === 'completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400';
-      var statusIcon = g.status === 'completed' ? '✓' : '✗';
-      h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-xl p-4 flex items-center gap-4 card-shadow-sm">';
-      h += '<div class="w-10 h-10 rounded-xl flex items-center justify-center text-sm ' + statusClass + '">' + statusIcon + '</div>';
-      h += '<div class="flex-1 min-w-0">';
-      h += '<div class="text-sm font-medium truncate ' + tText + '">' + (g.text || '').substring(0, 80) + '</div>';
-      h += '<div class="text-xs ' + tSub + ' mt-0.5">' + (g.engine || '') + ' · ' + (g.language || 'en') + (g.duration ? ' · ' + g.duration.toFixed(1) + 's' : '') + '</div>';
-      h += '</div>';
-      if (g.status === 'completed') {
-        h += '<audio controls preload="none" src="' + API + '/audio/' + g.id + '" class="w-48 h-8"></audio>';
-      }
-      h += '</div>';
-    }
-  }
+  h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-2 ' + ct() + '">Voicebox Backend <span class="text-xs font-normal ' + cs() + '">Optional</span></h3>';
+  h += '<p class="text-xs ' + cs() + ' mb-3">Advanced TTS engines (Kokoro, Chatterbox, etc.)</p>';
+  h += '<input id="api-url" value="' + API + '" class="w-full ' + ci() + ' border rounded-xl px-4 py-2.5 text-sm font-mono mb-2">';
+  h += '<button onclick="API=document.getElementById(\'api-url\').value;localStorage.setItem(\'iknbite_api_url\',API);checkBackend()" class="btn-secondary px-4 py-2 rounded-xl text-sm">Reconnect</button>';
+  h += '</div>';
+
+  h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-2 ' + ct() + '">Status</h3>';
+  h += '<div class="space-y-2 text-sm">';
+  h += '<div class="flex justify-between"><span class="' + cs() + '">Browser TTS</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Always ready</span></div>';
+  h += '<div class="flex justify-between"><span class="' + cs() + '">Edge TTS</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ' + (edgeConnected ? 'bg-emerald-500' : 'bg-surface-300') + '"></span>' + (edgeConnected ? 'Connected' : 'Not connected') + '</span></div>';
+  h += '<div class="flex justify-between"><span class="' + cs() + '">Voicebox</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ' + (backendConnected ? 'bg-emerald-500' : 'bg-surface-300') + '"></span>' + (backendConnected ? 'Connected' : 'Not connected') + '</span></div>';
+  h += '<div class="flex justify-between"><span class="' + cs() + '">Web Speech Voices</span><span>' + webSpeechVoices.length + ' available</span></div>';
+  h += '</div></div>';
+
+  h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-2 ' + ct() + '">About</h3>';
+  h += '<p class="text-sm ' + cs() + '">iknbite is a free, open-source AI Voice Studio. Browser TTS works instantly without any server.</p>';
+  h += '<p class="text-xs ' + cs() + ' mt-2"><a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="text-brand-600 hover:underline">View on GitHub →</a></p>';
+  h += '</div>';
+
   h += '</div>';
   return h;
 }
 
-function renderSettings() {
-  var tBg = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
-  var tBdr = isDark ? 'border-[#333]' : 'border-surface-200';
-  var tText = isDark ? 'text-white' : 'text-surface-900';
-  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
-  var tInput = isDark ? 'bg-[#262626] border-[#404040]' : 'bg-surface-50 border-surface-200';
-
-  var statusDot = health ? 'bg-emerald-500' : 'bg-red-500';
-  var statusText = health ? 'Connected' : 'Disconnected';
-
-  var h = '<div class="max-w-xl mx-auto space-y-4 slide-up">';
-
-  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
-  h += '<h3 class="font-bold mb-3 ' + tText + '">Voicebox Backend <span class="text-xs font-normal text-surface-400">(Optional)</span></h3>';
-  h += '<input id="api-url" value="' + API + '" class="w-full ' + tInput + ' border rounded-xl px-4 py-3 text-sm font-mono mb-3" placeholder="http://localhost:8000">';
-  h += '<button onclick="API=document.getElementById(\'api-url\').value;localStorage.setItem(\'iknbite_api_url\',API);checkHealth();loadProfiles()" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Save & Reconnect</button>';
-  h += '</div>';
-
-  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
-  h += '<h3 class="font-bold mb-3 ' + tText + '">Edge TTS <span class="text-xs font-normal text-emerald-600 dark:text-emerald-400">FREE — Recommended</span></h3>';
-  h += '<input id="edge-url" value="' + EDGE_TTS_API + '" class="w-full ' + tInput + ' border rounded-xl px-4 py-3 text-sm font-mono mb-3" placeholder="http://localhost:5050">';
-  h += '<button onclick="EDGE_TTS_API=document.getElementById(\'edge-url\').value;localStorage.setItem(\'iknbite_edge_tts_url\',EDGE_TTS_API);loadEdgeVoices()" class="btn-secondary px-5 py-2.5 rounded-xl text-sm">Reconnect Edge TTS</button>';
-  h += '</div>';
-
-  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
-  h += '<h3 class="font-bold mb-3 ' + tText + '">Status</h3>';
-  h += '<div class="space-y-2">';
-  h += '<div class="flex justify-between text-sm"><span class="' + tSub + '">Backend</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ' + statusDot + '"></span>' + statusText + '</span></div>';
-  if (health) {
-    h += '<div class="flex justify-between text-sm"><span class="' + tSub + '">GPU</span><span>' + (health.gpu_type || 'None') + '</span></div>';
-    h += '<div class="flex justify-between text-sm"><span class="' + tSub + '">Model</span><span>' + (health.model_loaded ? 'Loaded' : 'Not loaded') + '</span></div>';
-  }
-  h += '</div></div>';
-
-  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
-  h += '<h3 class="font-bold mb-3 ' + tText + '">About</h3>';
-  h += '<p class="text-sm ' + tSub + '">iknbite is a free, open-source AI Voice Studio. All speech generation uses free engines — no API keys or subscriptions required.</p>';
-  h += '<p class="text-xs ' + tSub + ' mt-2"><a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="text-brand-600 hover:underline">View on GitHub →</a></p>';
-  h += '</div>';
-
-  h += '</div>';
-  return h;
+function downloadAudio() {
+  if (!generationAudioUrl) return;
+  var a = document.createElement('a');
+  a.href = generationAudioUrl;
+  a.download = 'iknbite-speech.mp3';
+  a.click();
 }
 
 // Init
 applyTheme();
+loadWebSpeechVoices();
 render();
-checkHealth().then(function() {
-  loadProfiles();
-  loadEdgeVoices();
-});
+checkEdgeTTS();
+checkBackend();
 </script>
 </body>
 </html>
