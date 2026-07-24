@@ -210,19 +210,90 @@ const EFFECTS_LIST = [
 
 // ─── Voice Avatars ────────────────────────────────────────────────
 const VOICE_AVATARS = {
-  // Female voices - warm/pastel gradients
-  'af_bella':    { bg: ['#ff6b9d','#c44dff'], icon: '🎤', hair: 'long', emoji: '💜' },
-  'af_nova':     { bg: ['#ff9a56','#ff6b6b'], icon: '✨', hair: 'wavy', emoji: '⭐' },
-  'af_sarah':    { bg: ['#a78bfa','#818cf8'], icon: '🎵', hair: 'straight', emoji: '🎶' },
-  'af_heart':    { bg: ['#f472b6','#ec4899'], icon: '💖', hair: 'curly', emoji: '💕' },
-  'af_kore':     { bg: ['#34d399','#06b6d4'], icon: '🌊', hair: 'bob', emoji: '🌊' },
-  'jf_alpha':    { bg: ['#fb923c','#f43f5e'], icon: '🌸', hair: 'long', emoji: '🌸' },
-  'zf_xiaoxiao': { bg: ['#c084fc','#a855f7'], icon: '🦋', hair: 'long', emoji: '🦋' },
-  // Male voices - cool/bold gradients  
-  'am_adam':     { bg: ['#3b82f6','#1d4ed8'], icon: '🎙️', hair: 'short', emoji: '💪' },
-  'am_michael':  { bg: ['#10b981','#059669'], icon: '🎹', hair: 'short', emoji: '🎵' },
-  'am_eric':     { bg: ['#f59e0b','#d97706'], icon: '🎸', hair: 'medium', emoji: '🔥' },
-  'am_puck':     { bg: ['#6366f1','#4f46e5'], icon: '🎭', hair: 'spiky', emoji: '⚡' },
+  // ═══ English Female (Afinn) ═══
+  'af_alloy':     { bg: ['#94a3b8','#64748b'], emoji: '🤖', label: 'Synthetic' },
+  'af_aoede':     { bg: ['#c084fc','#a855f7'], emoji: '🎼', label: 'Melodic' },
+  'af_bella':     { bg: ['#f472b6','#ec4899'], emoji: '💜', label: 'Warm' },
+  'af_heart':     { bg: ['#fb7185','#e11d48'], emoji: '💕', label: 'Heartfelt' },
+  'af_jessica':   { bg: ['#a78bfa','#8b5cf6'], emoji: '🌟', label: 'Bright' },
+  'af_kore':      { bg: ['#2dd4bf','#14b8a6'], emoji: '🌊', label: 'Calm' },
+  'af_nicole':    { bg: ['#f9a8d4','#f472b6'], emoji: '✨', label: 'Gentle' },
+  'af_nova':      { bg: ['#fbbf24','#f59e0b'], emoji: '⭐', label: 'Radiant' },
+  'af_river':     { bg: ['#38bdf8','#0ea5e9'], emoji: '🏞️', label: 'Flowing' },
+  'af_sarah':     { bg: ['#818cf8','#6366f1'], emoji: '🎶', label: 'Smooth' },
+  'af_sky':       { bg: ['#67e8f9','#06b6d4'], emoji: '☁️', label: 'Airy' },
+
+  // ═══ English Male (Adyn) ═══
+  'am_adam':      { bg: ['#3b82f6','#2563eb'], emoji: '💪', label: 'Deep' },
+  'am_echo':      { bg: ['#60a5fa','#3b82f6'], emoji: '🔊', label: 'Resonant' },
+  'am_eric':      { bg: ['#fb923c','#ea580c'], emoji: '🔥', label: 'Bold' },
+  'am_fenrir':    { bg: ['#6b7280','#4b5563'], emoji: '🐺', label: 'Fierce' },
+  'am_liam':      { bg: ['#4ade80','#22c55e'], emoji: '🌿', label: 'Natural' },
+  'am_michael':   { bg: ['#10b981','#059669'], emoji: '🎹', label: 'Rich' },
+  'am_onyx':      { bg: ['#1e293b','#0f172a'], emoji: '🖤', label: 'Dark' },
+  'am_puck':      { bg: ['#a855f7','#9333ea'], emoji: '⚡', label: 'Energetic' },
+  'am_santa':     { bg: ['#ef4444','#dc2626'], emoji: '🎄', label: 'Festive' },
+
+  // ═══ English Female (Bella) ═══
+  'bf_alice':     { bg: ['#fda4af','#fb7185'], emoji: '🌸', label: 'Sweet' },
+  'bf_emma':      { bg: ['#d8b4fe','#c084fc'], emoji: '🦋', label: 'Elegant' },
+  'bf_isabella':  { bg: ['#fca5a5','#f87171'], emoji: '🌹', label: 'Romantic' },
+  'bf_lily':      { bg: ['#bbf7d0','#4ade80'], emoji: '🌷', label: 'Fresh' },
+
+  // ═══ English Male (Daniel) ═══
+  'bm_daniel':    { bg: ['#93c5fd','#60a5fa'], emoji: '📘', label: 'Clear' },
+  'bm_fable':     { bg: ['#c4b5fd','#a78bfa'], emoji: '📖', label: 'Storyteller' },
+  'bm_george':    { bg: ['#a3e635','#84cc16'], emoji: '🏛️', label: 'Authoritative' },
+  'bm_lewis':     { bg: ['#fdba74','#f97316'], emoji: '🎭', label: 'Theatrical' },
+
+  // ═══ Spanish ═══
+  'ef_dora':      { bg: ['#fde047','#eab308'], emoji: '💃', label: 'Español' },
+  'em_alex':      { bg: ['#86efac','#22c55e'], emoji: '🇪🇸', label: 'Español M' },
+
+  // ═══ French ═══
+  'ff_siwis':     { bg: ['#60a5fa','#2563eb'], emoji: '🇫🇷', label: 'Français' },
+
+  // ═══ Hindi ═══
+  'hf_alpha':     { bg: ['#fbbf24','#d97706'], emoji: '🇮🇳', label: 'हिन्दी' },
+  'hf_beta':      { bg: ['#f59e0b','#b45309'], emoji: '🪷', label: 'हिन्दी β' },
+  'hm_omega':     { bg: ['#f97316','#c2410c'], emoji: '🕉️', label: 'हिन्दी M' },
+  'hm_psi':       { bg: ['#ea580c','#9a3412'], emoji: '🙏', label: 'हिन्दी Ψ' },
+
+  // ═══ Italian ═══
+  'if_sara':      { bg: ['#34d399','#059669'], emoji: '🇮🇹', label: 'Italiano' },
+  'im_nicola':    { bg: ['#10b981','#047857'], emoji: '🍝', label: 'Italiano M' },
+
+  // ═══ Japanese ═══
+  'jf_alpha':     { bg: ['#fb923c','#ea580c'], emoji: '🌸', label: '日本語' },
+  'jf_gongitsune': { bg: ['#f472b6','#db2777'], emoji: '🦊', label: 'きつね' },
+  'jf_nezumi':    { bg: ['#a78bfa','#7c3aed'], emoji: '🐭', label: 'ねずみ' },
+  'jf_tebukuro':  { bg: ['#f87171','#dc2626'], emoji: '🧤', label: 'てぶくろ' },
+  'jm_kumo':      { bg: ['#94a3b8','#64748b'], emoji: '☁️', label: 'くも' },
+
+  // ═══ Portuguese ═══
+  'pf_dora':      { bg: ['#4ade80','#16a34a'], emoji: '🇧🇷', label: 'Português' },
+  'pm_alex':      { bg: ['#22c55e','#15803d'], emoji: '🌴', label: 'Português M' },
+
+  // ═══ Chinese ═══
+  'zf_xiaobei':   { bg: ['#f472b6','#db2777'], emoji: '🌺', label: '小北' },
+  'zf_xiaoni':    { bg: ['#e879f9','#c026d3'], emoji: '🦢', label: '小妮' },
+  'zf_xiaoxiao':  { bg: ['#c084fc','#9333ea'], emoji: '🦋', label: '小晓' },
+  'zf_xiaoyi':    { bg: ['#f9a8d4','#ec4899'], emoji: '🎋', label: '小艺' },
+  'zm_yunjian':   { bg: ['#3b82f6','#1d4ed8'], emoji: '⛰️', label: '云健' },
+  'zm_yunxi':     { bg: ['#60a5fa','#2563eb'], emoji: '🐉', label: '云希' },
+  'zm_yunxia':    { bg: ['#818cf8','#4f46e5'], emoji: '🌙', label: '云夏' },
+  'zm_yunyang':   { bg: ['#a78bfa','#7c3aed'], emoji: '☀️', label: '云扬' },
+
+  // ═══ Qwen CustomVoice ═══
+  'Vivian':       { bg: ['#f472b6','#be185d'], emoji: '🎀', label: 'Vivian' },
+  'Serena':       { bg: ['#a855f7','#7e22ce'], emoji: '🔮', label: 'Serena' },
+  'Uncle_Fu':     { bg: ['#0891b2','#0e7490'], emoji: '🎩', label: 'Uncle Fu' },
+  'Dylan':        { bg: ['#059669','#047857'], emoji: '🎸', label: 'Dylan' },
+  'Eric':         { bg: ['#d97706','#92400e'], emoji: '🔥', label: 'Qwen Eric' },
+  'Ryan':         { bg: ['#2563eb','#1e40af'], emoji: '🎙️', label: 'Ryan' },
+  'Aiden':        { bg: ['#4f46e5','#3730a3'], emoji: '⚡', label: 'Aiden' },
+  'Ono_Anna':     { bg: ['#e11d48','#9f1239'], emoji: '🎎', label: '小野アンナ' },
+  'Sohee':        { bg: ['#7c3aed','#5b21b6'], emoji: '🇰🇷', label: '소희' },
 };
 
 const TABS = [
