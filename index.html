@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>iknbite — AI Voice Studio</title>
-  <meta name="description" content="Free, open-source AI voice studio. Generate speech in 40+ voices across 12 languages. No API keys needed.">
+  <meta name="description" content="Free, open-source AI voice studio. Generate speech in 12 languages. No API keys needed.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -66,25 +66,16 @@
   <div id="app"></div>
 
 <script>
-var EDGE_TTS_API = localStorage.getItem('iknbite_edge_tts_url') || 'http://localhost:5050';
-var API = localStorage.getItem('iknbite_api_url') || 'http://localhost:8000';
 var isDark = localStorage.getItem('iknbite_dark') === 'true';
 var currentView = 'landing';
 var currentTab = 'generate';
 var genText = '';
-var currentCharacter = null;
+var currentCharacter = null
 var isGenerating = false;
-var generationAudioUrl = null;
 var generationStatus = '';
-var edgeTTSVoices = {};
-var webSpeechVoices = [];
-var selectedSpeechVoice = null;
-var edgeConnected = false;
-var backendConnected = false;
-var profiles = [];
-var history = [];
 var favorites = JSON.parse(localStorage.getItem('iknbite_favs') || '[]');
 var charLangFilter = 'all';
+var currentAudio = null;
 
 var CHARACTER_VOICES = [
   {id:'ava',name:'Ava',desc:'Warm American female',avatar:'👩',color:['#f472b6','#ec4899'],lang:'en',rate:1.0,pitch:1.1},
@@ -125,136 +116,82 @@ var CHARACTER_VOICES = [
 
 var LANGUAGES = {en:'English',ja:'Japanese',zh:'Chinese',ko:'Korean',fr:'French',es:'Spanish',de:'German',ru:'Russian',ar:'Arabic',hi:'Hindi',pt:'Portuguese',it:'Italian'};
 
-function applyTheme() {
-  if (isDark) {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-}
+var LANG_CODES = {en:'en',ja:'ja',zh:'zh-CN',ko:'ko',fr:'fr',es:'es',de:'de',ru:'ru',ar:'ar',hi:'hi',pt:'pt',it:'it'};
 
-function toggleDark() {
-  isDark = !isDark;
-  localStorage.setItem('iknbite_dark', isDark);
-  applyTheme();
-  render();
-}
-
-function toggleFav(cid) {
-  var idx = favorites.indexOf(cid);
-  if (idx >= 0) favorites.splice(idx, 1);
-  else favorites.push(cid);
-  localStorage.setItem('iknbite_favs', JSON.stringify(favorites));
-  render();
-}
-
+function applyTheme() { if (isDark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }
+function toggleDark() { isDark = !isDark; localStorage.setItem('iknbite_dark', isDark); applyTheme(); render(); }
+function toggleFav(cid) { var idx = favorites.indexOf(cid); if (idx >= 0) favorites.splice(idx, 1); else favorites.push(cid); localStorage.setItem('iknbite_favs', JSON.stringify(favorites)); render(); }
 function isFav(cid) { return favorites.indexOf(cid) >= 0; }
-
 function cb() { return isDark ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-surface-200'; }
 function ct() { return isDark ? 'text-white' : 'text-surface-900'; }
 function cs() { return isDark ? 'text-surface-400' : 'text-surface-500'; }
 function ci() { return isDark ? 'bg-[#262626] border-[#404040]' : 'bg-surface-50 border-surface-200'; }
-function cvc() { return isDark ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-surface-200'; }
 
-function findBrowserVoice(lang) {
-  var langMap = {en:'en',ja:'ja',zh:'zh',ko:'ko',fr:'fr',es:'es',de:'de',ru:'ru',ar:'ar',hi:'hi',pt:'pt',it:'it'};
-  var target = langMap[lang] || 'en';
-  var best = null;
-  for (var i = 0; i < webSpeechVoices.length; i++) {
-    var v = webSpeechVoices[i];
-    if (v.lang.indexOf(target) === 0) {
-      if (!best) best = v;
-      if (v.localService) best = v;
-      if (v.lang === target + '-' + target.toUpperCase()) { best = v; break; }
-    }
-  }
-  return best;
+function googleTTSUrl(text, lang) {
+  var langCode = LANG_CODES[lang] || lang || 'en';
+  return 'https://translate.google.com/translate_tts?ie=UTF-8&tl=' + encodeURIComponent(langCode) + '&client=tw-ob&q=' + encodeURIComponent(text);
 }
 
 function generateSpeech(text, character) {
   if (!text || !text.trim() || isGenerating) return;
+  stopAudio();
   isGenerating = true;
   generationStatus = 'generating';
-  generationAudioUrl = null;
   render();
 
   var char = character || currentCharacter;
   var lang = char ? char.lang : 'en';
-  var rate = char ? (char.rate || 1.0) : 1.0;
-  var pitch = char ? (char.pitch || 1.0) : 1.0;
+  var url = googleTTSUrl(text, lang);
 
-  var voice = findBrowserVoice(lang);
-  if (!voice) {
-    voice = findBrowserVoice('en');
-  }
+  var audio = new Audio();
+  audio.crossOrigin = 'anonymous';
+  audio.src = url;
+  currentAudio = audio;
 
-  var utterance = new SpeechSynthesisUtterance(text);
-  if (voice) utterance.voice = voice;
-  utterance.rate = rate;
-  utterance.pitch = pitch;
-  utterance.volume = 1.0;
-  utterance.lang = lang;
-
-  utterance.onend = function() {
-    generationStatus = 'done';
+  audio.oncanplay = function() {
+    generationStatus = 'playing';
     isGenerating = false;
     render();
   };
-  utterance.onerror = function(e) {
-    console.error('Speech error:', e);
+  audio.onended = function() {
+    generationStatus = 'done';
+    isGenerating = false;
+    currentAudio = null;
+    render();
+  };
+  audio.onerror = function(e) {
+    console.error('Audio error:', e);
     generationStatus = 'error';
     isGenerating = false;
+    currentAudio = null;
     render();
   };
 
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
-
-  generationStatus = 'speaking';
-  render();
-}
-
-function stopSpeech() {
-  window.speechSynthesis.cancel();
-  isGenerating = false;
-  generationStatus = 'stopped';
-  render();
-}
-
-function generateEdgeTTS(text, voiceId) {
-  if (!text || !text.trim() || isGenerating) return;
-  isGenerating = true;
-  generationStatus = 'generating';
-  generationAudioUrl = null;
-  render();
-  fetch(EDGE_TTS_API + '/tts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text, voice: voiceId || 'en-US-AvaNeural' })
-  }).then(function(r) {
-    if (!r.ok) throw new Error('TTS failed');
-    return r.blob();
-  }).then(function(blob) {
-    var url = URL.createObjectURL(blob);
-    generationAudioUrl = url;
-    generationStatus = 'done';
-    isGenerating = false;
-    render();
-    var audio = document.getElementById('gen-audio');
-    if (audio) audio.play();
-  }).catch(function(e) {
+  audio.play().catch(function(e) {
+    console.error('Play failed:', e);
     generationStatus = 'error';
     isGenerating = false;
-    alert('Edge TTS failed: ' + e.message);
+    currentAudio = null;
     render();
   });
+}
+
+function stopAudio() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  isGenerating = false;
+  generationStatus = '';
+  render();
 }
 
 function selectCharacter(cid) {
   for (var i = 0; i < CHARACTER_VOICES.length; i++) {
     if (CHARACTER_VOICES[i].id === cid) {
       currentCharacter = CHARACTER_VOICES[i];
-      generationAudioUrl = null;
       generationStatus = '';
       currentTab = 'generate';
       render();
@@ -263,56 +200,13 @@ function selectCharacter(cid) {
   }
 }
 
-function clearCharacter() {
-  currentCharacter = null;
-  generationAudioUrl = null;
-  generationStatus = '';
-  render();
-}
-
-function checkEdgeTTS() {
-  return fetch(EDGE_TTS_API + '/voices').then(function(r) {
-    if (!r.ok) throw new Error('no');
-    return r.json();
-  }).then(function(d) {
-    edgeTTSVoices = d || {};
-    edgeConnected = true;
-    render();
-  }).catch(function() {
-    edgeTTSVoices = {};
-    edgeConnected = false;
-  });
-}
-
-function checkBackend() {
-  return fetch(API + '/health').then(function(r) {
-    if (!r.ok) throw new Error('no');
-    return r.json();
-  }).then(function(d) {
-    backendConnected = true;
-    render();
-  }).catch(function() {
-    backendConnected = false;
-  });
-}
-
-function loadWebSpeechVoices() {
-  webSpeechVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-  if (webSpeechVoices.length === 0 && window.speechSynthesis) {
-    window.speechSynthesis.onvoiceschanged = function() {
-      webSpeechVoices = window.speechSynthesis.getVoices();
-    };
-  }
-}
+function clearCharacter() { currentCharacter = null; generationStatus = ''; render(); }
 
 function render() {
   applyTheme();
   var app = document.getElementById('app');
-  if (currentView === 'landing') {
-    app.innerHTML = renderLanding();
-  } else {
-    app.innerHTML = renderApp();
-  }
+  if (currentView === 'landing') app.innerHTML = renderLanding();
+  else app.innerHTML = renderApp();
 }
 
 function renderNav() {
@@ -338,12 +232,12 @@ function renderLanding() {
   }
 
   var engines = [
-    {icon:'🌐',name:'Web Speech',desc:'Built-in browser TTS — works instantly, no server',badge:'Instant',color:'emerald'},
-    {icon:'🗣️',name:'Edge TTS',desc:'400+ Microsoft neural voices, free forever',badge:'400+ Voices',color:'blue'},
-    {icon:'⚡',name:'Kokoro',desc:'82M params, 50 voices, runs on CPU',badge:'Fast',color:'purple'},
-    {icon:'🎯',name:'Chatterbox',desc:'23 languages, voice cloning',badge:'Multilingual',color:'orange'},
-    {icon:'🔥',name:'Qwen3-TTS',desc:'High quality, voice cloning support',badge:'Quality',color:'red'},
-    {icon:'💎',name:'LuxTTS',desc:'48kHz audio, 150x realtime speed',badge:'Pro',color:'cyan'}
+    {icon:'🌐',name:'Google TTS',desc:'Free online neural voices — works instantly',badge:'Online',color:'emerald'},
+    {icon:'🗣️',name:'Web Speech',desc:'Built-in browser voices as fallback',badge:'Offline',color:'blue'},
+    {icon:'⚡',name:'Edge TTS',desc:'400+ Microsoft voices (self-hosted)',badge:'Premium',color:'purple'},
+    {icon:'🎯',name:'Kokoro',desc:'82M params, 50 voices (self-hosted)',badge:'Local',color:'orange'},
+    {icon:'🔥',name:'Chatterbox',desc:'23 languages, voice cloning (self-hosted)',badge:'Advanced',color:'red'},
+    {icon:'💎',name:'LuxTTS',desc:'48kHz audio (self-hosted)',badge:'Pro',color:'cyan'}
   ];
   var engineCards = '';
   for (var e = 0; e < engines.length; e++) {
@@ -361,7 +255,7 @@ function renderLanding() {
   var stats = [{val:'6',label:'TTS Engines'},{val:'12',label:'Languages'},{val:'34',label:'Characters'},{val:'$0',label:'API Keys'}];
   var statCards = '';
   for (var s = 0; s < stats.length; s++) {
-    statCards += '<div class="' + cvc() + ' rounded-2xl p-4 card-shadow-sm text-center">'
+    statCards += '<div class="' + cb() + ' rounded-2xl p-4 card-shadow-sm text-center">'
       + '<div class="text-2xl md:text-3xl font-black ' + ct() + '">' + stats[s].val + '</div>'
       + '<div class="text-[10px] md:text-xs ' + cs() + ' mt-1 uppercase tracking-wider">' + stats[s].label + '</div>'
       + '</div>';
@@ -372,14 +266,14 @@ function renderLanding() {
     + '<section class="pt-24 pb-12 px-4 md:px-6 max-w-5xl mx-auto text-center slide-up">'
     + '<div class="inline-flex items-center gap-2 ' + cb() + ' border rounded-full px-4 py-2 mb-6 text-sm ' + cs() + ' card-shadow-sm">'
     + '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>'
-    + 'Free & Open Source — Works in Your Browser'
+    + 'Works Online — No Installation Needed'
     + '</div>'
     + '<h1 class="text-4xl md:text-7xl font-black tracking-tight mb-4 leading-tight ' + ct() + '">'
     + 'AI Voice Studio<br>'
     + '<span class="bg-gradient-to-r from-brand-600 via-purple-500 to-pink-500 bg-clip-text text-transparent">For Everyone</span>'
     + '</h1>'
     + '<p class="text-base md:text-lg ' + cs() + ' max-w-xl mx-auto mb-8">'
-    + 'Generate natural speech in 12 languages with 34 character voices.<br>No sign-up. No API keys. Just works.'
+    + 'Generate natural speech in 12 languages with 34 character voices.<br>No sign-up. No API keys. Just click and speak.'
     + '</p>'
     + '<div class="flex items-center justify-center gap-3 mb-12">'
     + '<button onclick="currentView=\'app\';currentTab=\'generate\';render()" class="btn-primary text-base px-8 py-3 rounded-2xl">⚡ Start Generating</button>'
@@ -412,7 +306,6 @@ function renderApp() {
   var tabs = [
     {id:'generate',label:'Generate',icon:'⚡'},
     {id:'voices',label:'Voices',icon:'🎤'},
-    {id:'transcribe',label:'Transcribe',icon:'📝'},
     {id:'settings',label:'Settings',icon:'⚙️'}
   ];
   var tabHtml = '';
@@ -424,7 +317,6 @@ function renderApp() {
   var content = '';
   if (currentTab === 'generate') content = renderGenerate();
   else if (currentTab === 'voices') content = renderVoices();
-  else if (currentTab === 'transcribe') content = renderTranscribe();
   else content = renderSettings();
 
   return renderNav()
@@ -438,18 +330,14 @@ function renderApp() {
 function renderGenerate() {
   var h = '<div class="max-w-2xl mx-auto space-y-4 slide-up">';
 
-  // Character picker
   if (!currentCharacter) {
     h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
     h += '<div class="flex items-center justify-between mb-3">';
     h += '<div><h3 class="font-bold text-sm ' + ct() + '">Choose a Character</h3>';
-    h += '<p class="text-xs ' + cs() + '">34 voices · speaks instantly in your browser</p></div>';
-    if (favorites.length > 0) {
-      h += '<span class="text-xs ' + cs() + '">' + favorites.length + ' ★</span>';
-    }
+    h += '<p class="text-xs ' + cs() + '">34 voices · speaks online instantly</p></div>';
+    if (favorites.length > 0) h += '<span class="text-xs ' + cs() + '">' + favorites.length + ' ★</span>';
     h += '</div>';
 
-    // Language filter
     var langLabels = {all:'All',en:'English',ja:'Japanese',zh:'Chinese',ko:'Korean',fr:'French',es:'Spanish',ar:'Arabic',hi:'Hindi',de:'German',pt:'Portuguese',it:'Italian',ru:'Russian'};
     h += '<div class="flex flex-wrap gap-1 mb-3">';
     for (var lk in langLabels) {
@@ -470,7 +358,6 @@ function renderGenerate() {
     h += '</div></div>';
   }
 
-  // Active voice card
   h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
   if (currentCharacter) {
     h += '<div class="flex items-center gap-3">';
@@ -485,14 +372,12 @@ function renderGenerate() {
   } else {
     h += '<div class="flex items-center gap-3">';
     h += '<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-surface-100 dark:bg-surface-800">🎙️</div>';
-    h += '<div class="flex-1"><div class="font-bold text-sm ' + ct() + '">Browser TTS</div>';
-    h += '<div class="text-xs ' + cs() + '">Uses your device\'s built-in voices</div></div>';
-    h += '<button onclick="currentTab=\'voices\';render()" class="text-xs text-brand-600 hover:text-brand-700 px-2 py-1 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 transition">Pick ↑</button>';
+    h += '<div class="flex-1"><div class="font-bold text-sm ' + ct() + '">Select a character</div>';
+    h += '<div class="text-xs ' + cs() + '">Pick from the grid above</div></div>';
     h += '</div>';
   }
   h += '</div>';
 
-  // Text input
   h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
   h += '<div class="flex items-center justify-between mb-2">';
   h += '<label class="text-xs font-semibold ' + cs() + ' uppercase tracking-wider">Text to Speak</label>';
@@ -501,32 +386,20 @@ function renderGenerate() {
   h += '<textarea id="gen-textarea" rows="5" placeholder="Type or paste your text here..." class="w-full ' + ci() + ' border rounded-xl px-4 py-3 text-sm resize-none leading-relaxed" oninput="genText=this.value">' + genText + '</textarea>';
   h += '</div>';
 
-  // Status / Audio
   if (generationStatus === 'generating') {
     h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
     h += '<div class="flex items-center gap-3">';
     h += '<div class="gen-wave"><span></span><span></span><span></span><span></span></div>';
-    h += '<span class="text-sm font-medium ' + ct() + '">Generating speech...</span>';
+    h += '<span class="text-sm font-medium ' + ct() + '">Loading audio...</span>';
     h += '</div></div>';
-  } else if (generationStatus === 'speaking') {
+  } else if (generationStatus === 'playing') {
     h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
     h += '<div class="flex items-center gap-3">';
     h += '<div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 pulse-glow">🔊</div>';
     h += '<div class="flex-1"><span class="text-sm font-medium ' + ct() + '">Speaking now...</span></div>';
-    h += '<button onclick="stopSpeech()" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400 transition">⏹ Stop</button>';
+    h += '<button onclick="stopAudio()" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400 transition">⏹ Stop</button>';
     h += '</div></div>';
-  } else if (generationStatus === 'done' && generationAudioUrl) {
-    h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
-    h += '<div class="flex items-center gap-3 mb-3">';
-    h += '<div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">✓</div>';
-    h += '<span class="font-bold text-sm ' + ct() + '">Generated</span>';
-    h += '</div>';
-    h += '<audio id="gen-audio" controls class="w-full h-10" src="' + generationAudioUrl + '"></audio>';
-    h += '<div class="flex gap-2 mt-2">';
-    h += '<button onclick="downloadAudio()" class="text-xs font-medium px-3 py-1.5 rounded-lg ' + ci() + ' border hover:opacity-80 transition">⬇ Download</button>';
-    h += '<button onclick="generationAudioUrl=null;generationStatus=\'\';render()" class="text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition">✕ Clear</button>';
-    h += '</div></div>';
-  } else if (generationStatus === 'done' && !generationAudioUrl) {
+  } else if (generationStatus === 'done') {
     h += '<div class="' + cb() + ' border rounded-2xl p-4 card-shadow-sm">';
     h += '<div class="flex items-center gap-3">';
     h += '<div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">✓</div>';
@@ -540,15 +413,14 @@ function renderGenerate() {
     h += '</div></div>';
   }
 
-  // Actions
   h += '<div class="flex flex-wrap gap-2">';
   if (isGenerating) {
     h += '<button disabled class="btn-primary px-6 py-3 rounded-xl text-sm"><div class="gen-wave"><span></span><span></span><span></span><span></span></div></button>';
-    h += '<button onclick="stopSpeech()" class="btn-secondary px-5 py-3 rounded-xl text-sm text-red-500">⏹ Stop</button>';
+    h += '<button onclick="stopAudio()" class="btn-secondary px-5 py-3 rounded-xl text-sm text-red-500">⏹ Stop</button>';
   } else {
     var voiceLabel = currentCharacter ? currentCharacter.name : 'Speak';
     h += '<button onclick="generateSpeech(genText)"' + (!genText.trim() ? ' disabled' : '') + ' class="btn-primary px-6 py-3 rounded-xl text-sm">🔊 ' + voiceLabel + '</button>';
-    h += '<button onclick="genText=\'\';generationAudioUrl=null;generationStatus=\'\';render()" class="btn-secondary px-4 py-3 rounded-xl text-sm">Clear</button>';
+    h += '<button onclick="genText=\'\';generationStatus=\'\';render()" class="btn-secondary px-4 py-3 rounded-xl text-sm">Clear</button>';
   }
   h += '</div>';
 
@@ -559,7 +431,6 @@ function renderGenerate() {
 function renderVoices() {
   var h = '<div class="max-w-4xl mx-auto space-y-4 slide-up">';
 
-  // Character gallery
   h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
   h += '<div class="flex items-center justify-between mb-4">';
   h += '<h3 class="font-bold ' + ct() + '">Character Voices</h3>';
@@ -590,24 +461,6 @@ function renderVoices() {
   }
   h += '</div>';
 
-  // Browser voices info
-  h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
-  h += '<h3 class="font-bold mb-2 ' + ct() + '">Browser Voices</h3>';
-  h += '<p class="text-xs ' + cs() + ' mb-3">Your device has ' + webSpeechVoices.length + ' built-in voices. Characters use the closest matching voice for their language.</p>';
-  var langVoices = {};
-  for (var vi = 0; vi < webSpeechVoices.length; vi++) {
-    var v = webSpeechVoices[vi];
-    var shortLang = v.lang.split('-')[0];
-    if (!langVoices[shortLang]) langVoices[shortLang] = 0;
-    langVoices[shortLang]++;
-  }
-  h += '<div class="flex flex-wrap gap-2">';
-  for (var lk2 in langVoices) {
-    h += '<span class="text-[10px] px-2 py-1 rounded-full ' + ci() + ' border ' + cs() + '">' + lk2.toUpperCase() + ': ' + langVoices[lk2] + ' voices</span>';
-  }
-  h += '</div></div>';
-
-  // Favorites
   if (favorites.length > 0) {
     h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
     h += '<h3 class="font-bold mb-3 ' + ct() + '">★ Favorites</h3>';
@@ -631,70 +484,31 @@ function renderVoices() {
   return h;
 }
 
-function renderTranscribe() {
-  return '<div class="max-w-xl mx-auto text-center slide-up">'
-    + '<div class="' + cb() + ' border rounded-2xl p-8 card-shadow-sm">'
-    + '<div class="text-4xl mb-3">📝</div>'
-    + '<h3 class="text-lg font-bold mb-2 ' + ct() + '">Speech-to-Text</h3>'
-    + '<p class="text-sm ' + cs() + ' mb-5">Upload audio for instant transcription</p>'
-    + '<input type="file" id="tf" accept=".wav,.mp3,.m4a,.ogg,.flac,.aac,.webm" class="hidden" onchange="if(this.files[0])doTranscribe(this.files[0])">'
-    + '<label for="tf" class="block border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl p-8 cursor-pointer hover:border-brand-300 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition">'
-    + '<div class="' + cs() + '">'
-    + '<div class="text-3xl mb-2">📁</div>'
-    + '<p class="text-sm">Click to upload audio</p>'
-    + '<p class="text-xs text-surface-300 mt-1">WAV, MP3, M4A, OGG, FLAC, AAC, WebM</p>'
-    + '</div></label></div></div>';
-}
-
-function doTranscribe(file) {
-  isGenerating = true;
-  render();
-  var fd = new FormData();
-  fd.append('file', file);
-  fetch(API + '/transcribe', { method: 'POST', body: fd }).then(function(r) {
-    if (!r.ok) throw new Error('Failed');
-    return r.json();
-  }).then(function(d) {
-    genText = d.text || '';
-    currentTab = 'generate';
-    isGenerating = false;
-    render();
-  }).catch(function(e) {
-    alert('Transcription requires the Voicebox backend running locally.\n\nStart it with: python -m backend.main');
-    isGenerating = false;
-    render();
-  });
-}
-
 function renderSettings() {
   var h = '<div class="max-w-lg mx-auto space-y-4 slide-up">';
 
   h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
-  h += '<h3 class="font-bold mb-2 ' + ct() + '">Edge TTS Server <span class="text-xs font-normal text-emerald-600 dark:text-emerald-400">Optional</span></h3>';
-  h += '<p class="text-xs ' + cs() + ' mb-3">For higher quality voices, run the Edge TTS server locally</p>';
-  h += '<input id="edge-url" value="' + EDGE_TTS_API + '" class="w-full ' + ci() + ' border rounded-xl px-4 py-2.5 text-sm font-mono mb-2">';
-  h += '<button onclick="EDGE_TTS_API=document.getElementById(\'edge-url\').value;localStorage.setItem(\'iknbite_edge_tts_url\',EDGE_TTS_API);checkEdgeTTS()" class="btn-secondary px-4 py-2 rounded-xl text-sm">Reconnect</button>';
-  h += '</div>';
-
-  h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
-  h += '<h3 class="font-bold mb-2 ' + ct() + '">Voicebox Backend <span class="text-xs font-normal ' + cs() + '">Optional</span></h3>';
-  h += '<p class="text-xs ' + cs() + ' mb-3">Advanced TTS engines (Kokoro, Chatterbox, etc.)</p>';
-  h += '<input id="api-url" value="' + API + '" class="w-full ' + ci() + ' border rounded-xl px-4 py-2.5 text-sm font-mono mb-2">';
-  h += '<button onclick="API=document.getElementById(\'api-url\').value;localStorage.setItem(\'iknbite_api_url\',API);checkBackend()" class="btn-secondary px-4 py-2 rounded-xl text-sm">Reconnect</button>';
-  h += '</div>';
-
-  h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
-  h += '<h3 class="font-bold mb-2 ' + ct() + '">Status</h3>';
+  h += '<h3 class="font-bold mb-2 ' + ct() + '">TTS Engine</h3>';
+  h += '<p class="text-xs ' + cs() + ' mb-3">Google TTS is used by default — free, online, no setup needed.</p>';
   h += '<div class="space-y-2 text-sm">';
-  h += '<div class="flex justify-between"><span class="' + cs() + '">Browser TTS</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Always ready</span></div>';
-  h += '<div class="flex justify-between"><span class="' + cs() + '">Edge TTS</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ' + (edgeConnected ? 'bg-emerald-500' : 'bg-surface-300') + '"></span>' + (edgeConnected ? 'Connected' : 'Not connected') + '</span></div>';
-  h += '<div class="flex justify-between"><span class="' + cs() + '">Voicebox</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ' + (backendConnected ? 'bg-emerald-500' : 'bg-surface-300') + '"></span>' + (backendConnected ? 'Connected' : 'Not connected') + '</span></div>';
-  h += '<div class="flex justify-between"><span class="' + cs() + '">Web Speech Voices</span><span>' + webSpeechVoices.length + ' available</span></div>';
+  h += '<div class="flex justify-between"><span class="' + cs() + '">Google TTS</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Active</span></div>';
+  h += '<div class="flex justify-between"><span class="' + cs() + '">Voices</span><span>' + CHARACTER_VOICES.length + ' characters · 12 languages</span></div>';
+  h += '<div class="flex justify-between"><span class="' + cs() + '">API Keys</span><span>None needed</span></div>';
   h += '</div></div>';
 
   h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-2 ' + ct() + '">How It Works</h3>';
+  h += '<ul class="text-xs ' + cs() + ' space-y-2">';
+  h += '<li>• Pick a character voice from the grid</li>';
+  h += '<li>• Type or paste your text</li>';
+  h += '<li>• Click the generate button</li>';
+  h += '<li>• Audio plays instantly from Google TTS</li>';
+  h += '<li>• Each character uses the matching language voice</li>';
+  h += '</ul></div>';
+
+  h += '<div class="' + cb() + ' border rounded-2xl p-5 card-shadow-sm">';
   h += '<h3 class="font-bold mb-2 ' + ct() + '">About</h3>';
-  h += '<p class="text-sm ' + cs() + '">iknbite is a free, open-source AI Voice Studio. Browser TTS works instantly without any server.</p>';
+  h += '<p class="text-sm ' + cs() + '">iknbite is a free, open-source AI Voice Studio. Speech generation uses Google Translate TTS — completely free, no API key or sign-up required.</p>';
   h += '<p class="text-xs ' + cs() + ' mt-2"><a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="text-brand-600 hover:underline">View on GitHub →</a></p>';
   h += '</div>';
 
@@ -702,20 +516,8 @@ function renderSettings() {
   return h;
 }
 
-function downloadAudio() {
-  if (!generationAudioUrl) return;
-  var a = document.createElement('a');
-  a.href = generationAudioUrl;
-  a.download = 'iknbite-speech.mp3';
-  a.click();
-}
-
-// Init
 applyTheme();
-loadWebSpeechVoices();
 render();
-checkEdgeTTS();
-checkBackend();
 </script>
 </body>
 </html>
