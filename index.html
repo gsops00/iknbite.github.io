@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" class="dark scroll-smooth">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>iknbite — AI Voice Studio</title>
-  <meta name="description" content="Clone any voice. Generate speech. Dictate into any app. The full voice I/O stack, running locally.">
+  <meta name="description" content="Free, open-source AI voice studio. Clone voices, generate speech, transcribe audio — all running locally on your machine.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
-  <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -15,7 +15,10 @@
         extend: {
           colors: {
             brand: { 50:'#f0f4ff',100:'#dbe4ff',200:'#bac8ff',300:'#91a7ff',400:'#748ffc',500:'#5c7cfa',600:'#4c6ef5',700:'#4263eb',800:'#3b5bdb',900:'#364fc7',950:'#1e2a5e' },
-            surface: { 50:'#fafafa',100:'#f4f4f5',200:'#e4e4e7',800:'#27272a',900:'#18181b',950:'#09090b' }
+            surface: { 50:'#fafafa',100:'#f4f4f5',200:'#e4e4e7',800:'#27272a',900:'#18181b',950:'#09090b' },
+            emerald: { 400:'#34d399',500:'#10b981' },
+            amber: { 400:'#fbbf24',500:'#f59e0b' },
+            rose: { 400:'#fb7185',500:'#f43f5e' }
           },
           fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }
         }
@@ -26,524 +29,991 @@
     * { scrollbar-width: thin; scrollbar-color: #3b5bdb #09090b; }
     ::selection { background: #4c6ef544; }
     body { font-family: 'Inter', system-ui, sans-serif; }
-    .glass { background: rgba(24,24,27,0.7); backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255,255,255,0.06); }
-    .glass-light { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+
+    /* Glass morphism */
+    .glass { background: rgba(24,24,27,0.75); backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255,255,255,0.06); }
+    .glass-subtle { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+    .glass-strong { background: rgba(15,15,18,0.9); backdrop-filter: blur(32px); border: 1px solid rgba(255,255,255,0.08); }
+
+    /* Gradients */
     .gradient-text { background: linear-gradient(135deg, #748ffc 0%, #cc5de8 50%, #ff6b6b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .gradient-border { border: 1px solid transparent; background-clip: padding-box; position: relative; }
-    .gradient-border::before { content: ''; position: absolute; inset: -1px; border-radius: inherit; background: linear-gradient(135deg, rgba(92,124,250,0.3), rgba(204,93,232,0.3)); z-index: -1; mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite: exclude; padding: 1px; }
+    .gradient-text-warm { background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #ef4444 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .gradient-bg { background: linear-gradient(135deg, #4c6ef5, #7950f2, #cc5de8); }
+    .gradient-border { position: relative; }
+    .gradient-border::before { content: ''; position: absolute; inset: -1px; border-radius: inherit; background: linear-gradient(135deg, rgba(92,124,250,0.4), rgba(204,93,232,0.4)); z-index: -1; mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite: exclude; padding: 1px; }
+
+    /* Glow */
     .glow { box-shadow: 0 0 60px rgba(92,124,250,0.15), 0 0 120px rgba(92,124,250,0.05); }
     .glow-sm { box-shadow: 0 0 30px rgba(92,124,250,0.1); }
-    .card-hover { transition: all 0.4s cubic-bezier(0.4,0,0.2,1); }
-    .card-hover:hover { transform: translateY(-6px); box-shadow: 0 25px 50px rgba(0,0,0,0.4), 0 0 40px rgba(92,124,250,0.1); }
-    .hero-gradient { background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(92,124,250,0.15), transparent), radial-gradient(ellipse 60% 40% at 80% 50%, rgba(204,93,232,0.08), transparent); }
-    .mesh-gradient { background: radial-gradient(at 40% 20%, rgba(92,124,250,0.08) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(204,93,232,0.06) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(92,210,250,0.04) 0px, transparent 50%); }
-    .slide-up { animation: slideUp 0.7s cubic-bezier(0.16,1,0.3,1); }
-    .slide-up-delay { animation: slideUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.15s both; }
-    .slide-up-delay2 { animation: slideUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.3s both; }
+    .glow-emerald { box-shadow: 0 0 30px rgba(16,185,129,0.15); }
+
+    /* Hero */
+    .hero-gradient { background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(92,124,250,0.18), transparent), radial-gradient(ellipse 60% 40% at 80% 50%, rgba(204,93,232,0.08), transparent), radial-gradient(ellipse 40% 30% at 20% 80%, rgba(16,185,129,0.06), transparent); }
+    .mesh-bg { background-image: radial-gradient(at 40% 20%, rgba(92,124,250,0.08) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(204,93,232,0.06) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(92,210,250,0.04) 0px, transparent 50%); }
+
+    /* Animations */
+    .slide-up { animation: slideUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+    .slide-up-1 { animation-delay: 0.1s; }
+    .slide-up-2 { animation-delay: 0.2s; }
+    .slide-up-3 { animation-delay: 0.3s; }
+    .slide-up-4 { animation-delay: 0.4s; }
     @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
     @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-8px); } }
     @keyframes pulse-ring { 0% { transform:scale(0.8); opacity:1; } 100% { transform:scale(2.5); opacity:0; } }
     @keyframes waveform { 0%,100% { height:6px; } 50% { height:28px; } }
+    @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     .float { animation: float 6s ease-in-out infinite; }
-    .waveform-bar { animation: waveform 1s ease-in-out infinite; width:3px; border-radius:2px; }
-    .waveform-bar:nth-child(2) { animation-delay:0.1s; }
-    .waveform-bar:nth-child(3) { animation-delay:0.2s; }
-    .waveform-bar:nth-child(4) { animation-delay:0.3s; }
-    .waveform-bar:nth-child(5) { animation-delay:0.4s; }
-    .waveform-bar:nth-child(6) { animation-delay:0.5s; }
-    .waveform-bar:nth-child(7) { animation-delay:0.6s; }
-    .waveform-bar:nth-child(8) { animation-delay:0.7s; }
-    .waveform-bar:nth-child(9) { animation-delay:0.8s; }
-    .waveform-bar:nth-child(10) { animation-delay:0.9s; }
-    .noise { background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E"); }
-    textarea:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 2px rgba(92,124,250,0.5); }
-    .tab-active { background: rgba(92,124,250,0.15); color: #748ffc; border-color: rgba(92,124,250,0.4); }
-    .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
-    .status-connected { background:#51cf66; box-shadow:0 0 12px #51cf6680; }
-    .status-disconnected { background:#ff6b6b; box-shadow:0 0 12px #ff6b6b80; }
-    .status-loading { background:#fcc419; box-shadow:0 0 12px #fcc41980; animation:pulse 1.5s infinite; }
+    .spin-slow { animation: spin-slow 20s linear infinite; }
+    .shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); background-size: 200% 100%; animation: shimmer 3s ease-in-out infinite; }
+
+    .waveform-bar { animation: waveform 1s ease-in-out infinite; width: 3px; border-radius: 2px; }
+    .waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+    .waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+    .waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+    .waveform-bar:nth-child(5) { animation-delay: 0.4s; }
+    .waveform-bar:nth-child(6) { animation-delay: 0.5s; }
+    .waveform-bar:nth-child(7) { animation-delay: 0.6s; }
+    .waveform-bar:nth-child(8) { animation-delay: 0.7s; }
+
+    /* Cards */
+    .card-hover { transition: all 0.4s cubic-bezier(0.4,0,0.2,1); }
+    .card-hover:hover { transform: translateY(-6px); box-shadow: 0 25px 50px rgba(0,0,0,0.4), 0 0 40px rgba(92,124,250,0.1); }
+
+    /* Buttons */
+    .btn-primary { background: linear-gradient(135deg, #4c6ef5, #7950f2); color: white; padding: 12px 28px; border-radius: 14px; font-weight: 600; font-size: 14px; transition: all 0.3s; cursor: pointer; border: none; }
+    .btn-primary:hover { opacity: 0.9; box-shadow: 0 8px 30px rgba(76,110,245,0.3); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: rgba(255,255,255,0.06); color: white; padding: 12px 28px; border-radius: 14px; font-weight: 600; font-size: 14px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s; cursor: pointer; }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
+    .btn-ghost { background: transparent; color: #a1a1aa; padding: 8px 16px; border-radius: 10px; font-weight: 500; font-size: 13px; transition: all 0.3s; cursor: pointer; border: none; }
+    .btn-ghost:hover { color: white; background: rgba(255,255,255,0.06); }
+
+    /* Status dots */
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .status-connected { background: #51cf66; box-shadow: 0 0 12px #51cf6680; }
+    .status-disconnected { background: #ff6b6b; box-shadow: 0 0 12px #ff6b6b80; }
+    .status-loading { background: #fcc419; box-shadow: 0 0 12px #fcc41980; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-    .hidden { display:none !important; }
-    .section-divider { height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent); }
-    .feature-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; }
-    .btn-primary { background:linear-gradient(135deg,#4c6ef5,#7950f2); color:white; padding:12px 28px; border-radius:14px; font-weight:600; font-size:14px; transition:all 0.3s; }
-    .btn-primary:hover { opacity:0.9; box-shadow:0 8px 30px rgba(76,110,245,0.3); transform:translateY(-1px); }
-    .btn-secondary { background:rgba(255,255,255,0.06); color:white; padding:12px 28px; border-radius:14px; font-weight:600; font-size:14px; border:1px solid rgba(255,255,255,0.08); transition:all 0.3s; }
-    .btn-secondary:hover { background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.15); }
-    .stat-number { font-size:2.5rem; font-weight:800; line-height:1; }
-    .stat-label { font-size:0.8rem; color:#a1a1aa; margin-top:4px; text-transform:uppercase; letter-spacing:0.05em; }
-    .app-preview { background:linear-gradient(135deg, rgba(24,24,27,0.9), rgba(9,9,11,0.95)); border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden; }
-    .app-titlebar { display:flex; align-items:center; gap:6px; padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.05); }
-    .titlebar-dot { width:10px; height:10px; border-radius:50%; }
+
+    /* Inputs */
+    textarea:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 2px rgba(92,124,250,0.5); }
+
+    /* Tabs */
+    .tab-active { background: rgba(92,124,250,0.15); color: #748ffc; border-color: rgba(92,124,250,0.4); }
+
+    /* Misc */
+    .noise { background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E"); }
+    .section-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent); }
+    .hidden { display: none !important; }
+
+    /* Audio player custom */
+    audio::-webkit-media-controls-panel { background: rgba(30,30,40,0.9); }
+    audio { filter: hue-rotate(220deg) saturate(0.8); border-radius: 10px; height: 40px; width: 100%; }
+
+    /* Modal overlay */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 50; display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: #18181b; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 32px; max-width: 520px; width: 90%; max-height: 80vh; overflow-y: auto; }
+
+    /* Sidebar */
+    .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 12px; color: #a1a1aa; font-weight: 500; font-size: 14px; transition: all 0.2s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+    .sidebar-item:hover { color: white; background: rgba(255,255,255,0.05); }
+    .sidebar-item.active { color: #748ffc; background: rgba(92,124,250,0.1); }
+
+    /* Range slider */
+    input[type="range"] { -webkit-appearance: none; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, #4c6ef5, #7950f2); cursor: pointer; box-shadow: 0 2px 8px rgba(76,110,245,0.4); }
+
     @media (max-width: 768px) {
       .hero-title { font-size: 2.5rem !important; }
-      .stat-number { font-size: 1.8rem; }
+      .app-sidebar { display: none; }
     }
+
+    /* Tooltip */
+    [data-tooltip] { position: relative; }
+    [data-tooltip]:hover::after { content: attr(data-tooltip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #27272a; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; z-index: 100; border: 1px solid rgba(255,255,255,0.1); }
   </style>
 </head>
 <body class="bg-surface-950 text-white min-h-screen noise">
   <div id="app"></div>
 
 <script>
-const API = localStorage.getItem('iknbite_api_url') || 'http://localhost:17493';
+// ─── Configuration ────────────────────────────────────────────────
+const DEFAULT_API = 'http://localhost:17493';
+let API = localStorage.getItem('iknbite_api_url') || DEFAULT_API;
+
+// ─── State ────────────────────────────────────────────────────────
 let currentView = 'landing'; // landing | app
 let currentTab = 'generate';
 let health = null;
 let profiles = [];
+let presetVoices = { kokoro: [], qwen_custom_voice: [] };
 let history = [];
+let effectsPresets = [];
+let availableEffects = [];
+let isGenerating = false;
+let isTranscribing = false;
+let sseConnected = false;
+let activeTasks = [];
 
-const tabs = [
-  { id:'generate', label:'Generate', icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>' },
-  { id:'voices', label:'Voices', icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>' },
-  { id:'transcribe', label:'Transcribe', icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' },
-  { id:'history', label:'History', icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' },
-  { id:'settings', label:'Settings', icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' },
+// Generate form
+let genText = '';
+let genProfileId = '';
+let genEngine = 'kokoro';
+let genLanguage = 'en';
+let genInstruct = '';
+let genSeed = '';
+let genNormalize = true;
+let genMaxChunkChars = 2000;
+let genCrossfadeMs = 50;
+
+// Settings
+let settingsApiKey = localStorage.getItem('iknbite_api_key') || '';
+
+// ─── Engine Definitions ───────────────────────────────────────────
+const ENGINES = [
+  { id: 'kokoro', name: 'Kokoro', desc: '82M model, 50 preset voices, fast CPU', langs: ['en','ja','zh','fr','es','de','hi','pt'], badge: 'Fast', color: '#34d399' },
+  { id: 'qwen', name: 'Qwen3-TTS', desc: '0.6B / 1.7B, high-quality cloning', langs: ['en','ja','zh','ko','fr','es','de','ru','ar','hi'], badge: 'Quality', color: '#748ffc' },
+  { id: 'qwen_custom_voice', name: 'Qwen CustomVoice', desc: '9 preset voices, delivery control', langs: ['en','ja','zh','ko','fr','es','de','ru','ar','hi'], badge: 'Presets', color: '#cc5de8' },
+  { id: 'chatterbox', name: 'Chatterbox', desc: '23 languages, multilingual', langs: ['en','ar','da','fi','el','he','hi','ms','no','pl','sv','sw','tr','fr','es','de','ja','zh','ko','pt','ru','it','nl'], badge: '23 Langs', color: '#fbbf24' },
+  { id: 'chatterbox_turbo', name: 'Chatterbox Turbo', desc: '350M, paralinguistic tags', langs: ['en'], badge: 'Expressive', color: '#f97316' },
+  { id: 'luxtts', name: 'LuxTTS', desc: '~1GB VRAM, 48kHz, 150x realtime', langs: ['en'], badge: 'Light', color: '#06b6d4' },
+  { id: 'hume', name: 'Hume TADA', desc: '1B / 3B, 700s+ coherent audio', langs: ['en','ja','zh','ko','fr','es','de','ru','ar','hi'], badge: 'Long', color: '#f43f5e' },
 ];
 
-// ─── Landing Page ───
+const LANGUAGES = {
+  en: 'English', ja: 'Japanese', zh: 'Chinese', ko: 'Korean', fr: 'French',
+  es: 'Spanish', de: 'German', ru: 'Russian', ar: 'Arabic', hi: 'Hindi',
+  pt: 'Portuguese', it: 'Italian', nl: 'Dutch', sv: 'Swedish', da: 'Danish',
+  fi: 'Finnish', el: 'Greek', he: 'Hebrew', ms: 'Malay', no: 'Norwegian',
+  pl: 'Polish', tr: 'Turkish', sw: 'Swahili'
+};
+
+const EFFECTS_LIST = [
+  { id: 'pitch_shift', name: 'Pitch Shift', icon: '🎵', params: { semitones: 0 } },
+  { id: 'reverb', name: 'Reverb', icon: '🏟️', params: { room_size: 0.5, damping: 0.5, wet_level: 0.3 } },
+  { id: 'delay', name: 'Delay', icon: '🔄', params: { delay_seconds: 0.3, feedback: 0.4, mix: 0.3 } },
+  { id: 'chorus', name: 'Chorus', icon: '🌊', params: { rate: 1.0, depth: 0.5, mix: 0.3 } },
+  { id: 'compressor', name: 'Compressor', icon: '📊', params: { threshold: -20, ratio: 4, attack: 0.005, release: 0.1 } },
+  { id: 'gain', name: 'Gain', icon: '🔊', params: { db: 0 } },
+  { id: 'highpass', name: 'High-Pass', icon: '📈', params: { cutoff_hz: 200 } },
+  { id: 'lowpass', name: 'Low-Pass', icon: '📉', params: { cutoff_hz: 3000 } },
+];
+
+const TABS = [
+  { id: 'generate', label: 'Generate', icon: '⚡' },
+  { id: 'voices', label: 'Voices', icon: '🎤' },
+  { id: 'effects', label: 'Effects', icon: '🎛️' },
+  { id: 'transcribe', label: 'Transcribe', icon: '📝' },
+  { id: 'history', label: 'History', icon: '🕐' },
+  { id: 'settings', label: 'Settings', icon: '⚙️' },
+];
+
+// ─── API Helpers ──────────────────────────────────────────────────
+function apiHeaders() {
+  const h = { 'Content-Type': 'application/json' };
+  if (settingsApiKey) h['Authorization'] = `Bearer ${settingsApiKey}`;
+  return h;
+}
+
+async function apiFetch(path, opts = {}) {
+  try {
+    const res = await fetch(`${API}${path}`, {
+      ...opts,
+      headers: { ...apiHeaders(), ...(opts.headers || {}) },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || res.statusText);
+    }
+    return await res.json();
+  } catch (e) {
+    console.error(`API ${path}:`, e);
+    throw e;
+  }
+}
+
+// ─── Health Check ─────────────────────────────────────────────────
+async function checkHealth() {
+  try {
+    health = await apiFetch('/health');
+    sseConnected = true;
+  } catch {
+    health = null;
+    sseConnected = false;
+  }
+  render();
+}
+
+// ─── Profiles ─────────────────────────────────────────────────────
+async function loadProfiles() {
+  try {
+    profiles = await apiFetch('/profiles');
+  } catch { profiles = []; }
+  render();
+}
+
+async function loadPresets() {
+  for (const engine of ['kokoro', 'qwen_custom_voice']) {
+    try {
+      const data = await apiFetch(`/profiles/presets/${engine}`);
+      presetVoices[engine] = data.voices || [];
+    } catch { presetVoices[engine] = []; }
+  }
+  render();
+}
+
+async function createProfile(name, language, description) {
+  await apiFetch('/profiles', {
+    method: 'POST',
+    body: JSON.stringify({ name, language, description: description || '' }),
+  });
+  await loadProfiles();
+}
+
+async function deleteProfile(id) {
+  await apiFetch(`/profiles/${id}`, { method: 'DELETE' });
+  await loadProfiles();
+}
+
+// ─── Generate ─────────────────────────────────────────────────────
+async function generateSpeech() {
+  if (!genText.trim() || isGenerating) return;
+  isGenerating = true;
+  render();
+
+  try {
+    const body = {
+      text: genText,
+      engine: genEngine,
+      language: genLanguage,
+      normalize: genNormalize,
+      max_chunk_chars: genMaxChunkChars,
+      crossfade_ms: genCrossfadeMs,
+    };
+    if (genProfileId) body.profile_id = genProfileId;
+    if (genInstruct) body.instruct = genInstruct;
+    if (genSeed) body.seed = parseInt(genSeed);
+
+    const result = await apiFetch('/generate', { method: 'POST', body: JSON.stringify(body) });
+    if (result.id) {
+      activeTasks.push({ id: result.id, status: 'generating', text: genText.substring(0, 50) });
+      pollGeneration(result.id);
+    }
+  } catch (e) {
+    alert('Generation failed: ' + e.message);
+  } finally {
+    isGenerating = false;
+    render();
+  }
+}
+
+async function pollGeneration(id) {
+  const maxAttempts = 120;
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    try {
+      const gen = await apiFetch(`/generations/${id}`);
+      if (gen.status === 'completed') {
+        activeTasks = activeTasks.filter(t => t.id !== id);
+        await loadHistory();
+        render();
+        return;
+      }
+      if (gen.status === 'failed') {
+        activeTasks = activeTasks.filter(t => t.id !== id);
+        alert('Generation failed: ' + (gen.error || 'Unknown error'));
+        render();
+        return;
+      }
+    } catch { /* retry */ }
+  }
+  activeTasks = activeTasks.filter(t => t.id !== id);
+  render();
+}
+
+// ─── Transcribe ───────────────────────────────────────────────────
+async function transcribeFile(file) {
+  isTranscribing = true;
+  render();
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API}/transcribe`, {
+      method: 'POST',
+      headers: settingsApiKey ? { 'Authorization': `Bearer ${settingsApiKey}` } : {},
+      body: formData,
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    const result = await res.json();
+    genText = result.text || '';
+    currentTab = 'generate';
+    render();
+  } catch (e) {
+    alert('Transcription failed: ' + e.message);
+  } finally {
+    isTranscribing = false;
+    render();
+  }
+}
+
+// ─── History ──────────────────────────────────────────────────────
+async function loadHistory() {
+  try {
+    const data = await apiFetch('/history?limit=50');
+    history = data.generations || data || [];
+  } catch { history = []; }
+  render();
+}
+
+async function deleteGeneration(id) {
+  try {
+    await apiFetch(`/generations/${id}`, { method: 'DELETE' });
+    await loadHistory();
+  } catch (e) { alert('Delete failed: ' + e.message); }
+}
+
+// ─── Effects ──────────────────────────────────────────────────────
+async function loadEffects() {
+  try {
+    const data = await apiFetch('/effects/available');
+    availableEffects = data.effects || [];
+  } catch { availableEffects = EFFECTS_LIST; }
+  try {
+    effectsPresets = await apiFetch('/effects/presets');
+  } catch { effectsPresets = []; }
+  render();
+}
+
+// ─── Rendering ────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  if (currentView === 'landing') {
+    app.innerHTML = renderLanding();
+  } else {
+    app.innerHTML = renderApp();
+  }
+  attachEventListeners();
+}
+
 function renderLanding() {
-  document.getElementById('app').innerHTML = `
-  <div class="noise">
+  return `
+  <div class="min-h-screen hero-gradient mesh-bg noise">
     <!-- Nav -->
     <nav class="fixed top-0 w-full z-50 glass">
-      <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="white" stroke-width="2" fill="none"/></svg>
-          </div>
+          <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center text-white font-bold text-sm">iK</div>
           <span class="text-lg font-bold tracking-tight">iknbite</span>
         </div>
-        <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
-          <a href="#features" class="hover:text-white transition">Features</a>
-          <a href="#how" class="hover:text-white transition">How it Works</a>
-          <a href="#tech" class="hover:text-white transition">Tech</a>
+        <div class="flex items-center gap-3">
+          <a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="btn-ghost flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            GitHub
+          </a>
+          <button onclick="currentView='app';render()" class="btn-primary text-sm">Open Studio →</button>
         </div>
-        <button onclick="currentView='app';render()" class="btn-primary text-sm py-2.5 px-5">Launch App →</button>
       </div>
     </nav>
 
     <!-- Hero -->
-    <section class="hero-gradient relative pt-32 pb-20 md:pt-44 md:pb-32 overflow-hidden">
-      <div class="max-w-7xl mx-auto px-6 text-center relative z-10">
-        <div class="slide-up">
-          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-xs font-medium text-zinc-300 mb-8">
-            <span class="status-dot status-connected"></span>
-            Open Source &bull; Free &bull; Private
-          </div>
+    <section class="pt-32 pb-20 px-6">
+      <div class="max-w-5xl mx-auto text-center slide-up">
+        <div class="inline-flex items-center gap-2 glass-subtle rounded-full px-4 py-2 mb-8 text-sm text-brand-300">
+          <span class="status-dot status-connected"></span>
+          100% Free & Open Source — No API Keys Required
         </div>
-        <h1 class="hero-title text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.95] mb-6 slide-up-delay">
-          The AI Voice<br><span class="gradient-text">Studio You Own</span>
+        <h1 class="hero-title text-5xl md:text-7xl font-black tracking-tight mb-6">
+          <span class="gradient-text">AI Voice Studio</span>
         </h1>
-        <p class="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed slide-up-delay2">
-          Clone any voice. Generate speech. Dictate into any app. Talk to agents in voices you own. The full voice I/O stack, running locally on your machine.
+        <p class="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto mb-10 leading-relaxed">
+          Clone any voice. Generate speech in 23 languages.<br class="hidden md:block">
+          Transcribe audio. Apply studio effects — all running <span class="text-white font-semibold">locally on your machine</span>.
         </p>
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 slide-up-delay2">
-          <button onclick="currentView='app';render()" class="btn-primary text-base py-3.5 px-8">
-            Launch Studio
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 slide-up slide-up-1">
+          <button onclick="currentView='app';render()" class="btn-primary text-base px-8 py-4 rounded-2xl flex items-center gap-2">
+            ⚡ Launch Studio
           </button>
-          <a href="https://github.com/jamiepine/voicebox" target="_blank" class="btn-secondary text-base py-3.5 px-8 flex items-center gap-2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            Star on GitHub
-          </a>
+          <a href="#features" class="btn-secondary text-base px-8 py-4 rounded-2xl">Learn More ↓</a>
         </div>
-        <!-- Waveform -->
-        <div class="flex justify-center gap-1 h-10 items-end">
-          ${Array.from({length:10}, (_,i) => `<div class="waveform-bar bg-gradient-to-t from-brand-600 to-purple-500" style="animation-delay:${i*0.1}s"></div>`).join('')}
-        </div>
-      </div>
-    </section>
 
-    <!-- Stats -->
-    <section class="py-16 border-y border-white/5">
-      <div class="max-w-7xl mx-auto px-6">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          <div><div class="stat-number gradient-text">6+</div><div class="stat-label">TTS Engines</div></div>
-          <div><div class="stat-number gradient-text">100%</div><div class="stat-label">Local & Private</div></div>
-          <div><div class="stat-number gradient-text">Free</div><div class="stat-label">Open Source</div></div>
-          <div><div class="stat-number gradient-text">MCP</div><div class="stat-label">AI Agent Ready</div></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- App Preview -->
-    <section class="py-20 md:py-28 mesh-gradient">
-      <div class="max-w-6xl mx-auto px-6">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl md:text-5xl font-bold mb-4">See it in action</h2>
-          <p class="text-zinc-400 text-lg max-w-xl mx-auto">A complete voice studio running in your browser, connected to a local AI backend.</p>
-        </div>
-        <div class="app-preview glow max-w-4xl mx-auto">
-          <div class="app-titlebar">
-            <div class="titlebar-dot" style="background:#ff5f57"></div>
-            <div class="titlebar-dot" style="background:#febc2e"></div>
-            <div class="titlebar-dot" style="background:#28c840"></div>
-            <span class="text-xs text-zinc-500 ml-3 font-mono">iknbite — AI Voice Studio</span>
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto slide-up slide-up-2">
+          <div class="glass-subtle rounded-2xl p-6">
+            <div class="text-3xl font-black gradient-text">7</div>
+            <div class="text-xs text-gray-500 mt-1 uppercase tracking-wider">TTS Engines</div>
           </div>
-          <div class="p-6">
-            <div class="flex gap-2 mb-6">
-              ${tabs.map((t,i) => `<div class="px-4 py-2 rounded-lg text-xs font-medium ${i===0?'tab-active':'text-zinc-500 border border-transparent'}">${t.label}</div>`).join('')}
-            </div>
-            <div class="glass-light rounded-xl p-5">
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2 text-sm font-semibold"><span class="text-brand-400">⚡</span> Text to Speech</div>
-                <div class="flex gap-2">
-                  <div class="px-3 py-1 rounded-lg bg-white/5 text-xs text-zinc-400 font-mono">Qwen3-TTS</div>
-                  <div class="px-3 py-1 rounded-lg bg-white/5 text-xs text-zinc-400">Default Voice</div>
-                </div>
-              </div>
-              <div class="w-full h-24 bg-white/3 rounded-xl p-4 text-sm text-zinc-500 font-mono mb-4">
-                Welcome to iknbite, the open source AI voice studio. Clone any voice, generate speech, and talk to AI agents — all running locally on your machine.
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-xs text-zinc-600 font-mono">142 characters</span>
-                <div class="btn-primary text-xs py-2 px-5">⚡ Generate</div>
-              </div>
-            </div>
-            <div class="glass-light rounded-xl p-5 mt-4">
-              <div class="text-xs text-zinc-500 mb-3 font-medium">Generated Audio</div>
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#748ffc"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                </div>
-                <div class="flex-1 h-8 rounded-full bg-white/5 overflow-hidden flex items-center px-3">
-                  <div class="flex items-center gap-0.5 h-6">
-                    ${Array.from({length:40}, () => `<div class="w-0.5 bg-brand-500/60 rounded-full" style="height:${Math.random()*100}%"></div>`).join('')}
-                  </div>
-                </div>
-                <span class="text-xs text-zinc-600 font-mono">0:04</span>
-              </div>
-            </div>
+          <div class="glass-subtle rounded-2xl p-6">
+            <div class="text-3xl font-black gradient-text">23</div>
+            <div class="text-xs text-gray-500 mt-1 uppercase tracking-wider">Languages</div>
+          </div>
+          <div class="glass-subtle rounded-2xl p-6">
+            <div class="text-3xl font-black gradient-text">50+</div>
+            <div class="text-xs text-gray-500 mt-1 uppercase tracking-wider">Preset Voices</div>
+          </div>
+          <div class="glass-subtle rounded-2xl p-6">
+            <div class="text-3xl font-black gradient-text">0</div>
+            <div class="text-xs text-gray-500 mt-1 uppercase tracking-wider">API Keys Needed</div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Waveform decoration -->
+    <div class="flex items-end justify-center gap-1 h-16 mb-12 opacity-30">
+      ${Array.from({length: 40}, () => `<div class="waveform-bar bg-brand-500" style="height:${6+Math.random()*22}px;animation-delay:${Math.random()}s"></div>`).join('')}
+    </div>
 
     <!-- Features -->
-    <section id="features" class="py-20 md:py-28">
-      <div class="max-w-7xl mx-auto px-6">
+    <section id="features" class="py-20 px-6">
+      <div class="max-w-6xl mx-auto">
         <div class="text-center mb-16">
-          <h2 class="text-3xl md:text-5xl font-bold mb-4">Everything you need</h2>
-          <p class="text-zinc-400 text-lg max-w-xl mx-auto">One local app replaces a dozen cloud services. No API keys, no subscriptions, no data leaving your machine.</p>
+          <h2 class="text-3xl md:text-4xl font-bold mb-4">Everything You Need</h2>
+          <p class="text-gray-400 text-lg max-w-2xl mx-auto">A complete voice I/O stack — from generation to effects to dictation.</p>
         </div>
-        <div class="grid md:grid-cols-3 gap-5">
+        <div class="grid md:grid-cols-3 gap-6">
           ${[
-            { icon:'🎭', title:'Voice Cloning', desc:'Clone any voice from a short audio sample. Natural speech with Qwen3-TTS and LinaCodec.', color:'from-brand-500/20 to-brand-500/5', iconBg:'bg-brand-500/15' },
-            { icon:'⚡', title:'Text to Speech', desc:'Generate high-quality speech in multiple languages. English, Japanese, Chinese, and more.', color:'from-purple-500/20 to-purple-500/5', iconBg:'bg-purple-500/15' },
-            { icon:'📝', title:'Speech to Text', desc:'Transcribe audio with Whisper. Auto-downloads models on first use. Zero cloud needed.', color:'from-green-500/20 to-green-500/5', iconBg:'bg-green-500/15' },
-            { icon:'🎙️', title:'Dictation Mode', desc:'Dictate text directly into any application. Real-time voice input across your desktop.', color:'from-orange-500/20 to-orange-500/5', iconBg:'bg-orange-500/15' },
-            { icon:'🔒', title:'100% Private', desc:'Everything runs on your machine. No audio leaves your device. No API keys needed.', color:'from-red-500/20 to-red-500/5', iconBg:'bg-red-500/15' },
-            { icon:'🔗', title:'MCP Integration', desc:'Built-in MCP server for AI agent integration. Let agents speak and listen through iknbite.', color:'from-cyan-500/20 to-cyan-500/5', iconBg:'bg-cyan-500/15' },
+            { icon: '🎙️', title: 'Voice Cloning', desc: 'Clone any voice from a few seconds of audio. Zero-shot cloning with Qwen3-TTS, Chatterbox, and more.', color: '#4c6ef5' },
+            { icon: '🌍', title: '23 Languages', desc: 'From English to Arabic, Japanese, Hindi, Swahili — the broadest language coverage of any open-source TTS.', color: '#cc5de8' },
+            { icon: '⚡', title: '7 TTS Engines', desc: 'Kokoro (fast), Qwen3-TTS (quality), Chatterbox (multilingual), LuxTTS (lightweight), Hume TADA (long-form).', color: '#fbbf24' },
+            { icon: '🎭', title: 'Expressive Speech', desc: 'Paralinguistic tags like [laugh], [sigh], [gasp] with Chatterbox Turbo. Delivery instructions with Qwen.', color: '#f97316' },
+            { icon: '🎛️', title: 'Studio Effects', desc: 'Pitch shift, reverb, delay, chorus, compression, gain, high/low-pass filters with presets.', color: '#06b6d4' },
+            { icon: '📝', title: 'Transcription', desc: 'Whisper-based speech-to-text. Upload any audio file and get instant transcription.', color: '#10b981' },
+            { icon: '🔒', title: '100% Private', desc: 'Models and voice data never leave your machine. No cloud, no API keys, no subscriptions.', color: '#f43f5e' },
+            { icon: '♾️', title: 'Unlimited Length', desc: 'Auto-chunking with crossfade for scripts, articles, and chapters up to 50,000 characters.', color: '#748ffc' },
+            { icon: '📖', title: 'Stories Editor', desc: 'Multi-voice timeline for conversations, podcasts, and narratives with drag-and-drop.', color: '#a855f7' },
           ].map(f => `
-            <div class="glass-light rounded-2xl p-7 card-hover group">
-              <div class="feature-icon ${f.iconBg} mb-5">${f.icon}</div>
-              <h3 class="text-lg font-semibold mb-2">${f.title}</h3>
-              <p class="text-zinc-400 text-sm leading-relaxed">${f.desc}</p>
+            <div class="glass-subtle rounded-2xl p-6 card-hover cursor-default">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-4" style="background:${f.color}20">${f.icon}</div>
+              <h3 class="text-lg font-bold mb-2">${f.title}</h3>
+              <p class="text-gray-400 text-sm leading-relaxed">${f.desc}</p>
             </div>
           `).join('')}
         </div>
       </div>
     </section>
 
-    <!-- How it Works -->
-    <section id="how" class="py-20 md:py-28 mesh-gradient">
-      <div class="max-w-7xl mx-auto px-6">
+    <!-- Engines -->
+    <section class="py-20 px-6">
+      <div class="max-w-6xl mx-auto">
         <div class="text-center mb-16">
-          <h2 class="text-3xl md:text-5xl font-bold mb-4">Up and running in minutes</h2>
-          <p class="text-zinc-400 text-lg">No accounts. No API keys. Just clone and go.</p>
+          <h2 class="text-3xl md:text-4xl font-bold mb-4">Open Source Engines</h2>
+          <p class="text-gray-400 text-lg">Choose the right engine for your use case.</p>
         </div>
-        <div class="grid md:grid-cols-3 gap-8">
-          ${[
-            { num:'1', title:'Clone & Setup', code:'git clone https://github.com/jamiepine/voicebox.git\ncd voicebox && just setup', desc:'One command handles Python venv, system deps, and JS packages.' },
-            { num:'2', title:'Start the App', code:'just dev', desc:'Launch the backend and desktop app together in one go.' },
-            { num:'3', title:'Create & Clone', code:'# Models auto-download on first use\n# Start generating immediately', desc:'Whisper, Qwen3-TTS, and more download automatically.' },
-          ].map(s => `
-            <div class="text-center">
-              <div class="w-14 h-14 rounded-2xl bg-brand-600 text-white text-xl font-bold flex items-center justify-center mx-auto mb-5 glow-sm">${s.num}</div>
-              <h3 class="font-semibold text-lg mb-2">${s.title}</h3>
-              <div class="bg-surface-900 rounded-xl p-4 text-left mb-4 border border-white/5">
-                <pre class="text-xs font-mono text-green-400 whitespace-pre-wrap">${s.code}</pre>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          ${ENGINES.map(e => `
+            <div class="glass-subtle rounded-xl p-5 card-hover flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shrink-0" style="background:${e.color}20;color:${e.color}">${e.badge}</div>
+              <div class="min-w-0">
+                <div class="font-semibold text-sm">${e.name}</div>
+                <div class="text-gray-500 text-xs mt-0.5">${e.desc}</div>
+                <div class="flex flex-wrap gap-1 mt-2">${e.langs.slice(0,5).map(l => `<span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400">${l}</span>`).join('')}${e.langs.length > 5 ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500">+${e.langs.length-5}</span>` : ''}</div>
               </div>
-              <p class="text-zinc-500 text-sm">${s.desc}</p>
             </div>
           `).join('')}
-        </div>
-      </div>
-    </section>
-
-    <!-- Tech Stack -->
-    <section id="tech" class="py-16 border-y border-white/5">
-      <div class="max-w-7xl mx-auto px-6">
-        <p class="text-center text-xs text-zinc-600 font-medium tracking-widest mb-8">POWERED BY</p>
-        <div class="flex flex-wrap items-center justify-center gap-8 md:gap-14">
-          ${['PyTorch','Qwen3-TTS','Whisper','FastAPI','React','Tauri','Kokoro','Chatterbox'].map(t =>
-            `<span class="text-lg font-semibold text-zinc-500 hover:text-zinc-300 transition cursor-default">${t}</span>`
-          ).join('')}
         </div>
       </div>
     </section>
 
     <!-- CTA -->
-    <section class="py-20 md:py-28">
-      <div class="max-w-4xl mx-auto px-6">
-        <div class="glass rounded-3xl p-10 md:p-14 text-center glow relative overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-br from-brand-600/10 to-purple-600/10"></div>
-          <div class="relative z-10">
-            <h2 class="text-3xl md:text-4xl font-bold mb-4">Ready to build with your voice?</h2>
-            <p class="text-zinc-400 text-lg mb-8 max-w-lg mx-auto">Free, open source, and runs on macOS, Linux, and Windows.</p>
-            <button onclick="currentView='app';render()" class="btn-primary text-base py-3.5 px-10">
-              Launch iknbite Studio →
-            </button>
-          </div>
-        </div>
+    <section class="py-20 px-6">
+      <div class="max-w-3xl mx-auto text-center glass rounded-3xl p-12 glow">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Ready to Start?</h2>
+        <p class="text-gray-400 text-lg mb-8">Launch the studio and start creating with AI voices — completely free.</p>
+        <button onclick="currentView='app';render()" class="btn-primary text-lg px-10 py-4 rounded-2xl">
+          ⚡ Open iknbite Studio
+        </button>
       </div>
     </section>
 
     <!-- Footer -->
-    <footer class="py-10 border-t border-white/5">
-      <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-2">
-          <div class="w-6 h-6 rounded-md bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/></svg>
-          </div>
-          <span class="text-sm font-semibold">iknbite.com</span>
+    <footer class="border-t border-white/5 py-10 px-6">
+      <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center text-white font-bold text-xs">iK</div>
+          <span class="font-semibold">iknbite</span>
+          <span class="text-gray-600 text-sm">— AI Voice Studio</span>
         </div>
-        <p class="text-sm text-zinc-600">Open source AI voice studio. Powered by Voicebox.</p>
+        <div class="flex items-center gap-6 text-sm text-gray-500">
+          <a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="hover:text-white transition">GitHub</a>
+          <span>MIT License</span>
+          <span>Built on Voicebox</span>
+        </div>
       </div>
     </footer>
   </div>`;
 }
 
-// ─── App View ───
 function renderApp() {
-  document.getElementById('app').innerHTML = `
-  <div class="min-h-screen noise">
-    <nav class="glass fixed top-0 left-0 right-0 z-50 px-6 h-14">
-      <div class="max-w-7xl mx-auto h-full flex items-center justify-between">
-        <div class="flex items-center gap-3 cursor-pointer" onclick="currentView='landing';render()">
-          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/></svg>
+  const currentEngine = ENGINES.find(e => e.id === genEngine) || ENGINES[0];
+  const engineLangs = currentEngine.langs;
+
+  return `
+  <div class="flex h-screen overflow-hidden bg-surface-950">
+    <!-- Sidebar -->
+    <aside class="app-sidebar w-64 shrink-0 glass-strong border-r border-white/5 flex flex-col">
+      <div class="p-4 border-b border-white/5">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center text-white font-bold text-sm">iK</div>
+          <div>
+            <div class="font-bold text-sm">iknbite</div>
+            <div class="text-[10px] text-gray-500">AI Voice Studio</div>
           </div>
-          <span class="text-sm font-bold">iknbite</span>
-        </div>
-        <div class="flex items-center gap-1" id="app-tabs"></div>
-        <div class="flex items-center gap-2 text-xs text-zinc-500">
-          <span id="app-status" class="status-dot status-loading"></span>
-          <span id="app-status-text">Connecting...</span>
         </div>
       </div>
-    </nav>
-    <main id="app-content" class="max-w-4xl mx-auto px-6 pt-20 pb-24"></main>
+      <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+        ${TABS.map(t => `
+          <button class="sidebar-item ${currentTab === t.id ? 'active' : ''}" onclick="currentTab='${t.id}';render()">
+            <span class="text-lg">${t.icon}</span>
+            <span>${t.label}</span>
+            ${t.id === 'generate' && activeTasks.length ? `<span class="ml-auto w-5 h-5 rounded-full bg-brand-600 text-[10px] flex items-center justify-center">${activeTasks.length}</span>` : ''}
+          </button>
+        `).join('')}
+      </nav>
+      <div class="p-3 border-t border-white/5">
+        <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+          <span class="status-dot ${sseConnected ? 'status-connected' : 'status-disconnected'}"></span>
+          ${sseConnected ? (health?.gpu_type || 'Connected') : 'Disconnected'}
+        </div>
+        <button onclick="currentView='landing';render()" class="sidebar-item text-xs">
+          <span>←</span><span>Back to Home</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto">
+      <!-- Top Bar -->
+      <div class="sticky top-0 z-40 glass-strong border-b border-white/5 px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <h2 class="font-bold text-lg">${TABS.find(t => t.id === currentTab)?.icon || ''} ${TABS.find(t => t.id === currentTab)?.label || ''}</h2>
+        </div>
+        <div class="flex items-center gap-3">
+          ${activeTasks.length ? `<div class="flex items-center gap-2 text-xs text-amber-400"><div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>${activeTasks.length} generating...</div>` : ''}
+          <button onclick="checkHealth()" class="btn-ghost text-xs">Refresh</button>
+        </div>
+      </div>
+
+      <div class="p-6">
+        ${currentTab === 'generate' ? renderGenerateTab(engineLangs) : ''}
+        ${currentTab === 'voices' ? renderVoicesTab() : ''}
+        ${currentTab === 'effects' ? renderEffectsTab() : ''}
+        ${currentTab === 'transcribe' ? renderTranscribeTab() : ''}
+        ${currentTab === 'history' ? renderHistoryTab() : ''}
+        ${currentTab === 'settings' ? renderSettingsTab() : ''}
+      </div>
+    </main>
   </div>`;
+}
 
-  const tabsEl = document.getElementById('app-tabs');
-  tabs.forEach(t => {
-    const btn = document.createElement('button');
-    btn.className = `px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${t.id===currentTab?'tab-active':'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`;
-    btn.dataset.tab = t.id;
-    btn.innerHTML = `<span class="mr-1.5 inline-flex">${t.icon}</span>${t.label}`;
-    btn.onclick = () => switchTab(t.id);
-    tabsEl.appendChild(btn);
-  });
+function renderGenerateTab(engineLangs) {
+  return `
+  <div class="max-w-4xl mx-auto space-y-6">
+    <!-- Engine Selector -->
+    <div class="glass-subtle rounded-2xl p-5">
+      <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">TTS Engine</label>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        ${ENGINES.map(e => `
+          <button onclick="genEngine='${e.id}';genLanguage='${e.langs[0]}';render()" class="p-3 rounded-xl text-left transition-all ${genEngine === e.id ? 'ring-2 ring-brand-500 bg-brand-500/10' : 'bg-white/[0.03] hover:bg-white/[0.06]'}">
+            <div class="text-sm font-semibold flex items-center gap-2">
+              ${e.name}
+              <span class="text-[10px] px-1.5 py-0.5 rounded-full" style="background:${e.color}20;color:${e.color}">${e.badge}</span>
+            </div>
+            <div class="text-[11px] text-gray-500 mt-1">${e.desc}</div>
+          </button>
+        `).join('')}
+      </div>
+    </div>
 
+    <!-- Profile & Language -->
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="glass-subtle rounded-2xl p-5">
+        <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">Voice Profile</label>
+        <select id="profile-select" class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm" onchange="genProfileId=this.value">
+          <option value="">No profile (use engine default)</option>
+          ${profiles.map(p => `<option value="${p.id}" ${genProfileId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+        </select>
+        <div class="text-[11px] text-gray-600 mt-2">
+          ${presetVoices.kokoro.length || presetVoices.qwen_custom_voice.length ? `📦 ${presetVoices.kokoro.length + presetVoices.qwen_custom_voice.length} preset voices available` : 'Create a voice profile to clone voices'}
+        </div>
+      </div>
+      <div class="glass-subtle rounded-2xl p-5">
+        <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">Language</label>
+        <select id="lang-select" class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm" onchange="genLanguage=this.value">
+          ${(engineLangs || ['en']).map(l => `<option value="${l}" ${genLanguage === l ? 'selected' : ''}>${LANGUAGES[l] || l}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <!-- Text Input -->
+    <div class="glass-subtle rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-3">
+        <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Text to Speak</label>
+        <span class="text-xs text-gray-600">${genText.length.toLocaleString()} / 50,000 chars</span>
+      </div>
+      <textarea id="gen-text" rows="8" placeholder="Type or paste your text here...&#10;&#10;Tip: With Chatterbox Turbo, use / to insert expressive tags like [laugh], [sigh], [gasp]..."
+        class="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm resize-none font-mono leading-relaxed"
+        oninput="genText=this.value;render()">${genText}</textarea>
+    </div>
+
+    <!-- Advanced Options -->
+    <details class="glass-subtle rounded-2xl p-5">
+      <summary class="text-xs text-gray-500 uppercase tracking-wider font-semibold cursor-pointer select-none">Advanced Options</summary>
+      <div class="grid md:grid-cols-3 gap-4 mt-4">
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Delivery Instruction</label>
+          <input type="text" value="${genInstruct}" placeholder="e.g. speak slowly, whisper"
+            class="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-sm"
+            oninput="genInstruct=this.value">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Seed (for reproducibility)</label>
+          <input type="number" value="${genSeed}" placeholder="Random"
+            class="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-sm"
+            oninput="genSeed=this.value">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Crossfade: ${genCrossfadeMs}ms</label>
+          <input type="range" min="0" max="200" value="${genCrossfadeMs}"
+            class="w-full mt-2"
+            oninput="genCrossfadeMs=parseInt(this.value);this.previousElementSibling.textContent='Crossfade: '+this.value+'ms'">
+        </div>
+      </div>
+      <div class="flex items-center gap-4 mt-4">
+        <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+          <input type="checkbox" ${genNormalize ? 'checked' : ''} onchange="genNormalize=this.checked" class="rounded">
+          Normalize audio
+        </label>
+        <div class="flex-1"></div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Max chunk: ${genMaxChunkChars}</label>
+          <input type="range" min="100" max="5000" step="100" value="${genMaxChunkChars}"
+            class="w-32"
+            oninput="genMaxChunkChars=parseInt(this.value);this.previousElementSibling.textContent='Max chunk: '+this.value">
+        </div>
+      </div>
+    </details>
+
+    <!-- Generate Button -->
+    <div class="flex items-center gap-4">
+      <button onclick="generateSpeech()" ${isGenerating || !genText.trim() ? 'disabled' : ''}
+        class="btn-primary text-base px-10 py-4 rounded-2xl flex items-center gap-3">
+        ${isGenerating ? `<div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...` : `⚡ Generate Speech`}
+      </button>
+      ${genText.length > 5000 ? `<span class="text-xs text-amber-400">⚠️ Long text will be auto-chunked</span>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderVoicesTab() {
+  return `
+  <div class="max-w-4xl mx-auto space-y-6">
+    <!-- Create Profile -->
+    <div class="glass-subtle rounded-2xl p-6">
+      <h3 class="font-bold mb-4">Create Voice Profile</h3>
+      <div class="grid md:grid-cols-3 gap-4">
+        <input id="new-profile-name" type="text" placeholder="Profile name"
+          class="bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm">
+        <select id="new-profile-lang" class="bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm">
+          ${Object.entries(LANGUAGES).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <button onclick="createProfile(document.getElementById('new-profile-name').value, document.getElementById('new-profile-lang').value)"
+          class="btn-primary rounded-xl">Create Profile</button>
+      </div>
+    </div>
+
+    <!-- User Profiles -->
+    <div class="glass-subtle rounded-2xl p-6">
+      <h3 class="font-bold mb-4">Your Voice Profiles <span class="text-sm font-normal text-gray-500">(${profiles.length})</span></h3>
+      ${profiles.length === 0 ? `
+        <div class="text-center py-8 text-gray-600">
+          <div class="text-4xl mb-3">🎤</div>
+          <p class="text-sm">No voice profiles yet. Create one above or import from a ZIP file.</p>
+        </div>
+      ` : `
+        <div class="space-y-3">
+          ${profiles.map(p => `
+            <div class="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.05] transition">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-400 font-bold text-sm">${p.name[0]}</div>
+                <div>
+                  <div class="font-semibold text-sm">${p.name}</div>
+                  <div class="text-xs text-gray-500">${LANGUAGES[p.language] || p.language} • ${p.description || 'No description'}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="genProfileId='${p.id}';currentTab='generate';render()" class="btn-ghost text-xs">Use</button>
+                <button onclick="if(confirm('Delete ${p.name}?'))deleteProfile('${p.id}')" class="btn-ghost text-xs text-rose-400">Delete</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>
+
+    <!-- Preset Voices -->
+    <div class="glass-subtle rounded-2xl p-6">
+      <h3 class="font-bold mb-4">Preset Voices <span class="text-sm font-normal text-gray-500">(Built-in)</span></h3>
+      <div class="grid md:grid-cols-2 gap-4">
+        ${[
+          { engine: 'kokoro', voices: presetVoices.kokoro, color: '#34d399' },
+          { engine: 'qwen_custom_voice', voices: presetVoices.qwen_custom_voice, color: '#cc5de8' },
+        ].map(eg => `
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:${eg.color}">${eg.engine === 'kokoro' ? 'Kokoro' : 'Qwen CustomVoice'} — ${eg.voices.length} voices</div>
+            ${eg.voices.length === 0 ? `<div class="text-xs text-gray-600 py-2">Connect to backend to load presets</div>` : `
+              <div class="max-h-48 overflow-y-auto space-y-1">
+                ${eg.voices.map(v => `
+                  <div class="flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.03] text-xs">
+                    <span class="text-gray-300">${v.name}</span>
+                    <span class="text-gray-600">${v.gender} • ${v.language}</span>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderEffectsTab() {
+  return `
+  <div class="max-w-4xl mx-auto space-y-6">
+    <div class="glass-subtle rounded-2xl p-6">
+      <h3 class="font-bold mb-2">Audio Effects</h3>
+      <p class="text-sm text-gray-500 mb-6">Apply post-processing effects to your generated speech. Effects are applied after generation.</p>
+      <div class="grid md:grid-cols-2 gap-4">
+        ${EFFECTS_LIST.map(e => `
+          <div class="p-4 rounded-xl bg-white/[0.03] border border-white/5">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-xl">${e.icon}</span>
+              <span class="font-semibold text-sm">${e.name}</span>
+            </div>
+            <div class="space-y-2">
+              ${Object.entries(e.params).map(([k, v]) => `
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-gray-400">${k.replace(/_/g, ' ')}</span>
+                  <span class="text-gray-500 font-mono">${v}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="glass-subtle rounded-2xl p-6">
+      <h3 class="font-bold mb-4">Effect Presets</h3>
+      ${effectsPresets.length === 0 ? `
+        <div class="text-center py-6 text-gray-600">
+          <p class="text-sm">No effect presets yet. Create custom presets from the Effects tab in the desktop app.</p>
+          <div class="flex justify-center gap-3 mt-4">
+            ${['Robotic 🤖', 'Radio 📻', 'Echo Chamber 🏟️', 'Deep Voice 🎙️'].map(p => `
+              <span class="text-xs px-3 py-1.5 rounded-full bg-white/5 text-gray-400">${p}</span>
+            `).join('')}
+          </div>
+        </div>
+      ` : `
+        <div class="space-y-2">
+          ${effectsPresets.map(p => `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.03]">
+              <span class="text-sm font-semibold">${p.name}</span>
+              <span class="text-xs text-gray-500">${(p.effects_chain || []).length} effects</span>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>
+  </div>`;
+}
+
+function renderTranscribeTab() {
+  return `
+  <div class="max-w-3xl mx-auto space-y-6">
+    <div class="glass-subtle rounded-2xl p-8 text-center">
+      <div class="text-5xl mb-4">📝</div>
+      <h3 class="text-xl font-bold mb-2">Speech-to-Text Transcription</h3>
+      <p class="text-gray-400 text-sm mb-6">Upload an audio file and get instant transcription powered by Whisper.</p>
+      <div class="relative">
+        <input type="file" id="transcribe-input" accept=".wav,.mp3,.m4a,.ogg,.flac,.aac,.webm,.opus"
+          class="hidden" onchange="if(this.files[0])transcribeFile(this.files[0])">
+        <label for="transcribe-input"
+          class="block border-2 border-dashed border-white/10 rounded-2xl p-12 cursor-pointer hover:border-brand-500/40 hover:bg-brand-500/5 transition">
+          ${isTranscribing ? `
+            <div class="flex flex-col items-center gap-3">
+              <div class="w-8 h-8 border-2 border-white/30 border-t-brand-500 rounded-full animate-spin"></div>
+              <span class="text-sm text-gray-400">Transcribing...</span>
+            </div>
+          ` : `
+            <div class="text-gray-500">
+              <div class="text-3xl mb-3">📁</div>
+              <p class="text-sm">Click to upload audio file</p>
+              <p class="text-xs text-gray-600 mt-1">Supports WAV, MP3, M4A, OGG, FLAC, AAC, WebM, Opus</p>
+            </div>
+          `}
+        </label>
+      </div>
+    </div>
+
+    ${genText ? `
+      <div class="glass-subtle rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-semibold text-sm">Transcription Result</h4>
+          <button onclick="currentTab='generate';render()" class="btn-ghost text-xs text-brand-400">Send to Generate →</button>
+        </div>
+        <div class="bg-white/[0.03] rounded-xl p-4 text-sm text-gray-300 font-mono whitespace-pre-wrap">${genText}</div>
+      </div>
+    ` : ''}
+  </div>`;
+}
+
+function renderHistoryTab() {
+  return `
+  <div class="max-w-4xl mx-auto space-y-4">
+    <div class="flex items-center justify-between">
+      <h3 class="font-bold">Generation History</h3>
+      <button onclick="loadHistory()" class="btn-ghost text-xs">Refresh</button>
+    </div>
+    ${history.length === 0 ? `
+      <div class="glass-subtle rounded-2xl p-12 text-center">
+        <div class="text-5xl mb-4">🕐</div>
+        <p class="text-gray-400">No generations yet. Start by generating some speech!</p>
+      </div>
+    ` : `
+      <div class="space-y-3">
+        ${history.map(g => `
+          <div class="glass-subtle rounded-xl p-4 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${g.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : g.status === 'failed' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}">
+              ${g.status === 'completed' ? '✓' : g.status === 'failed' ? '✗' : '⏳'}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium truncate">${(g.text || '').substring(0, 80)}</div>
+              <div class="text-xs text-gray-500 mt-0.5">
+                ${g.engine || 'unknown'} • ${g.language || 'en'} • ${g.duration ? g.duration.toFixed(1) + 's' : '—'}
+                ${g.created_at ? ' • ' + new Date(g.created_at).toLocaleDateString() : ''}
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              ${g.status === 'completed' && g.id ? `
+                <audio controls preload="none" src="${API}/generations/${g.id}/audio" class="w-48"></audio>
+              ` : ''}
+              ${g.status === 'completed' && g.id ? `
+                <a href="${API}/generations/${g.id}/download" class="btn-ghost text-xs">↓</a>
+              ` : ''}
+              <button onclick="deleteGeneration('${g.id}')" class="btn-ghost text-xs text-rose-400">✕</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  </div>`;
+}
+
+function renderSettingsTab() {
+  return `
+  <div class="max-w-3xl mx-auto space-y-6">
+    <div class="glass-subtle rounded-2xl p-6">
+      <h3 class="font-bold mb-4">Backend Connection</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">API URL</label>
+          <input type="text" value="${API}" id="api-url-input"
+            class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm font-mono"
+            placeholder="http://localhost:17493">
+          <p class="text-[11px] text-gray-600 mt-1">Default: http://localhost:17493 — The URL of your Voicebox backend.</p>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">API Key (optional)</label>
+          <input type="password" value="${settingsApiKey}" id="api-key-input"
+            class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm"
+            placeholder="Leave empty if not using auth">
+        </div>
+        <button onclick="saveSettings()" class="btn-primary rounded-xl">Save & Reconnect</button>
+      </div>
+    </div>
+
+    <div class="glass-subtle rounded-2xl p-6">
+      <h3 class="font-bold mb-4">Server Status</h3>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
+          <span class="text-sm text-gray-400">Connection</span>
+          <span class="flex items-center gap-2 text-sm">
+            <span class="status-dot ${sseConnected ? 'status-connected' : 'status-disconnected'}"></span>
+            ${sseConnected ? 'Connected' : 'Disconnected'}
+          </span>
+        </div>
+        ${health ? `
+          <div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
+            <span class="text-sm text-gray-400">GPU</span>
+            <span class="text-sm">${health.gpu_type || 'Not available'}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
+            <span class="text-sm text-gray-400">Model Loaded</span>
+            <span class="text-sm">${health.model_loaded ? '✓ Yes' : '✗ No'} ${health.model_size ? `(${health.model_size})` : ''}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
+            <span class="text-sm text-gray-400">Backend</span>
+            <span class="text-sm font-mono">${health.backend_type || 'unknown'} (${health.backend_variant || 'cpu'})</span>
+          </div>
+          ${health.vram_used_mb ? `
+            <div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
+              <span class="text-sm text-gray-400">VRAM Used</span>
+              <span class="text-sm">${Math.round(health.vram_used_mb)} MB</span>
+            </div>
+          ` : ''}
+        ` : `
+          <div class="text-center py-4 text-gray-600 text-sm">Cannot reach backend. Make sure Voicebox server is running.</div>
+        `}
+      </div>
+    </div>
+
+    <div class="glass-subtle rounded-2xl p-6">
+      <h3 class="font-bold mb-4">About</h3>
+      <div class="space-y-2 text-sm text-gray-400">
+        <p>iknbite AI Voice Studio — A free, open-source voice studio built on <a href="https://github.com/jamiepine/voicebox" target="_blank" class="text-brand-400 hover:underline">Voicebox</a>.</p>
+        <p>All TTS engines are open-source: Kokoro, Qwen3-TTS, Chatterbox, LuxTTS, Hume TADA.</p>
+        <p class="text-gray-600 text-xs mt-4">No data leaves your machine. No API keys required. No subscriptions.</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+function saveSettings() {
+  const urlInput = document.getElementById('api-url-input');
+  const keyInput = document.getElementById('api-key-input');
+  if (urlInput) {
+    API = urlInput.value.replace(/\/+$/, '');
+    localStorage.setItem('iknbite_api_url', API);
+  }
+  if (keyInput) {
+    settingsApiKey = keyInput.value;
+    localStorage.setItem('iknbite_api_key', settingsApiKey);
+  }
   checkHealth();
-  loadProfiles().then(() => loadHistory().then(() => renderTab()));
+  loadProfiles();
+  loadPresets();
 }
 
-function switchTab(id) {
-  currentTab = id;
-  document.getElementById('app-tabs').querySelectorAll('button').forEach(b => {
-    b.className = b.dataset.tab===id
-      ? 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all tab-active'
-      : 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-zinc-500 hover:text-zinc-300 hover:bg-white/5';
-  });
-  renderTab();
-}
-
-async function checkHealth() {
-  try {
-    const r = await fetch(`${API}/health`);
-    health = await r.json();
-    const dot = document.getElementById('app-status');
-    const txt = document.getElementById('app-status-text');
-    if(dot) { dot.className='status-dot status-connected'; txt.textContent=`Connected — ${health.backend||'Voicebox'}`; }
-  } catch {
-    health = null;
-    const dot = document.getElementById('app-status');
-    const txt = document.getElementById('app-status-text');
-    if(dot) { dot.className='status-dot status-disconnected'; txt.textContent='Disconnected'; }
+// ─── Event Listeners ──────────────────────────────────────────────
+function attachEventListeners() {
+  // Auto-refresh on tab switch
+  if (currentView === 'app') {
+    if (currentTab === 'history' && history.length === 0) loadHistory();
+    if (currentTab === 'voices' && profiles.length === 0) loadProfiles();
+    if (currentTab === 'effects' && effectsPresets.length === 0) loadEffects();
   }
 }
 
-async function loadProfiles() {
-  try { profiles = await (await fetch(`${API}/profiles`)).json(); } catch { profiles = []; }
-}
-
-async function loadHistory() {
-  try {
-    const d = await (await fetch(`${API}/history`)).json();
-    history = d.items || d || [];
-  } catch { history = []; }
-}
-
-function renderTab() {
-  const c = document.getElementById('app-content');
-  c.className = 'max-w-4xl mx-auto px-6 pt-20 pb-24 slide-up';
-  if(currentTab==='generate') renderGenerate(c);
-  else if(currentTab==='voices') renderVoices(c);
-  else if(currentTab==='transcribe') renderTranscribe(c);
-  else if(currentTab==='history') renderHistory(c);
-  else if(currentTab==='settings') renderSettings(c);
-}
-
-function renderGenerate(c) {
-  c.innerHTML = `
-    <div class="glass-light rounded-2xl p-6 space-y-4">
-      <div class="flex items-center justify-between flex-wrap gap-3">
-        <h2 class="text-lg font-semibold flex items-center gap-2"><span class="text-brand-400">⚡</span> Text to Speech</h2>
-        <div class="flex items-center gap-2">
-          <select id="gen-engine" class="bg-surface-900 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-zinc-300">
-            <option value="qwen3-tts">Qwen3-TTS</option><option value="kokoro">Kokoro</option><option value="chatterbox">Chatterbox</option><option value="luxtts">LuxTTS</option><option value="hume">Hume</option>
-          </select>
-          <select id="gen-profile" class="bg-surface-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-zinc-300">
-            <option value="">Default Voice</option>
-          </select>
-        </div>
-      </div>
-      <textarea id="gen-text" class="w-full h-36 bg-surface-900/50 border border-white/10 rounded-xl p-4 text-sm font-mono resize-none placeholder:text-zinc-600 text-zinc-200" placeholder="Type or paste text to convert to speech..."></textarea>
-      <div class="flex items-center justify-between">
-        <span class="text-xs text-zinc-600 font-mono" id="gen-chars">0 characters</span>
-        <button id="gen-btn" class="btn-primary text-sm py-2.5 px-6">⚡ Generate Speech</button>
-      </div>
-      <div id="gen-error" class="text-red-400 text-sm hidden"></div>
-    </div>
-    <div id="gen-result" class="hidden glass-light rounded-2xl p-6 slide-up">
-      <h3 class="text-xs font-semibold text-zinc-500 mb-3 uppercase tracking-wide">Generated Audio</h3>
-      <audio id="gen-audio" controls class="w-full rounded-xl"></audio>
-      <div class="mt-3 flex gap-2"><a id="gen-download" download class="px-4 py-1.5 bg-white/5 rounded-lg text-xs font-medium hover:bg-white/10 transition cursor-pointer">📥 Download</a></div>
-    </div>`;
-
-  const sel = document.getElementById('gen-profile');
-  profiles.forEach(p => { const o = document.createElement('option'); o.value=p.id; o.textContent=p.name; sel.appendChild(o); });
-  document.getElementById('gen-text').oninput = function() { document.getElementById('gen-chars').textContent=this.value.length+' characters'; };
-  document.getElementById('gen-btn').onclick = async () => {
-    const text = document.getElementById('gen-text').value.trim();
-    if(!text) return;
-    const btn = document.getElementById('gen-btn');
-    btn.innerHTML = '<svg class="animate-spin h-4 w-4 inline mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Generating...';
-    btn.disabled = true;
-    try {
-      const res = await fetch(`${API}/generate`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text,engine:document.getElementById('gen-engine').value,profile_id:document.getElementById('gen-profile').value||undefined}) });
-      if(!res.ok) throw new Error('Generation failed');
-      const data = await res.json();
-      if(data.id) {
-        document.getElementById('gen-audio').src = `${API}/audio/${data.id}`;
-        document.getElementById('gen-download').href = `${API}/audio/${data.id}`;
-        document.getElementById('gen-result').classList.remove('hidden');
-      }
-    } catch(e) { document.getElementById('gen-error').textContent=e.message; document.getElementById('gen-error').classList.remove('hidden'); }
-    finally { btn.innerHTML='⚡ Generate Speech'; btn.disabled=false; }
-  };
-}
-
-function renderVoices(c) {
-  c.innerHTML = `
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-lg font-semibold flex items-center gap-2"><span class="text-purple-400">🎭</span> Voice Profiles</h2>
-      <button id="voice-new" class="btn-primary text-sm py-2 px-5">+ New Voice</button>
-    </div>
-    <div id="voice-create" class="hidden glass-light rounded-2xl p-6 space-y-3 slide-up mb-4">
-      <input id="v-name" placeholder="Voice name" class="w-full bg-surface-900/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600">
-      <input id="v-desc" placeholder="Description (optional)" class="w-full bg-surface-900/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600">
-      <select id="v-engine" class="bg-surface-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm w-full text-zinc-300"><option value="qwen3-tts">Qwen3-TTS</option><option value="kokoro">Kokoro</option><option value="chatterbox">Chatterbox</option></select>
-      <div class="flex gap-2"><button id="v-create" class="btn-primary text-sm py-2 px-5">Create</button><button id="v-cancel" class="btn-secondary text-sm py-2 px-5">Cancel</button></div>
-    </div>
-    <div id="voice-list" class="space-y-3"></div>`;
-  document.getElementById('voice-new').onclick = () => document.getElementById('voice-create').classList.toggle('hidden');
-  document.getElementById('v-cancel').onclick = () => document.getElementById('voice-create').classList.add('hidden');
-  document.getElementById('v-create').onclick = async () => {
-    const name = document.getElementById('v-name').value.trim();
-    if(!name) return;
-    await fetch(`${API}/profiles`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,description:document.getElementById('v-desc').value,engine:document.getElementById('v-engine').value})});
-    await loadProfiles(); renderTab();
-  };
-  const list = document.getElementById('voice-list');
-  if(!profiles.length) { list.innerHTML='<div class="glass-light rounded-2xl p-12 text-center"><p class="text-zinc-500 text-lg mb-2">No voice profiles yet</p><p class="text-zinc-600 text-sm">Create a voice to get started with voice cloning</p></div>'; return; }
-  profiles.forEach(p => {
-    const d = document.createElement('div');
-    d.className = 'glass-light rounded-2xl p-5 flex items-center justify-between card-hover';
-    d.innerHTML = `<div><h3 class="font-semibold">${p.name}</h3><p class="text-zinc-500 text-sm">${p.description||'No description'}</p><span class="text-xs text-zinc-600 font-mono mt-1 inline-block">${p.engine} • ${new Date(p.created_at).toLocaleDateString()}</span></div><button class="px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg text-xs hover:bg-red-500/20 transition">Delete</button>`;
-    d.querySelector('button').onclick = async () => { if(!confirm('Delete this voice profile?'))return; await fetch(`${API}/profiles/${p.id}`,{method:'DELETE'}); await loadProfiles(); renderTab(); };
-    list.appendChild(d);
-  });
-}
-
-function renderTranscribe(c) {
-  c.innerHTML = `
-    <div class="glass-light rounded-2xl p-6 space-y-4">
-      <h2 class="text-lg font-semibold flex items-center gap-2"><span class="text-green-400">📝</span> Speech to Text</h2>
-      <div class="border-2 border-dashed border-white/10 rounded-xl p-10 text-center hover:border-white/20 transition">
-        <input type="file" accept="audio/*" id="stt-file" class="hidden">
-        <label for="stt-file" class="cursor-pointer"><div class="text-5xl mb-3">🎤</div><p class="text-zinc-300 font-medium" id="stt-filename">Drop audio file or click to upload</p><p class="text-zinc-600 text-sm mt-1">MP3, WAV, OGG, M4A</p></label>
-      </div>
-      <button id="stt-btn" class="w-full py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-green-500 to-cyan-500 text-surface-950 hover:opacity-90 transition">📝 Transcribe Audio</button>
-      <div id="stt-error" class="text-red-400 text-sm hidden"></div>
-    </div>
-    <div id="stt-result" class="hidden glass-light rounded-2xl p-6 slide-up">
-      <h3 class="text-xs font-semibold text-zinc-500 mb-3 uppercase tracking-wide">Result</h3>
-      <div id="stt-text" class="bg-surface-900/50 rounded-xl p-4 font-mono text-sm whitespace-pre-wrap text-zinc-200"></div>
-      <button id="stt-copy" class="mt-3 px-4 py-1.5 bg-white/5 rounded-lg text-xs font-medium hover:bg-white/10 transition">📋 Copy</button>
-    </div>`;
-  let selectedFile = null;
-  document.getElementById('stt-file').onchange = (e) => { selectedFile=e.target.files[0]; document.getElementById('stt-filename').textContent=selectedFile?selectedFile.name:'Drop audio file or click to upload'; };
-  document.getElementById('stt-btn').onclick = async () => {
-    if(!selectedFile) return;
-    const btn = document.getElementById('stt-btn'); btn.textContent='🔄 Transcribing...'; btn.disabled=true;
-    try {
-      const fd = new FormData(); fd.append('file',selectedFile);
-      const res = await fetch(`${API}/transcribe`,{method:'POST',body:fd});
-      if(!res.ok) throw new Error('Transcription failed');
-      const data = await res.json();
-      document.getElementById('stt-text').textContent = data.text||data.transcription||JSON.stringify(data);
-      document.getElementById('stt-result').classList.remove('hidden');
-    } catch(e) { document.getElementById('stt-error').textContent=e.message; document.getElementById('stt-error').classList.remove('hidden'); }
-    finally { btn.textContent='📝 Transcribe Audio'; btn.disabled=false; }
-  };
-  document.getElementById('stt-copy').onclick = () => navigator.clipboard.writeText(document.getElementById('stt-text').textContent);
-}
-
-function renderHistory(c) {
-  let h = `<h2 class="text-lg font-semibold flex items-center gap-2 mb-6"><span class="text-orange-400">📚</span> Generation History</h2>`;
-  if(!history.length) { h+='<div class="glass-light rounded-2xl p-12 text-center"><p class="text-zinc-500 text-lg mb-2">No generations yet</p><p class="text-zinc-600 text-sm">Your generated audio will appear here</p></div>'; }
-  else { h+='<div class="space-y-3">'; history.forEach(g => {
-    h+=`<div class="glass-light rounded-2xl p-5 card-hover"><div class="flex items-start justify-between gap-4"><div class="flex-1 min-w-0"><p class="font-medium truncate text-zinc-200">${g.text||'Untitled'}</p><p class="text-zinc-600 text-xs font-mono mt-1">${g.engine||''} • ${new Date(g.created_at).toLocaleString()}</p></div>${g.id?`<audio controls src="${API}/audio/${g.id}" class="h-8 flex-shrink-0 max-w-xs rounded-lg"></audio>`:''}</div></div>`;
-  }); h+='</div>'; }
-  c.innerHTML = h;
-}
-
-function renderSettings(c) {
-  c.innerHTML = `
-    <h2 class="text-lg font-semibold flex items-center gap-2 mb-6"><span class="text-zinc-400">⚙️</span> Settings</h2>
-    <div class="glass-light rounded-2xl p-6 space-y-4">
-      <h3 class="font-semibold text-sm text-zinc-400">Backend Connection</h3>
-      <div class="flex items-center gap-3 mb-4"><span class="status-dot ${health?'status-connected':'status-disconnected'}"></span><span class="text-sm text-zinc-300">${health?'Connected — '+(health.backend||'Voicebox'):'Disconnected'}</span></div>
-      <label class="block"><span class="text-xs text-zinc-500 font-mono">API URL</span><input id="set-url" value="${API}" class="w-full mt-1 bg-surface-900/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-zinc-200"></label>
-      <button id="set-save" class="btn-secondary text-sm py-2 px-5">Save & Reconnect</button>
-    </div>
-    <div class="glass-light rounded-2xl p-6 space-y-3 mt-4">
-      <h3 class="font-semibold text-sm text-zinc-400">About</h3>
-      <p class="text-zinc-300 text-sm">iknbite — AI Voice Studio</p>
-      <p class="text-zinc-600 text-xs">Powered by Voicebox • Open Source • Runs Locally</p>
-      <div class="flex gap-2 mt-2"><a href="https://github.com/jamiepine/voicebox" target="_blank" class="btn-secondary text-xs py-1.5 px-3">GitHub</a><a href="https://voicebox.sh" target="_blank" class="btn-secondary text-xs py-1.5 px-3">Docs</a></div>
-    </div>`;
-  document.getElementById('set-save').onclick = () => { localStorage.setItem('iknbite_api_url',document.getElementById('set-url').value); window.location.reload(); };
-}
-
-// ─── Init ───
-function render() {
-  if(currentView==='landing') renderLanding();
-  else renderApp();
-}
+// ─── Init ─────────────────────────────────────────────────────────
 render();
+checkHealth().then(() => {
+  if (currentView === 'app') {
+    loadProfiles();
+    loadPresets();
+  }
+});
 </script>
 </body>
 </html>
