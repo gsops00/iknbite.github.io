@@ -174,15 +174,69 @@ function renderGenerate(){
 
 function renderVoices(){
   var h='<div class="max-w-4xl mx-auto space-y-6 slide-up">';
-  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><div class="flex items-center justify-between mb-4"><h3 class="font-bold">Voice Gallery</h3><span class="text-xs text-surface-400">'+Object.keys(VOICE_AVATARS).length+' voices</span></div>';
+
+  // Voice Gallery card
+  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
+  h+='<div class="flex items-center justify-between mb-4">';
+  h+='<h3 class="font-bold">Voice Gallery</h3>';
+  h+='<span class="text-xs text-surface-400">'+Object.keys(VOICE_AVATARS).length+' voices</span>';
+  h+='</div>';
+
   var groups={'English Female':['af_alloy','af_aoede','af_bella','af_heart','af_jessica','af_kore','af_nicole','af_nova','af_river','af_sarah','af_sky','bf_alice','bf_emma','bf_isabella','bf_lily'],'English Male':['am_adam','am_echo','am_eric','am_fenrir','am_liam','am_michael','am_onyx','am_puck','am_santa','bm_daniel','bm_fable','bm_george','bm_lewis'],'Chinese':['zf_xiaobei','zf_xiaoni','zf_xiaoxiao','zf_xiaoyi','zm_yunjian','zm_yunxi','zm_yunxia','zm_yunyang'],'Japanese':['jf_alpha','jf_gongitsune','jf_nezumi','jf_tebukuro','jm_kumo'],'Spanish':['ef_dora','em_alex'],'French':['ff_siwis'],'Hindi':['hf_alpha','hf_beta','hm_omega','hm_psi'],'Italian':['if_sara','im_nicola'],'Portuguese':['pf_dora','pm_alex'],'Qwen Custom':['Vivian','Serena','Uncle_Fu','Dylan','Eric','Ryan','Aiden','Ono_Anna','Sohee']};
-  for(var label in groups){var ids=groups[label];var voices=ids.map(function(id){return{id:id,av:VOICE_AVATARS[id]};}).filter(function(v){return v.av;});if(voices.length===0)continue;h+='<div class="mb-5"><div class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">'+label+' <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-100 font-normal">'+voices.length+'</span></div><div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">';for(var i=0;i<voices.length;i++){var v=voices[i];h+='<button onclick="selectVoice(\''+v.id+'\')" class="voice-card flex flex-col items-center gap-2 p-3 cursor-pointer"><div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl text-white font-bold" style="background:linear-gradient(135deg,'+v.av.bg[0]+','+v.av.bg[1]+')">'+v.av.emoji+'</div><div class="text-[11px] font-medium text-surface-600 text-center truncate w-full">'+v.av.label+'</div></button>';}h+='</div></div>';}
+
+  for(var label in groups){
+    var ids=groups[label];
+    var voices=[];
+    for(var k=0;k<ids.length;k++){if(VOICE_AVATARS[ids[k]])voices.push({id:ids[k],av:VOICE_AVATARS[ids[k]]});}
+    if(voices.length===0)continue;
+    h+='<div class="mb-4">';
+    h+='<div class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">'+label+' <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-100 font-normal">'+voices.length+'</span></div>';
+    h+='<div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">';
+    for(var i=0;i<voices.length;i++){
+      var v=voices[i];
+      h+='<button onclick="selectVoice(\''+v.id+'\')" class="voice-card flex flex-col items-center gap-2 p-3 cursor-pointer">';
+      h+='<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl text-white font-bold" style="background:linear-gradient(135deg,'+v.av.bg[0]+','+v.av.bg[1]+')">'+v.av.emoji+'</div>';
+      h+='<div class="text-[11px] font-medium text-surface-600 text-center truncate w-full">'+v.av.label+'</div>';
+      h+='</button>';
+    }
+    h+='</div></div>';
+  }
+  h+='</div>';
+
+  // Create Profile card
+  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
+  h+='<h3 class="font-bold mb-3">Create Profile</h3>';
+  h+='<div class="flex gap-3">';
+  h+='<input id="np-name" placeholder="Name" class="flex-1 bg-surface-50 border border-surface-200 rounded-xl px-4 py-2.5 text-sm">';
+  h+='<select id="np-lang" class="bg-surface-50 border border-surface-200 rounded-xl px-4 py-2.5 text-sm">';
+  h+='<option value="en">English</option><option value="ja">Japanese</option><option value="zh">Chinese</option><option value="ko">Korean</option><option value="fr">French</option><option value="es">Spanish</option><option value="de">German</option><option value="hi">Hindi</option><option value="pt">Portuguese</option><option value="it">Italian</option>';
+  h+='</select>';
+  h+='<button onclick="createProfile(document.getElementById(\'np-name\').value,document.getElementById(\'np-lang\').value)" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Create</button>';
   h+='</div></div>';
-  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Create Profile</h3><div class="flex gap-3"><input id="np-name" placeholder="Name" class="flex-1 bg-surface-50 border border-surface-200 rounded-xl px-4 py-2.5 text-sm"><select id="np-lang" class="bg-surface-50 border border-surface-200 rounded-xl px-4 py-2.5 text-sm"><option value="en">English</option><option value="ja">Japanese</option><option value="zh">Chinese</option><option value="ko">Korean</option><option value="fr">French</option><option value="es">Spanish</option><option value="de">German</option><option value="hi">Hindi</option><option value="pt">Portuguese</option><option value="it">Italian</option></select><button onclick="createProfile(document.getElementById(\'np-name\').value,document.getElementById(\'np-lang\').value)" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Create</button></div></div>';
-  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Your Profiles <span class="text-sm font-normal text-surface-400">('+profiles.length+')</span></h3>';
-  if(profiles.length===0){h+='<div class="text-center py-6 text-surface-400 text-sm">No profiles yet. Create one above.</div>';}
-  else{for(var j=0;j<profiles.length;j++){var p=profiles[j];var pav=getAvatar(p);h+='<div class="flex items-center justify-between p-3 rounded-xl hover:bg-surface-50 transition"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:linear-gradient(135deg,'+pav.bg[0]+','+pav.bg[1]+')">'+pav.emoji+'</div><div><div class="text-sm font-semibold">'+p.name+'</div><div class="text-xs text-surface-400">'+(LANGUAGES[p.language]||p.language)+'</div></div></div><div class="flex gap-2"><button onclick="selectVoice(\''+p.id+'\')" class="btn-secondary text-xs px-3 py-1.5 rounded-lg">Use</button><button onclick="if(confirm(\'Delete?\'))deleteProf(\''+p.id+'\')" class="text-xs text-red-400 px-2 py-1.5">✕</button></div></div>';}}
-  h+='</div></div>';
+
+  // Your Profiles card
+  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
+  h+='<h3 class="font-bold mb-3">Your Profiles <span class="text-sm font-normal text-surface-400">('+profiles.length+')</span></h3>';
+  if(profiles.length===0){
+    h+='<div class="text-center py-6 text-surface-400 text-sm">No profiles yet. Create one above.</div>';
+  } else {
+    for(var j=0;j<profiles.length;j++){
+      var p=profiles[j];var pav=getAvatar(p);
+      h+='<div class="flex items-center justify-between p-3 rounded-xl hover:bg-surface-50 transition">';
+      h+='<div class="flex items-center gap-3">';
+      h+='<div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:linear-gradient(135deg,'+pav.bg[0]+','+pav.bg[1]+')">'+pav.emoji+'</div>';
+      h+='<div><div class="text-sm font-semibold">'+p.name+'</div>';
+      h+='<div class="text-xs text-surface-400">'+(LANGUAGES[p.language]||p.language)+'</div></div>';
+      h+='</div>';
+      h+='<div class="flex gap-2">';
+      h+='<button onclick="selectVoice(\''+p.id+'\')" class="btn-secondary text-xs px-3 py-1.5 rounded-lg">Use</button>';
+      h+='<button onclick="if(confirm(\'Delete?\'))deleteProf(\''+p.id+'\')" class="text-xs text-red-400 px-2 py-1.5">✕</button>';
+      h+='</div></div>';
+    }
+  }
+  h+='</div>';
+
+  h+='</div>';
   return h;
 }
 
