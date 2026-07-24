@@ -115,6 +115,67 @@ const VOICE_AVATARS = {
   'Sohee':{bg:['#7c3aed','#5b21b6'],emoji:'🇰🇷',label:'소희'},
 };
 
+const CHARACTER_VOICES = [
+  // English Characters
+  {id:'char_ava',name:'Ava',desc:'Warm American female voice',avatar:'👩',color:['#f472b6','#ec4899'],edge:'en-US-AvaNeural',type:'character'},
+  {id:'char_andrew',name:'Andrew',desc:'Deep American male voice',avatar:'👨',color:['#3b82f6','#2563eb'],edge:'en-US-AndrewNeural',type:'character'},
+  {id:'char_brian',name:'Brian',desc:'Natural friendly male voice',avatar:'🧑',color:['#10b981','#059669'],edge:'en-US-BrianNeural',type:'character'},
+  {id:'char_emma',name:'Emma',desc:'Bright cheerful female voice',avatar:'👧',color:['#fbbf24','#f59e0b'],edge:'en-US-EmmaNeural',type:'character'},
+  {id:'char_jenny',name:'Jenny',desc:'Friendly customer service voice',avatar:'👩‍💼',color:['#a78bfa','#8b5cf6'],edge:'en-US-JennyNeural',type:'character'},
+  {id:'char_guy',name:'Guy',desc:'Casual laid-back male voice',avatar:'🧔',color:['#6b7280','#4b5563'],edge:'en-US-GuyNeural',type:'character'},
+  {id:'char_aria',name:'Aria',desc:'Expressive dramatic female voice',avatar:'🎭',color:['#ef4444','#dc2626'],edge:'en-US-AriaNeural',type:'character'},
+  {id:'char_davis',name:'Davis',desc:'Strong authoritative male voice',avatar:'💪',color:['#1e293b','#0f172a'],edge:'en-US-DavisNeural',type:'character'},
+  {id:'char_sonia',name:'Sonia',desc:'Elegant British female voice',avatar:'👩‍🦰',color:['#be185d','#9d174d'],edge:'en-GB-SoniaNeural',type:'character'},
+  {id:'char_ryan',name:'Ryan',desc:'Confident British male voice',avatar:'🎩',color:['#0891b2','#0e7490'],edge:'en-GB-RyanNeural',type:'character'},
+  
+  // Japanese Characters
+  {id:'char_nanami',name:'Nanami',desc:'Soft Japanese female voice',avatar:'🌸',color:['#fb923c','#ea580c'],edge:'ja-JP-NanamiNeural',type:'character'},
+  {id:'char_keita',name:'Keita',desc:'Cool Japanese male voice',avatar:'⚔️',color:['#f87171','#dc2626'],edge:'ja-JP-KeitaNeural',type:'character'},
+  
+  // Chinese Characters
+  {id:'char_xiaoxiao',name:'Xiaoxiao',desc:'Sweet Chinese female voice',avatar:'🦋',color:['#c084fc','#9333ea'],edge:'zh-CN-XiaoxiaoNeural',type:'character'},
+  {id:'char_yunxi',name:'Yunxi',desc:'Gentle Chinese male voice',avatar:'🐉',color:['#60a5fa','#2563eb'],edge:'zh-CN-YunxiNeural',type:'character'},
+  
+  // Korean Characters
+  {id:'char_sunhi',name:'SunHi',desc:'Clear Korean female voice',avatar:'🇰🇷',color:['#f472b6','#db2777'],edge:'ko-KR-SunHiNeural',type:'character'},
+  {id:'char_injoon',name:'InJoon',desc:'Calm Korean male voice',avatar:'🎮',color:['#6366f1','#4f46e5'],edge:'ko-KR-InJoonNeural',type:'character'},
+  
+  // French Characters
+  {id:'char_denise',name:'Denise',desc:'Charming French female voice',avatar:'🗼',color:['#60a5fa','#2563eb'],edge:'fr-FR-DeniseNeural',type:'character'},
+  {id:'char_henri',name:'Henri',desc:'Sophisticated French male voice',avatar:'🥐',color:['#a855f7','#7e22ce'],edge:'fr-FR-HenriNeural',type:'character'},
+  
+  // Spanish Characters
+  {id:'char_elvira',name:'Elvira',desc:'Warm Spanish female voice',avatar:'💃',color:['#fde047','#eab308'],edge:'es-ES-ElviraNeural',type:'character'},
+  {id:'char_alvaro',name:'Alvaro',desc:'Friendly Spanish male voice',avatar:'🎸',color:['#22c55e','#16a34a'],edge:'es-ES-AlvaroNeural',type:'character'},
+  
+  // Arabic Characters
+  {id:'char_zariyah',name:'Zariyah',desc:'Gentle Arabic female voice',avatar:'🌙',color:['#fbbf24','#d97706'],edge:'ar-SA-ZariyahNeural',type:'character'},
+  {id:'char_hamed',name:'Hamed',desc:'Deep Arabic male voice',avatar:'🕌',color:['#f97316','#c2410c'],edge:'ar-SA-HamedNeural',type:'character'},
+  
+  // Hindi Characters
+  {id:'char_swara',name:'Swara',desc:'Melodious Hindi female voice',avatar:'🪷',color:['#f59e0b','#b45309'],edge:'hi-IN-SwaraNeural',type:'character'},
+  {id:'char_madhur',name:'Madhur',desc:'Rich Hindi male voice',avatar:'🕉️',color:['#ea580c','#9a3412'],edge:'hi-IN-MadhurNeural',type:'character'},
+  
+  // German Characters
+  {id:'char_katja',name:'Katja',desc:'Clear German female voice',avatar:'🇩🇪',color:['#10b981','#059669'],edge:'de-DE-KatjaNeural',type:'character'},
+  {id:'char_conrad',name:'Conrad',desc:'Strong German male voice',avatar:'🏔️',color:['#059669','#047857'],edge:'de-DE-ConradNeural',type:'character'},
+  
+  // Portuguese Characters
+  {id:'char_francisca',name:'Francisca',desc:'Warm Brazilian female voice',avatar:'🇧🇷',color:['#4ade80','#16a34a'],edge:'pt-BR-FranciscaNeural',type:'character'},
+  {id:'char_antonio',name:'Antonio',desc:'Friendly Brazilian male voice',avatar:'🌴',color:['#22c55e','#15803d'],edge:'pt-BR-AntonioNeural',type:'character'},
+  
+  // Italian Characters
+  {id:'char_elsa',name:'Elsa',desc:'Expressive Italian female voice',avatar:'🇮🇹',color:['#34d399','#059669'],edge:'it-IT-ElsaNeural',type:'character'},
+  {id:'char_diego',name:'Diego',desc:'Passionate Italian male voice',avatar:'🍝',color:['#10b981','#047857'],edge:'it-IT-DiegoNeural',type:'character'},
+  
+  // Russian Characters
+  {id:'char_svetlana',name:'Svetlana',desc:'Graceful Russian female voice',avatar:'❄️',color:['#93c5fd','#60a5fa'],edge:'ru-RU-SvetlanaNeural',type:'character'},
+  {id:'char_dmitry',name:'Dmitry',desc:'Strong Russian male voice',avatar:'🐻',color:['#3b82f6','#1d4ed8'],edge:'ru-RU-DmitryNeural',type:'character'},
+];
+
+let currentCharacter = null;
+};
+
 const ENGINES = [
   {id:'kokoro',name:'Kokoro',desc:'82M · Fast CPU · 50 voices',badge:'Fast',color:'#10b981'},
   {id:'qwen',name:'Qwen3-TTS',desc:'0.6B/1.7B · High quality cloning',badge:'Quality',color:'#6366f1'},
@@ -178,19 +239,64 @@ function renderGenerate(){
   var avData=av?getAvatar(av):null;
   var h='<div class="max-w-3xl mx-auto space-y-6 slide-up">';
 
-  // Voice card
+  // Character Quick Picker
+  if(!currentCharacter){
+    h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
+    h+='<h3 class="font-bold mb-1">Choose a Character Voice</h3>';
+    h+='<p class="text-xs text-surface-400 mb-4">Pick a character or use your own voice profile below</p>';
+    h+='<div class="grid grid-cols-5 md:grid-cols-10 gap-2">';
+    for(var i=0;i<CHARACTER_VOICES.length;i++){
+      var c=CHARACTER_VOICES[i];
+      h+='<button onclick="selectCharacter(\''+c.id+'\')" class="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-surface-50 transition-all hover:scale-105 active:scale-95">';
+      h+='<div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl text-white font-bold shadow-sm" style="background:linear-gradient(135deg,'+c.color[0]+','+c.color[1]+')">'+c.avatar+'</div>';
+      h+='<div class="text-[10px] font-medium text-surface-600 truncate w-full text-center">'+c.name+'</div>';
+      h+='</button>';
+    }
+    h+='</div></div>';
+  }
+
+  // Active Voice Card
   h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
+  if(currentCharacter){
+    h+='<div class="flex items-center gap-3 mb-4">';
+    h+='<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl text-white font-bold shadow-md" style="background:linear-gradient(135deg,'+currentCharacter.color[0]+','+currentCharacter.color[1]+')">'+currentCharacter.avatar+'</div>';
+    h+='<div class="flex-1"><div class="font-bold text-sm">'+currentCharacter.name+'</div>';
+    h+='<div class="text-xs text-surface-400">'+currentCharacter.desc+'</div></div>';
+    h+='<button onclick="clearCharacter()" class="text-xs text-surface-400 hover:text-red-500 px-2 py-1 rounded-lg hover:bg-red-50 transition">✕ Change</button>';
+    h+='</div>';
+  } else if(useEdgeTTS){
+    h+='<div class="flex items-center gap-3 mb-4">';
+    h+='<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-surface-100">🌐</div>';
+    h+='<div class="flex-1"><div class="font-bold text-sm">Edge TTS</div>';
+    h+='<div class="text-xs text-surface-400">'+edgeVoice+'</div></div>';
+    h+='<button onclick="useEdgeTTS=false;currentCharacter=null;render()" class="text-xs text-surface-400 hover:text-surface-800 px-2 py-1 rounded-lg hover:bg-surface-100 transition">Switch</button>';
+    h+='</div>';
+  } else {
+    h+='<div class="flex items-center gap-3 mb-4">';
+    if(avData){
+      h+='<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl text-white font-bold shadow-sm" style="background:linear-gradient(135deg,'+avData.bg[0]+','+avData.bg[1]+')">'+avData.emoji+'</div>';
+      h+='<div class="flex-1"><div class="font-bold text-sm">'+(av?av.name:'Select voice')+'</div>';
+      h+='<div class="text-xs text-surface-400">'+(av?(LANGUAGES[av.language]||av.language):'Local TTS engine')+'</div></div>';
+    } else {
+      h+='<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-surface-100">🎙️</div>';
+      h+='<div class="flex-1"><div class="font-bold text-sm text-surface-400">Select a voice</div>';
+      h+='<div class="text-xs text-surface-400">Choose from profiles below</div></div>';
+    }
+    h+='<button onclick="useEdgeTTS=true;loadEdgeVoices();currentCharacter=null;render()" class="text-xs text-emerald-600 hover:text-emerald-800 px-2 py-1 rounded-lg hover:bg-emerald-50 transition">🌐 Edge TTS</button>';
+    h+='</div>';
+  }
 
-  // TTS mode toggle
-  h+='<div class="flex items-center gap-3 mb-4">';
-  h+='<button onclick="useEdgeTTS=false;render()" class="px-4 py-2 rounded-xl text-sm font-semibold '+(useEdgeTTS?'bg-surface-100 text-surface-600 hover:bg-surface-200':'bg-[#0f0e0d] text-white')+' transition">🎤 Local TTS</button>';
-  h+='<button onclick="useEdgeTTS=true;loadEdgeVoices();render()" class="px-4 py-2 rounded-xl text-sm font-semibold '+(useEdgeTTS?'bg-[#0f0e0d] text-white':'bg-surface-100 text-surface-600 hover:bg-surface-200')+' transition">🌐 Edge TTS <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 ml-1">FREE</span></button>';
-  h+='</div>';
-
-  if(useEdgeTTS){
-    // Edge TTS mode
-    h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 block">Edge TTS Voice</label>';
-    h+='<select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm mb-4" onchange="edgeVoice=this.value">';
+  // Voice Selector (for local TTS)
+  if(!currentCharacter && !useEdgeTTS){
+    h+='<select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm mb-3" onchange="genProfileId=this.value">';
+    for(var i=0;i<profiles.length;i++){
+      var p=profiles[i];var pa=getAvatar(p);
+      h+='<option value="'+p.id+'"'+(genProfileId===p.id?' selected':'')+'>'+pa.emoji+' '+p.name+' — '+(LANGUAGES[p.language]||p.language)+'</option>';
+    }
+    h+='</select>';
+  }
+  if(useEdgeTTS && !currentCharacter){
+    h+='<select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm mb-3" onchange="edgeVoice=this.value">';
     for(var lang in edgeTTSVoices){
       var voices=edgeTTSVoices[lang];
       for(var i=0;i<voices.length;i++){
@@ -200,31 +306,10 @@ function renderGenerate(){
     }
     if(Object.keys(edgeTTSVoices).length===0)h+='<option>Loading voices...</option>';
     h+='</select>';
-    h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 block">Text</label>';
-    h+='<textarea id="edge-text" rows="4" placeholder="Type your text..." class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm resize-none leading-relaxed mb-4"></textarea>';
-    h+='<button onclick="generateEdgeTTS(document.getElementById(\'edge-text\').value,edgeVoice)" class="btn-primary px-8 py-3 rounded-xl">⚡ Generate with Edge TTS</button>';
-  } else {
-    // Local TTS mode
-    h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 block">Voice</label>';
-    h+='<div class="flex items-center gap-3 mb-3">';
-    if(avData){
-      h+='<div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:linear-gradient(135deg,'+avData.bg[0]+','+avData.bg[1]+')">'+avData.emoji+'</div>';
-      h+='<span class="font-semibold text-sm">'+avData.label+'</span>';
-    } else {
-      h+='<div class="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center text-surface-400">🎙️</div>';
-      h+='<span class="text-sm text-surface-400">Select a voice</span>';
-    }
-    h+='</div>';
-    h+='<select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm" onchange="genProfileId=this.value">';
-    for(var i=0;i<profiles.length;i++){
-      var p=profiles[i];var pa=getAvatar(p);
-      h+='<option value="'+p.id+'"'+(genProfileId===p.id?' selected':'')+'>'+pa.emoji+' '+p.name+' — '+(LANGUAGES[p.language]||p.language)+'</option>';
-    }
-    h+='</select>';
   }
   h+='</div>';
 
-  // Text input card
+  // Text input
   h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
   h+='<div class="flex items-center justify-between mb-3">';
   h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider">Text to Speak</label>';
@@ -235,11 +320,20 @@ function renderGenerate(){
 
   // Actions
   h+='<div class="flex flex-wrap gap-3">';
-  h+='<button onclick="useEdgeTTS?generateEdgeTTS(document.getElementById(\'edge-text\').value,edgeVoice):generateSpeech()"'+(isGenerating||!genText.trim()?' disabled':'')+' class="btn-primary px-8 py-3 rounded-xl flex items-center gap-2">'+(isGenerating?'<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...':'⚡ Generate Speech')+'</button>';
+  if(currentCharacter){
+    h+='<button onclick="generateEdgeTTS(genText,edgeVoice)"'+(isGenerating||!genText.trim()?' disabled':'')+' class="btn-primary px-8 py-3 rounded-xl">'+(isGenerating?'<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...':'⚡ Generate as '+currentCharacter.name)+'</button>';
+  } else if(useEdgeTTS){
+    h+='<button onclick="generateEdgeTTS(genText,edgeVoice)"'+(isGenerating||!genText.trim()?' disabled':'')+' class="btn-primary px-8 py-3 rounded-xl">'+(isGenerating?'<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...':'⚡ Generate with Edge TTS')+'</button>';
+  } else {
+    h+='<button onclick="generateSpeech()"'+(isGenerating||!genText.trim()?' disabled':'')+' class="btn-primary px-8 py-3 rounded-xl">'+(isGenerating?'<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...':'⚡ Generate Speech')+'</button>';
+  }
   h+='</div>';
-
   h+='</div>';
   return h;
+}
+
+
+function renderVoices(){ return h;
 }
 
 
@@ -348,7 +442,9 @@ function renderSettings(){
   return '<div class="max-w-xl mx-auto space-y-4 slide-up"><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Voicebox Backend</h3><input id="api-url" value="'+API+'" class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm font-mono mb-3" placeholder="http://localhost:8000"><button onclick="API=document.getElementById(\'api-url\').value;localStorage.setItem(\'iknbite_api_url\',API);checkHealth();loadProfiles();loadPresets()" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Save & Reconnect</button></div><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Edge TTS <span class="text-xs font-normal text-emerald-600">FREE</span></h3><input id="edge-url" value="'+EDGE_TTS_API+'" class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm font-mono mb-3" placeholder="http://localhost:5050"><button onclick="EDGE_TTS_API=edgeUrl=document.getElementById(\'edge-url\').value;localStorage.setItem(\'iknbite_edge_tts_url\',EDGE_TTS_API);loadEdgeVoices()" class="btn-secondary px-5 py-2.5 rounded-xl text-sm">Reconnect Edge TTS</button></div><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Status</h3><div class="space-y-2"><div class="flex justify-between text-sm"><span class="text-surface-500">Connection</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full '+(sseConnected?'bg-emerald-500':'bg-red-500')+'"></span>'+(sseConnected?'Connected':'Disconnected')+'</span></div>'+(health?'<div class="flex justify-between text-sm"><span class="text-surface-500">GPU</span><span>'+(health.gpu_type||'None')+'</span></div><div class="flex justify-between text-sm"><span class="text-surface-500">Model</span><span>'+(health.model_loaded?'Loaded':'Not loaded')+'</span></div>':'')+'</div></div></div>';
 }
 
-function selectVoice(id){var p=profiles.find(function(x){return x.id===id;});if(p){genProfileId=p.id;currentTab='generate';render();}else{genProfileId=id;currentTab='generate';render();}}
+function selectVoice(id){var p=profiles.find(function(x){return x.id===id;});if(p){genProfileId=p.id;currentTab='generate';useEdgeTTS=false;render();}}
+function selectCharacter(cid){var c=CHARACTER_VOICES.find(function(x){return x.id===cid;});if(c){currentCharacter=c;edgeVoice=c.edge;useEdgeTTS=true;currentTab='generate';render();}}
+function clearCharacter(){currentCharacter=null;render();}
 
 async function createProfile(name,lang){if(!name)return;try{await apiFetch('/profiles',{method:'POST',body:JSON.stringify({name:name,language:lang||'en'})});await loadProfiles();}catch(e){alert(e.message);}}
 
