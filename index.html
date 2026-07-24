@@ -1,1200 +1,215 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>iknbite — AI Voice Studio</title>
-  <meta name="description" content="Free, open-source AI voice studio. Clone voices, generate speech, transcribe audio — all running locally on your machine.">
+  <meta name="description" content="Free, open-source AI voice studio. Clone voices, generate speech, transcribe audio.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            brand: { 50:'#f0f4ff',100:'#dbe4ff',200:'#bac8ff',300:'#91a7ff',400:'#748ffc',500:'#5c7cfa',600:'#4c6ef5',700:'#4263eb',800:'#3b5bdb',900:'#364fc7',950:'#1e2a5e' },
-            surface: { 50:'#fafafa',100:'#f4f4f5',200:'#e4e4e7',800:'#27272a',900:'#18181b',950:'#09090b' },
-            emerald: { 400:'#34d399',500:'#10b981' },
-            amber: { 400:'#fbbf24',500:'#f59e0b' },
-            rose: { 400:'#fb7185',500:'#f43f5e' }
+            brand: { 50:'#f0f4ff',100:'#dbe4ff',200:'#bac8ff',300:'#91a7ff',400:'#748ffc',500:'#5c7cfa',600:'#4c6ef5',700:'#4263eb',800:'#3b5bdb',900:'#364fc7' },
+            surface: { 50:'#fafafa',100:'#f5f5f5',200:'#e5e5e5',300:'#d4d4d4',400:'#a3a3a3',500:'#737373',600:'#525252',700:'#404040',800:'#262626',900:'#171717' }
           },
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
         }
       }
     }
   </script>
   <style>
-    * { scrollbar-width: thin; scrollbar-color: #3b5bdb #09090b; }
-    ::selection { background: #4c6ef544; }
-    body { font-family: 'Inter', system-ui, sans-serif; }
-
-    /* Glass morphism */
-    .glass { background: rgba(24,24,27,0.75); backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255,255,255,0.06); }
-    .glass-subtle { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
-    .glass-strong { background: rgba(15,15,18,0.9); backdrop-filter: blur(32px); border: 1px solid rgba(255,255,255,0.08); }
-
-    /* Gradients */
-    .gradient-text { background: linear-gradient(135deg, #748ffc 0%, #cc5de8 50%, #ff6b6b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .gradient-text-warm { background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #ef4444 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .gradient-bg { background: linear-gradient(135deg, #4c6ef5, #7950f2, #cc5de8); }
-    .gradient-border { position: relative; }
-    .gradient-border::before { content: ''; position: absolute; inset: -1px; border-radius: inherit; background: linear-gradient(135deg, rgba(92,124,250,0.4), rgba(204,93,232,0.4)); z-index: -1; mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite: exclude; padding: 1px; }
-
-    /* Glow */
-    .glow { box-shadow: 0 0 60px rgba(92,124,250,0.15), 0 0 120px rgba(92,124,250,0.05); }
-    .glow-sm { box-shadow: 0 0 30px rgba(92,124,250,0.1); }
-    .glow-emerald { box-shadow: 0 0 30px rgba(16,185,129,0.15); }
-
-    /* Hero */
-    .hero-gradient { background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(92,124,250,0.18), transparent), radial-gradient(ellipse 60% 40% at 80% 50%, rgba(204,93,232,0.08), transparent), radial-gradient(ellipse 40% 30% at 20% 80%, rgba(16,185,129,0.06), transparent); }
-    .mesh-bg { background-image: radial-gradient(at 40% 20%, rgba(92,124,250,0.08) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(204,93,232,0.06) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(92,210,250,0.04) 0px, transparent 50%); }
-
-    /* Animations */
-    .slide-up { animation: slideUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
-    .slide-up-1 { animation-delay: 0.1s; }
-    .slide-up-2 { animation-delay: 0.2s; }
-    .slide-up-3 { animation-delay: 0.3s; }
-    .slide-up-4 { animation-delay: 0.4s; }
-    @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-8px); } }
-    @keyframes pulse-ring { 0% { transform:scale(0.8); opacity:1; } 100% { transform:scale(2.5); opacity:0; } }
-    @keyframes waveform { 0%,100% { height:6px; } 50% { height:28px; } }
-    @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-    .float { animation: float 6s ease-in-out infinite; }
-    .spin-slow { animation: spin-slow 20s linear infinite; }
-    .shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); background-size: 200% 100%; animation: shimmer 3s ease-in-out infinite; }
-
-    .waveform-bar { animation: waveform 1s ease-in-out infinite; width: 3px; border-radius: 2px; }
-    .waveform-bar:nth-child(2) { animation-delay: 0.1s; }
-    .waveform-bar:nth-child(3) { animation-delay: 0.2s; }
-    .waveform-bar:nth-child(4) { animation-delay: 0.3s; }
-    .waveform-bar:nth-child(5) { animation-delay: 0.4s; }
-    .waveform-bar:nth-child(6) { animation-delay: 0.5s; }
-    .waveform-bar:nth-child(7) { animation-delay: 0.6s; }
-    .waveform-bar:nth-child(8) { animation-delay: 0.7s; }
-
-    /* Cards */
-    .card-hover { transition: all 0.4s cubic-bezier(0.4,0,0.2,1); }
-    .card-hover:hover { transform: translateY(-6px); box-shadow: 0 25px 50px rgba(0,0,0,0.4), 0 0 40px rgba(92,124,250,0.1); }
-
-    /* Buttons */
-    .btn-primary { background: linear-gradient(135deg, #4c6ef5, #7950f2); color: white; padding: 12px 28px; border-radius: 14px; font-weight: 600; font-size: 14px; transition: all 0.3s; cursor: pointer; border: none; }
-    .btn-primary:hover { opacity: 0.9; box-shadow: 0 8px 30px rgba(76,110,245,0.3); transform: translateY(-1px); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .btn-secondary { background: rgba(255,255,255,0.06); color: white; padding: 12px 28px; border-radius: 14px; font-weight: 600; font-size: 14px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s; cursor: pointer; }
-    .btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
-    .btn-ghost { background: transparent; color: #a1a1aa; padding: 8px 16px; border-radius: 10px; font-weight: 500; font-size: 13px; transition: all 0.3s; cursor: pointer; border: none; }
-    .btn-ghost:hover { color: white; background: rgba(255,255,255,0.06); }
-
-    /* Status dots */
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-    .status-connected { background: #51cf66; box-shadow: 0 0 12px #51cf6680; }
-    .status-disconnected { background: #ff6b6b; box-shadow: 0 0 12px #ff6b6b80; }
-    .status-loading { background: #fcc419; box-shadow: 0 0 12px #fcc41980; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-
-    /* Inputs */
-    textarea:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 2px rgba(92,124,250,0.5); }
-
-    /* Tabs */
-    .tab-active { background: rgba(92,124,250,0.15); color: #748ffc; border-color: rgba(92,124,250,0.4); }
-
-    /* Misc */
-    .noise { background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E"); }
-    .section-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent); }
+    * { scrollbar-width: thin; scrollbar-color: #d4d4d4 transparent; }
+    ::selection { background: #4c6ef530; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #fafafa; }
+    .card-shadow { box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.02), 0px 1px 8px 0px rgba(0,0,0,0.08), 0px 24px 24px -8px rgba(0,0,0,0.05); }
+    .card-shadow-sm { box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.06), 0px 1px 2px 0px rgba(0,0,0,0.04), 0px 2px 4px 0px rgba(0,0,0,0.04); }
+    .btn-primary { background: #0f0e0d; color: white; padding: 10px 24px; border-radius: 12px; font-weight: 600; font-size: 14px; transition: all 0.2s; cursor: pointer; border: none; }
+    .btn-primary:hover { background: #262626; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .btn-secondary { background: white; color: #0f0e0d; padding: 10px 24px; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid #e5e5e5; transition: all 0.2s; cursor: pointer; }
+    .btn-secondary:hover { background: #f5f5f5; }
+    .voice-card { background: white; border: 1px solid #e5e5e5; border-radius: 20px; overflow: hidden; transition: all 0.3s; }
+    .voice-card:hover { box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.02), 0px 1px 8px 0px rgba(0,0,0,0.08), 0px 24px 24px -8px rgba(0,0,0,0.05); transform: translateY(-4px); }
+    .voice-card:hover .voice-play { opacity: 1; }
+    .voice-play { opacity: 0; transition: opacity 0.2s; }
+    textarea:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 2px #4c6ef5; }
+    .slide-up { animation: slideUp 0.5s ease-out both; }
+    @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes waveform { 0%,100% { height:4px; } 50% { height:20px; } }
+    .waveform-bar { animation: waveform 1s ease-in-out infinite; width:3px; border-radius:2px; }
+    .waveform-bar:nth-child(2) { animation-delay:0.1s; }
+    .waveform-bar:nth-child(3) { animation-delay:0.2s; }
+    .waveform-bar:nth-child(4) { animation-delay:0.3s; }
+    .waveform-bar:nth-child(5) { animation-delay:0.4s; }
+    .waveform-bar:nth-child(6) { animation-delay:0.5s; }
+    .waveform-bar:nth-child(7) { animation-delay:0.6s; }
+    .waveform-bar:nth-child(8) { animation-delay:0.7s; }
+    .tab-pill { padding: 8px 20px; border-radius: 10px; font-weight: 500; font-size: 14px; color: #737373; cursor: pointer; transition: all 0.2s; border: none; background: none; }
+    .tab-pill:hover { background: #f5f5f5; color: #171717; }
+    .tab-pill.active { background: #0f0e0d; color: white; }
     .hidden { display: none !important; }
-
-    /* Audio player custom */
-    audio::-webkit-media-controls-panel { background: rgba(30,30,40,0.9); }
-    audio { filter: hue-rotate(220deg) saturate(0.8); border-radius: 10px; height: 40px; width: 100%; }
-
-    /* Modal overlay */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 50; display: flex; align-items: center; justify-content: center; }
-    .modal-content { background: #18181b; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 32px; max-width: 520px; width: 90%; max-height: 80vh; overflow-y: auto; }
-
-    /* Sidebar */
-    .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 12px; color: #a1a1aa; font-weight: 500; font-size: 14px; transition: all 0.2s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
-    .sidebar-item:hover { color: white; background: rgba(255,255,255,0.05); }
-    .sidebar-item.active { color: #748ffc; background: rgba(92,124,250,0.1); }
-
-    /* Range slider */
-    input[type="range"] { -webkit-appearance: none; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); }
-    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, #4c6ef5, #7950f2); cursor: pointer; box-shadow: 0 2px 8px rgba(76,110,245,0.4); }
-
-    @media (max-width: 768px) {
-      .hero-title { font-size: 2.5rem !important; }
-      .app-sidebar { display: none; }
-    }
-
-    /* Tooltip */
-    [data-tooltip] { position: relative; }
-    [data-tooltip]:hover::after { content: attr(data-tooltip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #27272a; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; z-index: 100; border: 1px solid rgba(255,255,255,0.1); }
   </style>
 </head>
-<body class="bg-surface-950 text-white min-h-screen noise">
+<body class="bg-[#fafafa] text-[#0f0e0d] min-h-screen">
   <div id="app"></div>
 
 <script>
-// ─── Configuration ────────────────────────────────────────────────
 const DEFAULT_API = 'http://localhost:8000';
 let API = localStorage.getItem('iknbite_api_url') || DEFAULT_API;
-
-// ─── State ────────────────────────────────────────────────────────
-let currentView = 'landing'; // landing | app
+let currentView = 'landing';
 let currentTab = 'generate';
 let health = null;
 let profiles = [];
 let presetVoices = { kokoro: [], qwen_custom_voice: [] };
 let history = [];
-let effectsPresets = [];
-let availableEffects = [];
 let isGenerating = false;
-let isTranscribing = false;
-let sseConnected = false;
-let activeTasks = [];
-
-// Generate form
 let genText = '';
 let genProfileId = '';
 let genEngine = 'kokoro';
 let genLanguage = 'en';
 let genInstruct = '';
 let genSeed = '';
-let genNormalize = true;
-let genMaxChunkChars = 2000;
-let genCrossfadeMs = 50;
+let sseConnected = false;
+let activeTasks = [];
 
-// Settings
-let settingsApiKey = localStorage.getItem('iknbite_api_key') || '';
-
-// ─── Engine Definitions ───────────────────────────────────────────
-const ENGINES = [
-  { id: 'kokoro', name: 'Kokoro', desc: '82M model, 50 preset voices, fast CPU', langs: ['en','ja','zh','fr','es','de','hi','pt'], badge: 'Fast', color: '#34d399' },
-  { id: 'qwen', name: 'Qwen3-TTS', desc: '0.6B / 1.7B, high-quality cloning', langs: ['en','ja','zh','ko','fr','es','de','ru','ar','hi'], badge: 'Quality', color: '#748ffc' },
-  { id: 'qwen_custom_voice', name: 'Qwen CustomVoice', desc: '9 preset voices, delivery control', langs: ['en','ja','zh','ko','fr','es','de','ru','ar','hi'], badge: 'Presets', color: '#cc5de8' },
-  { id: 'chatterbox', name: 'Chatterbox', desc: '23 languages, multilingual', langs: ['en','ar','da','fi','el','he','hi','ms','no','pl','sv','sw','tr','fr','es','de','ja','zh','ko','pt','ru','it','nl'], badge: '23 Langs', color: '#fbbf24' },
-  { id: 'chatterbox_turbo', name: 'Chatterbox Turbo', desc: '350M, paralinguistic tags', langs: ['en'], badge: 'Expressive', color: '#f97316' },
-  { id: 'luxtts', name: 'LuxTTS', desc: '~1GB VRAM, 48kHz, 150x realtime', langs: ['en'], badge: 'Light', color: '#06b6d4' },
-  { id: 'hume', name: 'Hume TADA', desc: '1B / 3B, 700s+ coherent audio', langs: ['en','ja','zh','ko','fr','es','de','ru','ar','hi'], badge: 'Long', color: '#f43f5e' },
-];
-
-const LANGUAGES = {
-  en: 'English', ja: 'Japanese', zh: 'Chinese', ko: 'Korean', fr: 'French',
-  es: 'Spanish', de: 'German', ru: 'Russian', ar: 'Arabic', hi: 'Hindi',
-  pt: 'Portuguese', it: 'Italian', nl: 'Dutch', sv: 'Swedish', da: 'Danish',
-  fi: 'Finnish', el: 'Greek', he: 'Hebrew', ms: 'Malay', no: 'Norwegian',
-  pl: 'Polish', tr: 'Turkish', sw: 'Swahili'
-};
-
-const EFFECTS_LIST = [
-  { id: 'pitch_shift', name: 'Pitch Shift', icon: '🎵', params: { semitones: 0 } },
-  { id: 'reverb', name: 'Reverb', icon: '🏟️', params: { room_size: 0.5, damping: 0.5, wet_level: 0.3 } },
-  { id: 'delay', name: 'Delay', icon: '🔄', params: { delay_seconds: 0.3, feedback: 0.4, mix: 0.3 } },
-  { id: 'chorus', name: 'Chorus', icon: '🌊', params: { rate: 1.0, depth: 0.5, mix: 0.3 } },
-  { id: 'compressor', name: 'Compressor', icon: '📊', params: { threshold: -20, ratio: 4, attack: 0.005, release: 0.1 } },
-  { id: 'gain', name: 'Gain', icon: '🔊', params: { db: 0 } },
-  { id: 'highpass', name: 'High-Pass', icon: '📈', params: { cutoff_hz: 200 } },
-  { id: 'lowpass', name: 'Low-Pass', icon: '📉', params: { cutoff_hz: 3000 } },
-];
-
-
-// ─── Voice Avatars ────────────────────────────────────────────────
 const VOICE_AVATARS = {
-  // ═══ English Female (Afinn) ═══
-  'af_alloy':     { bg: ['#94a3b8','#64748b'], emoji: '🤖', label: 'Synthetic' },
-  'af_aoede':     { bg: ['#c084fc','#a855f7'], emoji: '🎼', label: 'Melodic' },
-  'af_bella':     { bg: ['#f472b6','#ec4899'], emoji: '💜', label: 'Warm' },
-  'af_heart':     { bg: ['#fb7185','#e11d48'], emoji: '💕', label: 'Heartfelt' },
-  'af_jessica':   { bg: ['#a78bfa','#8b5cf6'], emoji: '🌟', label: 'Bright' },
-  'af_kore':      { bg: ['#2dd4bf','#14b8a6'], emoji: '🌊', label: 'Calm' },
-  'af_nicole':    { bg: ['#f9a8d4','#f472b6'], emoji: '✨', label: 'Gentle' },
-  'af_nova':      { bg: ['#fbbf24','#f59e0b'], emoji: '⭐', label: 'Radiant' },
-  'af_river':     { bg: ['#38bdf8','#0ea5e9'], emoji: '🏞️', label: 'Flowing' },
-  'af_sarah':     { bg: ['#818cf8','#6366f1'], emoji: '🎶', label: 'Smooth' },
-  'af_sky':       { bg: ['#67e8f9','#06b6d4'], emoji: '☁️', label: 'Airy' },
-
-  // ═══ English Male (Adyn) ═══
-  'am_adam':      { bg: ['#3b82f6','#2563eb'], emoji: '💪', label: 'Deep' },
-  'am_echo':      { bg: ['#60a5fa','#3b82f6'], emoji: '🔊', label: 'Resonant' },
-  'am_eric':      { bg: ['#fb923c','#ea580c'], emoji: '🔥', label: 'Bold' },
-  'am_fenrir':    { bg: ['#6b7280','#4b5563'], emoji: '🐺', label: 'Fierce' },
-  'am_liam':      { bg: ['#4ade80','#22c55e'], emoji: '🌿', label: 'Natural' },
-  'am_michael':   { bg: ['#10b981','#059669'], emoji: '🎹', label: 'Rich' },
-  'am_onyx':      { bg: ['#1e293b','#0f172a'], emoji: '🖤', label: 'Dark' },
-  'am_puck':      { bg: ['#a855f7','#9333ea'], emoji: '⚡', label: 'Energetic' },
-  'am_santa':     { bg: ['#ef4444','#dc2626'], emoji: '🎄', label: 'Festive' },
-
-  // ═══ English Female (Bella) ═══
-  'bf_alice':     { bg: ['#fda4af','#fb7185'], emoji: '🌸', label: 'Sweet' },
-  'bf_emma':      { bg: ['#d8b4fe','#c084fc'], emoji: '🦋', label: 'Elegant' },
-  'bf_isabella':  { bg: ['#fca5a5','#f87171'], emoji: '🌹', label: 'Romantic' },
-  'bf_lily':      { bg: ['#bbf7d0','#4ade80'], emoji: '🌷', label: 'Fresh' },
-
-  // ═══ English Male (Daniel) ═══
-  'bm_daniel':    { bg: ['#93c5fd','#60a5fa'], emoji: '📘', label: 'Clear' },
-  'bm_fable':     { bg: ['#c4b5fd','#a78bfa'], emoji: '📖', label: 'Storyteller' },
-  'bm_george':    { bg: ['#a3e635','#84cc16'], emoji: '🏛️', label: 'Authoritative' },
-  'bm_lewis':     { bg: ['#fdba74','#f97316'], emoji: '🎭', label: 'Theatrical' },
-
-  // ═══ Spanish ═══
-  'ef_dora':      { bg: ['#fde047','#eab308'], emoji: '💃', label: 'Español' },
-  'em_alex':      { bg: ['#86efac','#22c55e'], emoji: '🇪🇸', label: 'Español M' },
-
-  // ═══ French ═══
-  'ff_siwis':     { bg: ['#60a5fa','#2563eb'], emoji: '🇫🇷', label: 'Français' },
-
-  // ═══ Hindi ═══
-  'hf_alpha':     { bg: ['#fbbf24','#d97706'], emoji: '🇮🇳', label: 'हिन्दी' },
-  'hf_beta':      { bg: ['#f59e0b','#b45309'], emoji: '🪷', label: 'हिन्दी β' },
-  'hm_omega':     { bg: ['#f97316','#c2410c'], emoji: '🕉️', label: 'हिन्दी M' },
-  'hm_psi':       { bg: ['#ea580c','#9a3412'], emoji: '🙏', label: 'हिन्दी Ψ' },
-
-  // ═══ Italian ═══
-  'if_sara':      { bg: ['#34d399','#059669'], emoji: '🇮🇹', label: 'Italiano' },
-  'im_nicola':    { bg: ['#10b981','#047857'], emoji: '🍝', label: 'Italiano M' },
-
-  // ═══ Japanese ═══
-  'jf_alpha':     { bg: ['#fb923c','#ea580c'], emoji: '🌸', label: '日本語' },
-  'jf_gongitsune': { bg: ['#f472b6','#db2777'], emoji: '🦊', label: 'きつね' },
-  'jf_nezumi':    { bg: ['#a78bfa','#7c3aed'], emoji: '🐭', label: 'ねずみ' },
-  'jf_tebukuro':  { bg: ['#f87171','#dc2626'], emoji: '🧤', label: 'てぶくろ' },
-  'jm_kumo':      { bg: ['#94a3b8','#64748b'], emoji: '☁️', label: 'くも' },
-
-  // ═══ Portuguese ═══
-  'pf_dora':      { bg: ['#4ade80','#16a34a'], emoji: '🇧🇷', label: 'Português' },
-  'pm_alex':      { bg: ['#22c55e','#15803d'], emoji: '🌴', label: 'Português M' },
-
-  // ═══ Chinese ═══
-  'zf_xiaobei':   { bg: ['#f472b6','#db2777'], emoji: '🌺', label: '小北' },
-  'zf_xiaoni':    { bg: ['#e879f9','#c026d3'], emoji: '🦢', label: '小妮' },
-  'zf_xiaoxiao':  { bg: ['#c084fc','#9333ea'], emoji: '🦋', label: '小晓' },
-  'zf_xiaoyi':    { bg: ['#f9a8d4','#ec4899'], emoji: '🎋', label: '小艺' },
-  'zm_yunjian':   { bg: ['#3b82f6','#1d4ed8'], emoji: '⛰️', label: '云健' },
-  'zm_yunxi':     { bg: ['#60a5fa','#2563eb'], emoji: '🐉', label: '云希' },
-  'zm_yunxia':    { bg: ['#818cf8','#4f46e5'], emoji: '🌙', label: '云夏' },
-  'zm_yunyang':   { bg: ['#a78bfa','#7c3aed'], emoji: '☀️', label: '云扬' },
-
-  // ═══ Qwen CustomVoice ═══
-  'Vivian':       { bg: ['#f472b6','#be185d'], emoji: '🎀', label: 'Vivian' },
-  'Serena':       { bg: ['#a855f7','#7e22ce'], emoji: '🔮', label: 'Serena' },
-  'Uncle_Fu':     { bg: ['#0891b2','#0e7490'], emoji: '🎩', label: 'Uncle Fu' },
-  'Dylan':        { bg: ['#059669','#047857'], emoji: '🎸', label: 'Dylan' },
-  'Eric':         { bg: ['#d97706','#92400e'], emoji: '🔥', label: 'Qwen Eric' },
-  'Ryan':         { bg: ['#2563eb','#1e40af'], emoji: '🎙️', label: 'Ryan' },
-  'Aiden':        { bg: ['#4f46e5','#3730a3'], emoji: '⚡', label: 'Aiden' },
-  'Ono_Anna':     { bg: ['#e11d48','#9f1239'], emoji: '🎎', label: '小野アンナ' },
-  'Sohee':        { bg: ['#7c3aed','#5b21b6'], emoji: '🇰🇷', label: '소희' },
+  'af_alloy':{bg:['#94a3b8','#64748b'],emoji:'🤖',label:'Synthetic'},'af_aoede':{bg:['#c084fc','#a855f7'],emoji:'🎼',label:'Melodic'},
+  'af_bella':{bg:['#f472b6','#ec4899'],emoji:'💜',label:'Warm'},'af_heart':{bg:['#fb7185','#e11d48'],emoji:'💕',label:'Heartfelt'},
+  'af_jessica':{bg:['#a78bfa','#8b5cf6'],emoji:'🌟',label:'Bright'},'af_kore':{bg:['#2dd4bf','#14b8a6'],emoji:'🌊',label:'Calm'},
+  'af_nicole':{bg:['#f9a8d4','#f472b6'],emoji:'✨',label:'Gentle'},'af_nova':{bg:['#fbbf24','#f59e0b'],emoji:'⭐',label:'Radiant'},
+  'af_river':{bg:['#38bdf8','#0ea5e9'],emoji:'🏞️',label:'Flowing'},'af_sarah':{bg:['#818cf8','#6366f1'],emoji:'🎶',label:'Smooth'},
+  'af_sky':{bg:['#67e8f9','#06b6d4'],emoji:'☁️',label:'Airy'},
+  'am_adam':{bg:['#3b82f6','#2563eb'],emoji:'💪',label:'Deep'},'am_echo':{bg:['#60a5fa','#3b82f6'],emoji:'🔊',label:'Resonant'},
+  'am_eric':{bg:['#fb923c','#ea580c'],emoji:'🔥',label:'Bold'},'am_fenrir':{bg:['#6b7280','#4b5563'],emoji:'🐺',label:'Fierce'},
+  'am_liam':{bg:['#4ade80','#22c55e'],emoji:'🌿',label:'Natural'},'am_michael':{bg:['#10b981','#059669'],emoji:'🎹',label:'Rich'},
+  'am_onyx':{bg:['#1e293b','#0f172a'],emoji:'🖤',label:'Dark'},'am_puck':{bg:['#a855f7','#9333ea'],emoji:'⚡',label:'Energetic'},
+  'am_santa':{bg:['#ef4444','#dc2626'],emoji:'🎄',label:'Festive'},
+  'bf_alice':{bg:['#fda4af','#fb7185'],emoji:'🌸',label:'Sweet'},'bf_emma':{bg:['#d8b4fe','#c084fc'],emoji:'🦋',label:'Elegant'},
+  'bf_isabella':{bg:['#fca5a5','#f87171'],emoji:'🌹',label:'Romantic'},'bf_lily':{bg:['#bbf7d0','#4ade80'],emoji:'🌷',label:'Fresh'},
+  'bm_daniel':{bg:['#93c5fd','#60a5fa'],emoji:'📘',label:'Clear'},'bm_fable':{bg:['#c4b5fd','#a78bfa'],emoji:'📖',label:'Storyteller'},
+  'bm_george':{bg:['#a3e635','#84cc16'],emoji:'🏛️',label:'Authoritative'},'bm_lewis':{bg:['#fdba74','#f97316'],emoji:'🎭',label:'Theatrical'},
+  'ef_dora':{bg:['#fde047','#eab308'],emoji:'💃',label:'Español'},'em_alex':{bg:['#86efac','#22c55e'],emoji:'🇪🇸',label:'Español M'},
+  'ff_siwis':{bg:['#60a5fa','#2563eb'],emoji:'🇫🇷',label:'Français'},
+  'hf_alpha':{bg:['#fbbf24','#d97706'],emoji:'🇮🇳',label:'Hindi'},'hf_beta':{bg:['#f59e0b','#b45309'],emoji:'🪷',label:'Hindi β'},
+  'hm_omega':{bg:['#f97316','#c2410c'],emoji:'🕉️',label:'Omega'},'hm_psi':{bg:['#ea580c','#9a3412'],emoji:'🙏',label:'Psi'},
+  'if_sara':{bg:['#34d399','#059669'],emoji:'🇮🇹',label:'Italiano'},'im_nicola':{bg:['#10b981','#047857'],emoji:'🍝',label:'Nicola'},
+  'jf_alpha':{bg:['#fb923c','#ea580c'],emoji:'🌸',label:'日本語'},'jf_gongitsune':{bg:['#f472b6','#db2777'],emoji:'🦊',label:'きつね'},
+  'jf_nezumi':{bg:['#a78bfa','#7c3aed'],emoji:'🐭',label:'ねずみ'},'jf_tebukuro':{bg:['#f87171','#dc2626'],emoji:'🧤',label:'てぶくろ'},
+  'jm_kumo':{bg:['#94a3b8','#64748b'],emoji:'☁️',label:'くも'},
+  'pf_dora':{bg:['#4ade80','#16a34a'],emoji:'🇧🇷',label:'Português'},'pm_alex':{bg:['#22c55e','#15803d'],emoji:'🌴',label:'Alex PT'},
+  'zf_xiaobei':{bg:['#f472b6','#db2777'],emoji:'🌺',label:'小北'},'zf_xiaoni':{bg:['#e879f9','#c026d3'],emoji:'🦢',label:'小妮'},
+  'zf_xiaoxiao':{bg:['#c084fc','#9333ea'],emoji:'🦋',label:'小晓'},'zf_xiaoyi':{bg:['#f9a8d4','#ec4899'],emoji:'🎋',label:'小艺'},
+  'zm_yunjian':{bg:['#3b82f6','#1d4ed8'],emoji:'⛰️',label:'云健'},'zm_yunxi':{bg:['#60a5fa','#2563eb'],emoji:'🐉',label:'云希'},
+  'zm_yunxia':{bg:['#818cf8','#4f46e5'],emoji:'🌙',label:'云夏'},'zm_yunyang':{bg:['#a78bfa','#7c3aed'],emoji:'☀️',label:'云扬'},
+  'Vivian':{bg:['#f472b6','#be185d'],emoji:'🎀',label:'Vivian'},'Serena':{bg:['#a855f7','#7e22ce'],emoji:'🔮',label:'Serena'},
+  'Uncle_Fu':{bg:['#0891b2','#0e7490'],emoji:'🎩',label:'Uncle Fu'},'Dylan':{bg:['#059669','#047857'],emoji:'🎸',label:'Dylan'},
+  'Eric':{bg:['#d97706','#92400e'],emoji:'🔥',label:'Eric'},'Ryan':{bg:['#2563eb','#1e40af'],emoji:'🎙️',label:'Ryan'},
+  'Aiden':{bg:['#4f46e5','#3730a3'],emoji:'⚡',label:'Aiden'},'Ono_Anna':{bg:['#e11d48','#9f1239'],emoji:'🎎',label:'小野アンナ'},
+  'Sohee':{bg:['#7c3aed','#5b21b6'],emoji:'🇰🇷',label:'소희'},
 };
 
-const TABS = [
-  { id: 'generate', label: 'Generate', icon: '⚡' },
-  { id: 'voices', label: 'Voices', icon: '🎤' },
-  { id: 'effects', label: 'Effects', icon: '🎛️' },
-  { id: 'transcribe', label: 'Transcribe', icon: '📝' },
-  { id: 'history', label: 'History', icon: '🕐' },
-  { id: 'settings', label: 'Settings', icon: '⚙️' },
+const ENGINES = [
+  {id:'kokoro',name:'Kokoro',desc:'82M · Fast CPU · 50 voices',badge:'Fast',color:'#10b981'},
+  {id:'qwen',name:'Qwen3-TTS',desc:'0.6B/1.7B · High quality cloning',badge:'Quality',color:'#6366f1'},
+  {id:'qwen_custom_voice',name:'Qwen CustomVoice',desc:'9 presets · Delivery control',badge:'Presets',color:'#a855f7'},
+  {id:'chatterbox',name:'Chatterbox',desc:'23 languages · Multilingual',badge:'23 Langs',color:'#f59e0b'},
+  {id:'chatterbox_turbo',name:'Chatterbox Turbo',desc:'350M · Paralinguistic tags',badge:'Expressive',color:'#f97316'},
+  {id:'luxtts',name:'LuxTTS',desc:'~1GB · 48kHz · 150x realtime',badge:'Light',color:'#06b6d4'},
+  {id:'hume',name:'Hume TADA',desc:'1B/3B · 700s+ coherent audio',badge:'Long',color:'#ef4444'},
 ];
 
-// ─── API Helpers ──────────────────────────────────────────────────
-function apiHeaders() {
-  const h = { 'Content-Type': 'application/json' };
-  if (settingsApiKey) h['Authorization'] = `Bearer ${settingsApiKey}`;
+const LANGUAGES = {en:'English',ja:'Japanese',zh:'Chinese',ko:'Korean',fr:'French',es:'Spanish',de:'German',ru:'Russian',ar:'Arabic',hi:'Hindi',pt:'Portuguese',it:'Italian'};
+
+function apiHeaders(){return{'Content-Type':'application/json'};}
+async function apiFetch(path,opts={}){try{const r=await fetch(API+path,{...opts,headers:{...apiHeaders(),...(opts.headers||{})}});if(!r.ok){const e=await r.json().catch(()=>({detail:r.statusText}));throw new Error(e.detail||r.statusText);}return await r.json();}catch(e){throw e;}}
+
+function getAvatar(p){if(!p)return{bg:['#e5e5e5','#d4d4d4'],emoji:'🎙️',label:'?'};return VOICE_AVATARS[p.preset_voice_id]||{bg:['#e5e5e5','#d4d4d4'],emoji:'🎙️',label:p.name};}
+
+async function checkHealth(){try{health=await apiFetch('/health');sseConnected=true;}catch{health=null;sseConnected=false;}render();}
+
+async function loadProfiles(){try{profiles=await apiFetch('/profiles');if(profiles.length>0&&!genProfileId)genProfileId=profiles[0].id;}catch{profiles=[];}render();}
+
+async function loadPresets(){for(const e of['kokoro','qwen_custom_voice']){try{const d=await apiFetch('/profiles/presets/'+e);presetVoices[e]=d.voices||[];}catch{presetVoices[e]=[];}}render();}
+
+async function loadHistory(){try{const d=await apiFetch('/history?limit=50');history=d.items||d||[];}catch{history=[];}render();}
+
+async function generateSpeech(){if(!genText.trim()||isGenerating||!genProfileId)return;isGenerating=true;render();try{const b={text:genText,engine:genEngine,language:genLanguage};if(genProfileId)b.profile_id=genProfileId;if(genInstruct)b.instruct=genInstruct;if(genSeed)b.seed=parseInt(genSeed);const r=await apiFetch('/generate',{method:'POST',body:JSON.stringify(b)});if(r.id){activeTasks.push({id:r.id});pollGen(r.id);}}catch(e){alert('Generation failed: '+e.message);}finally{isGenerating=false;render();}}
+
+async function pollGen(id){for(let i=0;i<60;i++){await new Promise(r=>setTimeout(r,3000));try{const d=await apiFetch('/history?limit=50');const g=(d.items||[]).find(x=>x.id===id);if(g&&(g.status==='completed'||g.status==='failed')){activeTasks=activeTasks.filter(t=>t.id!==id);await loadHistory();render();return;}}catch{}}}
+
+async function transcribe(file){isGenerating=true;render();try{const fd=new FormData();fd.append('file',file);const r=await fetch(API+'/transcribe',{method:'POST',body:fd});if(!r.ok)throw new Error('Failed');const d=await r.json();genText=d.text||'';currentTab='generate';render();}catch(e){alert('Transcription failed: '+e.message);}finally{isGenerating=false;render();}}
+
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML=currentView==='landing'?renderLanding():renderApp();
+}
+
+function renderLanding(){
+  return '<div class="min-h-screen bg-[#fafafa]">'+nav()+'<section class="pt-24 pb-16 px-6 max-w-5xl mx-auto text-center slide-up"><div class="inline-flex items-center gap-2 bg-white border border-surface-200 rounded-full px-4 py-2 mb-8 text-sm text-surface-600 card-shadow-sm"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Free & Open Source — No API Keys</div><h1 class="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight">AI Voice Studio<br><span class="bg-gradient-to-r from-brand-600 via-purple-500 to-pink-500 bg-clip-text text-transparent">That Runs Locally</span></h1><p class="text-lg text-surface-500 max-w-2xl mx-auto mb-10">Clone any voice. Generate speech in 23 languages.<br>Transcribe audio — all on your machine.</p><div class="flex items-center justify-center gap-4 mb-16"><button onclick="currentView=\'app\';render()" class="btn-primary text-base px-8 py-3.5 rounded-2xl">⚡ Open Studio</button><a href="#engines" class="btn-secondary text-base px-8 py-3.5 rounded-2xl">See Engines ↓</a></div><div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto"><div class="bg-white border border-surface-200 rounded-2xl p-5 card-shadow-sm"><div class="text-3xl font-black">7</div><div class="text-xs text-surface-400 mt-1 uppercase tracking-wider">TTS Engines</div></div><div class="bg-white border border-surface-200 rounded-2xl p-5 card-shadow-sm"><div class="text-3xl font-black">23</div><div class="text-xs text-surface-400 mt-1 uppercase tracking-wider">Languages</div></div><div class="bg-white border border-surface-200 rounded-2xl p-5 card-shadow-sm"><div class="text-3xl font-black">61</div><div class="text-xs text-surface-400 mt-1 uppercase tracking-wider">Voice Profiles</div></div><div class="bg-white border border-surface-200 rounded-2xl p-5 card-shadow-sm"><div class="text-3xl font-black">0</div><div class="text-xs text-surface-400 mt-1 uppercase tracking-wider">API Keys</div></div></div></section><div class="flex items-end justify-center gap-1 h-12 mb-16 opacity-40">'+Array.from({length:30},(_,i)=>'<div class="waveform-bar bg-brand-500" style="height:'+(4+Math.random()*16)+'px;animation-delay:'+i*0.05+'s"></div>').join('')+'</div><section id="engines" class="py-16 px-6 max-w-6xl mx-auto"><div class="text-center mb-12"><h2 class="text-3xl font-bold mb-2">Open Source Engines</h2><p class="text-surface-500">Choose the right engine for your use case</p></div><div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">'+ENGINES.map(e=>'<div class="bg-white border border-surface-200 rounded-2xl p-5 card-shadow-sm hover:card-shadow transition-all hover:-translate-y-1"><div class="flex items-center gap-3 mb-2"><span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:'+e.color+'15;color:'+e.color+'">'+e.badge+'</span><span class="font-semibold text-sm">'+e.name+'</span></div><p class="text-xs text-surface-500">'+e.desc+'</p></div>').join('')+'</div></section><section class="py-16 px-6"><div class="max-w-3xl mx-auto text-center bg-white border border-surface-200 rounded-3xl p-10 card-shadow"><h2 class="text-2xl font-bold mb-3">Ready to Start?</h2><p class="text-surface-500 mb-6">Launch the studio and create with AI voices</p><button onclick="currentView=\'app\';render()" class="btn-primary text-base px-8 py-3.5 rounded-2xl">⚡ Open iknbite</button></div></section>'+footer()+'</div>';
+}
+
+function nav(){return '<nav class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-surface-200"><div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-[#0f0e0d] flex items-center justify-center text-white font-bold text-xs">iK</div><span class="font-bold text-[15px]">iknbite</span></div><div class="flex items-center gap-3"><a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="btn-secondary text-sm px-4 py-2 rounded-xl flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>GitHub</a><button onclick="currentView=\'app\';render()" class="btn-primary text-sm px-5 py-2 rounded-xl">Open Studio →</button></div></div></nav>';
+}
+
+function footer(){return '<footer class="border-t border-surface-200 py-8 px-6"><div class="max-w-6xl mx-auto flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-[#0f0e0d] flex items-center justify-center text-white font-bold text-[10px]">iK</div><span class="font-semibold text-sm">iknbite</span><span class="text-surface-400 text-sm">AI Voice Studio</span></div><div class="flex items-center gap-6 text-sm text-surface-400"><a href="https://github.com/gsops00/iknbite.github.io" class="hover:text-[#0f0e0d]">GitHub</a><span>MIT License</span></div></div></footer>';
+}
+
+function renderApp(){
+  const tabs=[
+    {id:'generate',label:'Generate',icon:'⚡'},{id:'voices',label:'Voices',icon:'🎤'},
+    {id:'transcribe',label:'Transcribe',icon:'📝'},{id:'history',label:'History',icon:'🕐'},
+    {id:'settings',label:'Settings',icon:'⚙️'}
+  ];
+  if(profiles.length===0)loadProfiles();
+  return '<div class="min-h-screen bg-[#fafafa]">'+nav()+'<div class="pt-20 px-6 max-w-6xl mx-auto pb-12"><div class="flex items-center gap-2 mb-6 border-b border-surface-200 pb-0">'+tabs.map(t=>'<button class="tab-pill '+(currentTab===t.id?'active':'')+'" onclick="currentTab=\''+t.id+'\';render()">'+t.icon+' '+t.label+'</button>').join('')+'</div><div class="pt-6">'+(currentTab==='generate'?renderGenerate():currentTab==='voices'?renderVoices():currentTab==='transcribe'?renderTranscribe():currentTab==='history'?renderHistory():renderSettings())+'</div></div>'+footer()+'</div>';
+}
+
+function renderGenerate(){
+  const av=profiles.find(p=>p.id===genProfileId)?getAvatar(profiles.find(p=>p.id===genProfileId)):null;
+  return '<div class="max-w-3xl mx-auto space-y-6 slide-up"><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><label class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 block">Voice</label><div class="flex items-center gap-3 mb-3">'+(av?'<div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:linear-gradient(135deg,'+av.bg[0]+','+av.bg[1]+')">'+av.emoji+'</div><span class="font-semibold text-sm">'+av.label+'</span>':'<div class="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center text-surface-400">🎙️</div><span class="text-sm text-surface-400">Select a voice</span>')+'</div><select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm" onchange="genProfileId=this.value">'+profiles.map(p=>{const a=getAvatar(p);return '<option value="'+p.id+'"'+(genProfileId===p.id?' selected':'')+'>'+a.emoji+' '+p.name+' — '+(LANGUAGES[p.language]||p.language)+'</option>';}).join('')+'</select></div><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><div class="flex items-center justify-between mb-3"><label class="text-xs font-semibold text-surface-400 uppercase tracking-wider">Text to Speak</label><span class="text-xs text-surface-400">'+genText.length.toLocaleString()+' chars</span></div><textarea rows="6" placeholder="Type or paste your text here..." class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm resize-none leading-relaxed" oninput="genText=this.value">'+genText+'</textarea></div><div class="flex flex-wrap gap-3"><button onclick="generateSpeech()"'+(isGenerating||!genText.trim()?' disabled':'')+' class="btn-primary px-8 py-3 rounded-xl flex items-center gap-2">'+(isGenerating?'<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...':'⚡ Generate Speech')+'</button><button onclick="genInstruct=prompt(\'Delivery instruction:\',genInstruct)||\'\';render()" class="btn-secondary px-5 py-3 rounded-xl text-sm">🎛️ Delivery</button></div></div>';
+}
+
+function renderVoices(){
+  var h='<div class="max-w-4xl mx-auto space-y-6 slide-up">';
+  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><div class="flex items-center justify-between mb-4"><h3 class="font-bold">Voice Gallery</h3><span class="text-xs text-surface-400">'+Object.keys(VOICE_AVATARS).length+' voices</span></div>';
+  var groups={'English Female':['af_alloy','af_aoede','af_bella','af_heart','af_jessica','af_kore','af_nicole','af_nova','af_river','af_sarah','af_sky','bf_alice','bf_emma','bf_isabella','bf_lily'],'English Male':['am_adam','am_echo','am_eric','am_fenrir','am_liam','am_michael','am_onyx','am_puck','am_santa','bm_daniel','bm_fable','bm_george','bm_lewis'],'Chinese':['zf_xiaobei','zf_xiaoni','zf_xiaoxiao','zf_xiaoyi','zm_yunjian','zm_yunxi','zm_yunxia','zm_yunyang'],'Japanese':['jf_alpha','jf_gongitsune','jf_nezumi','jf_tebukuro','jm_kumo'],'Spanish':['ef_dora','em_alex'],'French':['ff_siwis'],'Hindi':['hf_alpha','hf_beta','hm_omega','hm_psi'],'Italian':['if_sara','im_nicola'],'Portuguese':['pf_dora','pm_alex'],'Qwen Custom':['Vivian','Serena','Uncle_Fu','Dylan','Eric','Ryan','Aiden','Ono_Anna','Sohee']};
+  for(var label in groups){var ids=groups[label];var voices=ids.map(function(id){return{id:id,av:VOICE_AVATARS[id]};}).filter(function(v){return v.av;});if(voices.length===0)continue;h+='<div class="mb-5"><div class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">'+label+' <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-100 font-normal">'+voices.length+'</span></div><div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">';for(var i=0;i<voices.length;i++){var v=voices[i];h+='<button onclick="selectVoice(\''+v.id+'\')" class="voice-card flex flex-col items-center gap-2 p-3 cursor-pointer"><div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl text-white font-bold" style="background:linear-gradient(135deg,'+v.av.bg[0]+','+v.av.bg[1]+')">'+v.av.emoji+'</div><div class="text-[11px] font-medium text-surface-600 text-center truncate w-full">'+v.av.label+'</div></button>';}h+='</div></div>';}
+  h+='</div></div>';
+  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Create Profile</h3><div class="flex gap-3"><input id="np-name" placeholder="Name" class="flex-1 bg-surface-50 border border-surface-200 rounded-xl px-4 py-2.5 text-sm"><select id="np-lang" class="bg-surface-50 border border-surface-200 rounded-xl px-4 py-2.5 text-sm"><option value="en">English</option><option value="ja">Japanese</option><option value="zh">Chinese</option><option value="ko">Korean</option><option value="fr">French</option><option value="es">Spanish</option><option value="de">German</option><option value="hi">Hindi</option><option value="pt">Portuguese</option><option value="it">Italian</option></select><button onclick="createProfile(document.getElementById(\'np-name\').value,document.getElementById(\'np-lang\').value)" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Create</button></div></div>';
+  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Your Profiles <span class="text-sm font-normal text-surface-400">('+profiles.length+')</span></h3>';
+  if(profiles.length===0){h+='<div class="text-center py-6 text-surface-400 text-sm">No profiles yet. Create one above.</div>';}
+  else{for(var j=0;j<profiles.length;j++){var p=profiles[j];var pav=getAvatar(p);h+='<div class="flex items-center justify-between p-3 rounded-xl hover:bg-surface-50 transition"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:linear-gradient(135deg,'+pav.bg[0]+','+pav.bg[1]+')">'+pav.emoji+'</div><div><div class="text-sm font-semibold">'+p.name+'</div><div class="text-xs text-surface-400">'+(LANGUAGES[p.language]||p.language)+'</div></div></div><div class="flex gap-2"><button onclick="selectVoice(\''+p.id+'\')" class="btn-secondary text-xs px-3 py-1.5 rounded-lg">Use</button><button onclick="if(confirm(\'Delete?\'))deleteProf(\''+p.id+'\')" class="text-xs text-red-400 px-2 py-1.5">✕</button></div></div>';}}
+  h+='</div></div>';
   return h;
 }
 
-async function apiFetch(path, opts = {}) {
-  try {
-    const res = await fetch(`${API}${path}`, {
-      ...opts,
-      headers: { ...apiHeaders(), ...(opts.headers || {}) },
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(err.detail || res.statusText);
-    }
-    return await res.json();
-  } catch (e) {
-    console.error(`API ${path}:`, e);
-    throw e;
-  }
+function renderTranscribe(){
+  return '<div class="max-w-2xl mx-auto text-center slide-up"><div class="bg-white border border-surface-200 rounded-2xl p-10 card-shadow-sm"><div class="text-4xl mb-3">📝</div><h3 class="text-lg font-bold mb-2">Speech-to-Text</h3><p class="text-sm text-surface-500 mb-6">Upload audio for instant transcription</p><input type="file" id="tf" accept=".wav,.mp3,.m4a,.ogg,.flac,.aac,.webm" class="hidden" onchange="if(this.files[0])transcribe(this.files[0])"><label for="tf" class="block border-2 border-dashed border-surface-200 rounded-2xl p-10 cursor-pointer hover:border-brand-300 hover:bg-brand-50/50 transition"><div class="text-surface-400"><div class="text-3xl mb-2">📁</div><p class="text-sm">Click to upload</p><p class="text-xs text-surface-300 mt-1">WAV, MP3, M4A, OGG, FLAC, AAC, WebM</p></div></label></div></div>';
 }
 
-// ─── Health Check ─────────────────────────────────────────────────
-async function checkHealth() {
-  try {
-    health = await apiFetch('/health');
-    sseConnected = true;
-  } catch {
-    health = null;
-    sseConnected = false;
-  }
-  render();
+function renderHistory(){
+  var h='<div class="max-w-3xl mx-auto space-y-3 slide-up"><div class="flex items-center justify-between mb-2"><h3 class="font-bold">History</h3><button onclick="loadHistory()" class="text-sm text-brand-600 hover:underline">Refresh</button></div>';
+  if(history.length===0){h+='<div class="bg-white border border-surface-200 rounded-2xl p-10 text-center card-shadow-sm"><div class="text-4xl mb-3">🕐</div><p class="text-surface-500 text-sm">No generations yet</p></div>';}
+  else{for(var i=0;i<history.length;i++){var g=history[i];h+='<div class="bg-white border border-surface-200 rounded-xl p-4 flex items-center gap-4 card-shadow-sm"><div class="w-10 h-10 rounded-xl flex items-center justify-center text-sm '+(g.status==='completed'?'bg-emerald-50 text-emerald-600':'bg-red-50 text-red-500')+'">'+(g.status==='completed'?'✓':'✗')+'</div><div class="flex-1 min-w-0"><div class="text-sm font-medium truncate">'+(g.text||'').substring(0,80)+'</div><div class="text-xs text-surface-400 mt-0.5">'+(g.engine||'')+' · '+(g.language||'en')+' · '+(g.duration?g.duration.toFixed(1)+'s':'—')+'</div></div>'+(g.status==='completed'?'<audio controls preload="none" src="'+API+'/audio/'+g.id+'" class="w-48 h-8"></a>':'')+'</div>';}}
+  h+='</div>';return h;
 }
 
-// ─── Profiles ─────────────────────────────────────────────────────
-
-function getVoiceAvatar(profile) {
-  if (!profile) return { bg: ['#6b7280','#4b5563'], icon: '🎤', emoji: '🎙️' };
-  return VOICE_AVATARS[profile.preset_voice_id] || { bg: ['#6b7280','#4b5563'], icon: '🎤', emoji: '🎙️' };
+function renderSettings(){
+  return '<div class="max-w-xl mx-auto space-y-4 slide-up"><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Backend</h3><input id="api-url" value="'+API+'" class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm font-mono mb-3" placeholder="http://localhost:8000"><button onclick="API=document.getElementById(\'api-url\').value;localStorage.setItem(\'iknbite_api_url\',API);checkHealth();loadProfiles();loadPresets()" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Save & Reconnect</button></div><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Status</h3><div class="space-y-2"><div class="flex justify-between text-sm"><span class="text-surface-500">Connection</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full '+(sseConnected?'bg-emerald-500':'bg-red-500')+'"></span>'+(sseConnected?'Connected':'Disconnected')+'</span></div>'+(health?'<div class="flex justify-between text-sm"><span class="text-surface-500">GPU</span><span>'+(health.gpu_type||'None')+'</span></div><div class="flex justify-between text-sm"><span class="text-surface-500">Model</span><span>'+(health.model_loaded?'Loaded':'Not loaded')+'</span></div>':'')+'</div></div></div>';
 }
 
-function selectPresetVoice(voiceId, name, gender) {
-  // Find or create a profile for this preset voice
-  const existing = profiles.find(p => p.preset_voice_id === voiceId);
-  if (existing) {
-    genProfileId = existing.id;
-    genEngine = 'kokoro';
-    currentTab = 'generate';
-    render();
-  } else {
-    // Create profile for this preset
-    createProfile(name, 'en').then(() => {
-      const newProfile = profiles.find(p => p.name === name);
-      if (newProfile) {
-        genProfileId = newProfile.id;
-        genEngine = 'kokoro';
-        currentTab = 'generate';
-        render();
-      }
-    });
-  }
-}
+function selectVoice(id){var p=profiles.find(function(x){return x.id===id;});if(p){genProfileId=p.id;currentTab='generate';render();}else{genProfileId=id;currentTab='generate';render();}}
 
-async function loadProfiles() {
-  try {
-    profiles = await apiFetch('/profiles');
-    if (profiles.length > 0 && !genProfileId) {
-      genProfileId = profiles[0].id;
-    }
-  } catch { profiles = []; }
-  render();
-}
+async function createProfile(name,lang){if(!name)return;try{await apiFetch('/profiles',{method:'POST',body:JSON.stringify({name:name,language:lang||'en'})});await loadProfiles();}catch(e){alert(e.message);}}
 
-async function loadPresets() {
-  for (const engine of ['kokoro', 'qwen_custom_voice']) {
-    try {
-      const data = await apiFetch(`/profiles/presets/${engine}`);
-      presetVoices[engine] = data.voices || [];
-    } catch { presetVoices[engine] = []; }
-  }
-  render();
-}
+async function deleteProf(id){try{await apiFetch('/profiles/'+id,{method:'DELETE'});await loadProfiles();}catch(e){alert(e.message);}}
 
-async function createProfile(name, language, description) {
-  await apiFetch('/profiles', {
-    method: 'POST',
-    body: JSON.stringify({ name, language, description: description || '' }),
-  });
-  await loadProfiles();
-}
-
-async function deleteProfile(id) {
-  await apiFetch(`/profiles/${id}`, { method: 'DELETE' });
-  await loadProfiles();
-}
-
-// ─── Generate ─────────────────────────────────────────────────────
-async function generateSpeech() {
-  if (!genText.trim() || isGenerating) return;
-  if (!genProfileId) {
-    alert('Please select a voice profile first.');
-    return;
-  }
-  isGenerating = true;
-  render();
-
-  const textToSend = genText;
-  try {
-    const body = {
-      text: textToSend,
-      engine: genEngine,
-      language: genLanguage,
-      normalize: genNormalize,
-      max_chunk_chars: genMaxChunkChars,
-      crossfade_ms: genCrossfadeMs,
-    };
-    if (genProfileId) body.profile_id = genProfileId;
-    if (genInstruct) body.instruct = genInstruct;
-    if (genSeed) body.seed = parseInt(genSeed);
-
-    const result = await apiFetch('/generate', { method: 'POST', body: JSON.stringify(body) });
-    if (result.id) {
-      activeTasks.push({ id: result.id, status: 'generating', text: genText.substring(0, 50) });
-      pollGeneration(result.id);
-    }
-  } catch (e) {
-    alert('Generation failed: ' + e.message);
-  } finally {
-    isGenerating = false;
-    render();
-  }
-}
-
-async function pollGeneration(id) {
-  const maxAttempts = 120;
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(r => setTimeout(r, 3000));
-    try {
-      const data = await apiFetch('/history?limit=50');
-      const items = data.items || data.generations || data || [];
-      const gen = items.find(g => g.id === id);
-      if (gen) {
-        if (gen.status === 'completed') {
-          activeTasks = activeTasks.filter(t => t.id !== id);
-          await loadHistory();
-          render();
-          return;
-        }
-        if (gen.status === 'failed') {
-          activeTasks = activeTasks.filter(t => t.id !== id);
-          alert('Generation failed: ' + (gen.error || 'Unknown error'));
-          render();
-          return;
-        }
-      }
-    } catch { /* retry */ }
-  }
-  activeTasks = activeTasks.filter(t => t.id !== id);
-  render();
-}
-
-// ─── Transcribe ───────────────────────────────────────────────────
-async function transcribeFile(file) {
-  isTranscribing = true;
-  render();
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch(`${API}/transcribe`, {
-      method: 'POST',
-      headers: settingsApiKey ? { 'Authorization': `Bearer ${settingsApiKey}` } : {},
-      body: formData,
-    });
-    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-    const result = await res.json();
-    genText = result.text || '';
-    currentTab = 'generate';
-    render();
-  } catch (e) {
-    alert('Transcription failed: ' + e.message);
-  } finally {
-    isTranscribing = false;
-    render();
-  }
-}
-
-// ─── History ──────────────────────────────────────────────────────
-async function loadHistory() {
-  try {
-    const data = await apiFetch('/history?limit=50');
-    history = data.items || data.generations || data || [];
-  } catch { history = []; }
-  render();
-}
-
-async function deleteGeneration(id) {
-  try {
-    await apiFetch(`/history/${id}`, { method: 'DELETE' });
-    await loadHistory();
-  } catch (e) { alert('Delete failed: ' + e.message); }
-}
-
-// ─── Effects ──────────────────────────────────────────────────────
-async function loadEffects() {
-  try {
-    const data = await apiFetch('/effects/available');
-    availableEffects = data.effects || [];
-  } catch { availableEffects = EFFECTS_LIST; }
-  try {
-    effectsPresets = await apiFetch('/effects/presets');
-  } catch { effectsPresets = []; }
-  render();
-}
-
-// ─── Rendering ────────────────────────────────────────────────────
-function render() {
-  const app = document.getElementById('app');
-  if (currentView === 'landing') {
-    app.innerHTML = renderLanding();
-  } else {
-    app.innerHTML = renderApp();
-  }
-  attachEventListeners();
-}
-
-function renderLanding() {
-  return `
-  <div class="min-h-screen hero-gradient mesh-bg noise">
-    <!-- Nav -->
-    <nav class="fixed top-0 w-full z-50 glass">
-      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center text-white font-bold text-sm">iK</div>
-          <span class="text-lg font-bold tracking-tight">iknbite</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="btn-ghost flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            GitHub
-          </a>
-          <button onclick="currentView='app';render()" class="btn-primary text-sm">Open Studio →</button>
-        </div>
-      </div>
-    </nav>
-
-    <!-- Hero -->
-    <section class="pt-32 pb-20 px-6">
-      <div class="max-w-5xl mx-auto text-center slide-up">
-        <div class="inline-flex items-center gap-2 glass-subtle rounded-full px-4 py-2 mb-8 text-sm text-brand-300">
-          <span class="status-dot status-connected"></span>
-          100% Free & Open Source — No API Keys Required
-        </div>
-        <h1 class="hero-title text-5xl md:text-7xl font-black tracking-tight mb-6">
-          <span class="gradient-text">AI Voice Studio</span>
-        </h1>
-        <p class="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto mb-10 leading-relaxed">
-          Clone any voice. Generate speech in 23 languages.<br class="hidden md:block">
-          Transcribe audio. Apply studio effects — all running <span class="text-white font-semibold">locally on your machine</span>.
-        </p>
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 slide-up slide-up-1">
-          <button onclick="currentView='app';render()" class="btn-primary text-base px-8 py-4 rounded-2xl flex items-center gap-2">
-            ⚡ Launch Studio
-          </button>
-          <a href="#features" class="btn-secondary text-base px-8 py-4 rounded-2xl">Learn More ↓</a>
-        </div>
-
-        <!-- Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto slide-up slide-up-2">
-          <div class="glass-subtle rounded-2xl p-6">
-            <div class="text-3xl font-black gradient-text">7</div>
-            <div class="text-xs text-gray-500 mt-1 uppercase tracking-wider">TTS Engines</div>
-          </div>
-          <div class="glass-subtle rounded-2xl p-6">
-            <div class="text-3xl font-black gradient-text">23</div>
-            <div class="text-xs text-gray-500 mt-1 uppercase tracking-wider">Languages</div>
-          </div>
-          <div class="glass-subtle rounded-2xl p-6">
-            <div class="text-3xl font-black gradient-text">50+</div>
-            <div class="text-xs text-gray-500 mt-1 uppercase tracking-wider">Preset Voices</div>
-          </div>
-          <div class="glass-subtle rounded-2xl p-6">
-            <div class="text-3xl font-black gradient-text">0</div>
-            <div class="text-xs text-gray-500 mt-1 uppercase tracking-wider">API Keys Needed</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Waveform decoration -->
-    <div class="flex items-end justify-center gap-1 h-16 mb-12 opacity-30">
-      ${Array.from({length: 40}, () => `<div class="waveform-bar bg-brand-500" style="height:${6+Math.random()*22}px;animation-delay:${Math.random()}s"></div>`).join('')}
-    </div>
-
-    <!-- Features -->
-    <section id="features" class="py-20 px-6">
-      <div class="max-w-6xl mx-auto">
-        <div class="text-center mb-16">
-          <h2 class="text-3xl md:text-4xl font-bold mb-4">Everything You Need</h2>
-          <p class="text-gray-400 text-lg max-w-2xl mx-auto">A complete voice I/O stack — from generation to effects to dictation.</p>
-        </div>
-        <div class="grid md:grid-cols-3 gap-6">
-          ${[
-            { icon: '🎙️', title: 'Voice Cloning', desc: 'Clone any voice from a few seconds of audio. Zero-shot cloning with Qwen3-TTS, Chatterbox, and more.', color: '#4c6ef5' },
-            { icon: '🌍', title: '23 Languages', desc: 'From English to Arabic, Japanese, Hindi, Swahili — the broadest language coverage of any open-source TTS.', color: '#cc5de8' },
-            { icon: '⚡', title: '7 TTS Engines', desc: 'Kokoro (fast), Qwen3-TTS (quality), Chatterbox (multilingual), LuxTTS (lightweight), Hume TADA (long-form).', color: '#fbbf24' },
-            { icon: '🎭', title: 'Expressive Speech', desc: 'Paralinguistic tags like [laugh], [sigh], [gasp] with Chatterbox Turbo. Delivery instructions with Qwen.', color: '#f97316' },
-            { icon: '🎛️', title: 'Studio Effects', desc: 'Pitch shift, reverb, delay, chorus, compression, gain, high/low-pass filters with presets.', color: '#06b6d4' },
-            { icon: '📝', title: 'Transcription', desc: 'Whisper-based speech-to-text. Upload any audio file and get instant transcription.', color: '#10b981' },
-            { icon: '🔒', title: '100% Private', desc: 'Models and voice data never leave your machine. No cloud, no API keys, no subscriptions.', color: '#f43f5e' },
-            { icon: '♾️', title: 'Unlimited Length', desc: 'Auto-chunking with crossfade for scripts, articles, and chapters up to 50,000 characters.', color: '#748ffc' },
-            { icon: '📖', title: 'Stories Editor', desc: 'Multi-voice timeline for conversations, podcasts, and narratives with drag-and-drop.', color: '#a855f7' },
-          ].map(f => `
-            <div class="glass-subtle rounded-2xl p-6 card-hover cursor-default">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-4" style="background:${f.color}20">${f.icon}</div>
-              <h3 class="text-lg font-bold mb-2">${f.title}</h3>
-              <p class="text-gray-400 text-sm leading-relaxed">${f.desc}</p>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </section>
-
-    <!-- Engines -->
-    <section class="py-20 px-6">
-      <div class="max-w-6xl mx-auto">
-        <div class="text-center mb-16">
-          <h2 class="text-3xl md:text-4xl font-bold mb-4">Open Source Engines</h2>
-          <p class="text-gray-400 text-lg">Choose the right engine for your use case.</p>
-        </div>
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          ${ENGINES.map(e => `
-            <div class="glass-subtle rounded-xl p-5 card-hover flex items-start gap-4">
-              <div class="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shrink-0" style="background:${e.color}20;color:${e.color}">${e.badge}</div>
-              <div class="min-w-0">
-                <div class="font-semibold text-sm">${e.name}</div>
-                <div class="text-gray-500 text-xs mt-0.5">${e.desc}</div>
-                <div class="flex flex-wrap gap-1 mt-2">${e.langs.slice(0,5).map(l => `<span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400">${l}</span>`).join('')}${e.langs.length > 5 ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500">+${e.langs.length-5}</span>` : ''}</div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </section>
-
-    <!-- CTA -->
-    <section class="py-20 px-6">
-      <div class="max-w-3xl mx-auto text-center glass rounded-3xl p-12 glow">
-        <h2 class="text-3xl md:text-4xl font-bold mb-4">Ready to Start?</h2>
-        <p class="text-gray-400 text-lg mb-8">Launch the studio and start creating with AI voices — completely free.</p>
-        <button onclick="currentView='app';render()" class="btn-primary text-lg px-10 py-4 rounded-2xl">
-          ⚡ Open iknbite Studio
-        </button>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="border-t border-white/5 py-10 px-6">
-      <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center text-white font-bold text-xs">iK</div>
-          <span class="font-semibold">iknbite</span>
-          <span class="text-gray-600 text-sm">— AI Voice Studio</span>
-        </div>
-        <div class="flex items-center gap-6 text-sm text-gray-500">
-          <a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="hover:text-white transition">GitHub</a>
-          <span>MIT License</span>
-          <span>Built on Voicebox</span>
-        </div>
-      </div>
-    </footer>
-  </div>`;
-}
-
-function renderApp() {
-  if (profiles.length === 0) loadProfiles();
-  const currentEngine = ENGINES.find(e => e.id === genEngine) || ENGINES[0];
-  const engineLangs = currentEngine.langs;
-
-  return `
-  <div class="flex h-screen overflow-hidden bg-surface-950">
-    <!-- Sidebar -->
-    <aside class="app-sidebar w-64 shrink-0 glass-strong border-r border-white/5 flex flex-col">
-      <div class="p-4 border-b border-white/5">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center text-white font-bold text-sm">iK</div>
-          <div>
-            <div class="font-bold text-sm">iknbite</div>
-            <div class="text-[10px] text-gray-500">AI Voice Studio</div>
-          </div>
-        </div>
-      </div>
-      <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
-        ${TABS.map(t => `
-          <button class="sidebar-item ${currentTab === t.id ? 'active' : ''}" onclick="currentTab='${t.id}';render()">
-            <span class="text-lg">${t.icon}</span>
-            <span>${t.label}</span>
-            ${t.id === 'generate' && activeTasks.length ? `<span class="ml-auto w-5 h-5 rounded-full bg-brand-600 text-[10px] flex items-center justify-center">${activeTasks.length}</span>` : ''}
-          </button>
-        `).join('')}
-      </nav>
-      <div class="p-3 border-t border-white/5">
-        ${currentTab === 'generate' && genProfileId ? (() => {
-          const p = profiles.find(pr => pr.id === genProfileId);
-          const av = getVoiceAvatar(p);
-          return p ? `<div class="flex items-center gap-3 mb-3 p-2 rounded-xl bg-white/[0.03]">
-            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm text-white font-bold shrink-0" style="background:linear-gradient(135deg,${av.bg[0]},${av.bg[1]})">${p.name[0]}</div>
-            <div class="min-w-0">
-              <div class="text-xs font-semibold truncate">${av.emoji} ${p.name}</div>
-              <div class="text-[10px] text-gray-500">${LANGUAGES[p.language] || p.language}</div>
-            </div>
-          </div>` : '';
-        })() : ''}
-        <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
-          <span class="status-dot ${sseConnected ? 'status-connected' : 'status-disconnected'}"></span>
-          ${sseConnected ? (health?.gpu_type || 'Connected') : 'Disconnected'}
-        </div>
-        <button onclick="currentView='landing';render()" class="sidebar-item text-xs">
-          <span>←</span><span>Back to Home</span>
-        </button>
-      </div>
-    </aside>
-
-    <!-- Main -->
-    <main class="flex-1 overflow-y-auto">
-      <!-- Top Bar -->
-      <div class="sticky top-0 z-40 glass-strong border-b border-white/5 px-6 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <h2 class="font-bold text-lg">${TABS.find(t => t.id === currentTab)?.icon || ''} ${TABS.find(t => t.id === currentTab)?.label || ''}</h2>
-        ${currentTab === 'generate' && genProfileId ? (() => {
-          const p = profiles.find(pr => pr.id === genProfileId);
-          const av = p ? (VOICE_AVATARS[p.preset_voice_id] || { bg: ['#6b7280','#4b5563'], emoji: '🎙️' }) : null;
-          return av ? `<div class="flex items-center gap-2 ml-4 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/10">
-            <div class="w-6 h-6 rounded-lg flex items-center justify-center text-xs text-white font-bold" style="background:linear-gradient(135deg,${av.bg[0]},${av.bg[1]})">${p?.name[0] || '?'}</div>
-            <span class="text-xs text-gray-400">${p?.name || ''}</span>
-          </div>` : '';
-        })() : ''}
-        </div>
-        <div class="flex items-center gap-3">
-          ${activeTasks.length ? `<div class="flex items-center gap-2 text-xs text-amber-400 px-3 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20"><div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>${activeTasks.length} generating...</div>` : ''}
-          <button onclick="checkHealth()" class="btn-ghost text-xs">Refresh</button>
-        </div>
-      </div>
-
-      <div class="p-6">
-        ${currentTab === 'generate' ? renderGenerateTab(engineLangs) : ''}
-        ${currentTab === 'voices' ? renderVoicesTab() : ''}
-        ${currentTab === 'effects' ? renderEffectsTab() : ''}
-        ${currentTab === 'transcribe' ? renderTranscribeTab() : ''}
-        ${currentTab === 'history' ? renderHistoryTab() : ''}
-        ${currentTab === 'settings' ? renderSettingsTab() : ''}
-      </div>
-    </main>
-  </div>`;
-}
-
-function renderGenerateTab(engineLangs) {
-  return `
-  <div class="max-w-4xl mx-auto space-y-6">
-    <!-- Engine Selector -->
-    <div class="glass-subtle rounded-2xl p-5">
-      <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">TTS Engine</label>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-        ${ENGINES.map(e => `
-          <button onclick="genEngine='${e.id}';genLanguage='${e.langs[0]}';render()" class="p-3 rounded-xl text-left transition-all ${genEngine === e.id ? 'ring-2 ring-brand-500 bg-brand-500/10' : 'bg-white/[0.03] hover:bg-white/[0.06]'}">
-            <div class="text-sm font-semibold flex items-center gap-2">
-              ${e.name}
-              <span class="text-[10px] px-1.5 py-0.5 rounded-full" style="background:${e.color}20;color:${e.color}">${e.badge}</span>
-            </div>
-            <div class="text-[11px] text-gray-500 mt-1">${e.desc}</div>
-          </button>
-        `).join('')}
-      </div>
-    </div>
-
-    <!-- Profile & Language -->
-    <div class="grid md:grid-cols-2 gap-4">
-      <div class="glass-subtle rounded-2xl p-5">
-        <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">Voice Profile</label>
-        <div class="flex items-center gap-2 mb-2">
-          ${(() => {
-            const p = profiles.find(pr => pr.id === genProfileId);
-            const av = getVoiceAvatar(p);
-            return p ? `<div class="w-8 h-8 rounded-xl flex items-center justify-center text-sm text-white font-bold" style="background:linear-gradient(135deg,${av.bg[0]},${av.bg[1]})">${p.name[0]}</div><span class="text-sm font-semibold">${av.emoji} ${p.name}</span>` : '';
-          })()}
-        </div>
-        <select id="profile-select" class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm" onchange="genProfileId=this.value">
-          <option value="" disabled>No profile selected — pick one below</option>
-          ${profiles.map(p => {
-            const av = VOICE_AVATARS[p.preset_voice_id] || { bg: ['#6b7280','#4b5563'], emoji: '🎙️' };
-            return `<option value="${p.id}" ${genProfileId === p.id ? 'selected' : ''}>${av.emoji} ${p.name} — ${LANGUAGES[p.language] || p.language}</option>`;
-          }).join('')}
-        </select>
-        <div class="text-[11px] text-gray-600 mt-2">
-          ${presetVoices.kokoro.length || presetVoices.qwen_custom_voice.length ? `📦 ${presetVoices.kokoro.length + presetVoices.qwen_custom_voice.length} preset voices available` : 'Create a voice profile to clone voices'}
-        </div>
-      </div>
-      <div class="glass-subtle rounded-2xl p-5">
-        <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">Language</label>
-        <select id="lang-select" class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm" onchange="genLanguage=this.value">
-          ${(engineLangs || ['en']).map(l => `<option value="${l}" ${genLanguage === l ? 'selected' : ''}>${LANGUAGES[l] || l}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-
-    <!-- Text Input -->
-    <div class="glass-subtle rounded-2xl p-5">
-      <div class="flex items-center justify-between mb-3">
-        <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Text to Speak</label>
-        <span class="text-xs text-gray-600">${genText.length.toLocaleString()} / 50,000 chars</span>
-      </div>
-      <textarea id="gen-text" rows="8" placeholder="Type or paste your text here...&#10;&#10;Tip: With Chatterbox Turbo, use / to insert expressive tags like [laugh], [sigh], [gasp]..."
-        class="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm resize-none font-mono leading-relaxed"
-        oninput="genText=this.value;render()">${genText}</textarea>
-    </div>
-
-    <!-- Advanced Options -->
-    <details class="glass-subtle rounded-2xl p-5">
-      <summary class="text-xs text-gray-500 uppercase tracking-wider font-semibold cursor-pointer select-none">Advanced Options</summary>
-      <div class="grid md:grid-cols-3 gap-4 mt-4">
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block">Delivery Instruction</label>
-          <input type="text" value="${genInstruct}" placeholder="e.g. speak slowly, whisper"
-            class="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-sm"
-            oninput="genInstruct=this.value">
-        </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block">Seed (for reproducibility)</label>
-          <input type="number" value="${genSeed}" placeholder="Random"
-            class="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-sm"
-            oninput="genSeed=this.value">
-        </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block">Crossfade: ${genCrossfadeMs}ms</label>
-          <input type="range" min="0" max="200" value="${genCrossfadeMs}"
-            class="w-full mt-2"
-            oninput="genCrossfadeMs=parseInt(this.value);this.previousElementSibling.textContent='Crossfade: '+this.value+'ms'">
-        </div>
-      </div>
-      <div class="flex items-center gap-4 mt-4">
-        <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
-          <input type="checkbox" ${genNormalize ? 'checked' : ''} onchange="genNormalize=this.checked" class="rounded">
-          Normalize audio
-        </label>
-        <div class="flex-1"></div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block">Max chunk: ${genMaxChunkChars}</label>
-          <input type="range" min="100" max="5000" step="100" value="${genMaxChunkChars}"
-            class="w-32"
-            oninput="genMaxChunkChars=parseInt(this.value);this.previousElementSibling.textContent='Max chunk: '+this.value">
-        </div>
-      </div>
-    </details>
-
-    <!-- Generate Button -->
-    <div class="flex items-center gap-4">
-      <button onclick="generateSpeech()" ${isGenerating || !genText.trim() ? 'disabled' : ''}
-        class="btn-primary text-base px-10 py-4 rounded-2xl flex items-center gap-3">
-        ${isGenerating ? `<div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...` : `⚡ Generate Speech`}
-      </button>
-      ${genText.length > 5000 ? `<span class="text-xs text-amber-400">⚠️ Long text will be auto-chunked</span>` : ''}
-    </div>
-  </div>`;
-}
-
-function renderVoicesTab() {
-  let html = '<div class="max-w-4xl mx-auto space-y-6">';
-
-  // Voice Gallery
-  html += '<div class="glass-subtle rounded-2xl p-6"><div class="flex items-center justify-between mb-4"><h3 class="font-bold">Voice Gallery</h3><span class="text-xs text-gray-500">' + Object.keys(VOICE_AVATARS).length + ' voices</span></div>';
-
-  const groups = {
-    'English Female': ['af_alloy','af_aoede','af_bella','af_heart','af_jessica','af_kore','af_nicole','af_nova','af_river','af_sarah','af_sky','bf_alice','bf_emma','bf_isabella','bf_lily'],
-    'English Male': ['am_adam','am_echo','am_eric','am_fenrir','am_liam','am_michael','am_onyx','am_puck','am_santa','bm_daniel','bm_fable','bm_george','bm_lewis'],
-    'Chinese \u4e2d\u6587': ['zf_xiaobei','zf_xiaoni','zf_xiaoxiao','zf_xiaoyi','zm_yunjian','zm_yunxi','zm_yunxia','zm_yunyang'],
-    'Japanese \u65e5\u672c\u8a9e': ['jf_alpha','jf_gongitsune','jf_nezumi','jf_tebukuro','jm_kumo'],
-    'Spanish': ['ef_dora','em_alex'],
-    'French': ['ff_siwis'],
-    'Hindi': ['hf_alpha','hf_beta','hm_omega','hm_psi'],
-    'Italian': ['if_sara','im_nicola'],
-    'Portuguese': ['pf_dora','pm_alex'],
-    'Qwen CustomVoice': ['Vivian','Serena','Uncle_Fu','Dylan','Eric','Ryan','Aiden','Ono_Anna','Sohee'],
-  };
-
-  for (const [label, ids] of Object.entries(groups)) {
-    const voices = ids.map(id => ({ id, av: VOICE_AVATARS[id] })).filter(v => v.av);
-    if (voices.length === 0) continue;
-    html += '<div class="mb-5"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2"><span>' + label + '</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 font-normal">' + voices.length + '</span></div><div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">';
-    for (const v of voices) {
-      html += '<button onclick="selectPresetVoice(\'' + v.id + '\',\'' + v.av.label + '\',\'\')" class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] transition-all hover:scale-105 active:scale-95 group border border-transparent hover:border-white/10"><div class="w-11 h-11 rounded-xl flex items-center justify-center text-lg text-white font-bold shadow-md group-hover:shadow-lg transition-shadow" style="background:linear-gradient(135deg,' + v.av.bg[0] + ',' + v.av.bg[1] + ')">' + v.av.emoji + '</div><div class="text-[11px] font-medium text-gray-300 text-center leading-tight truncate w-full">' + v.av.label + '</div></button>';
-    }
-    html += '</div></div>';
-  }
-  html += '</div>';
-
-  // Language Badges
-  html += '<div class="glass-subtle rounded-2xl p-5"><h3 class="font-bold mb-3 text-sm">Supported Languages</h3><div class="flex flex-wrap gap-2">';
-  const langColors = { en:'#3b82f6', ja:'#f472b6', zh:'#c084fc', ko:'#f59e0b', fr:'#3b82f6', es:'#f97316', de:'#10b981', ru:'#ef4444', ar:'#06b6d4', hi:'#f59e0b', pt:'#10b981', it:'#3b82f6' };
-  for (const [code, name] of Object.entries(LANGUAGES)) {
-    const c = langColors[code] || '#6b7280';
-    html += '<span class="text-xs px-2.5 py-1 rounded-full font-medium" style="background:' + c + '15;color:' + c + ';border:1px solid ' + c + '30">' + name + '</span>';
-  }
-  html += '</div></div>';
-
-  // Create Profile
-  html += '<div class="glass-subtle rounded-2xl p-6"><h3 class="font-bold mb-4">Create Voice Profile</h3>';
-  html += '<div class="grid md:grid-cols-3 gap-4">';
-  html += '<input id="new-profile-name" type="text" placeholder="Profile name" class="bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm">';
-  html += '<select id="new-profile-lang" class="bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm">';
-  for (const [k, v] of Object.entries(LANGUAGES)) {
-    html += '<option value="' + k + '">' + v + '</option>';
-  }
-  html += '</select>';
-  html += '<button onclick="createProfile(document.getElementById(\'new-profile-name\').value, document.getElementById(\'new-profile-lang\').value)" class="btn-primary rounded-xl">Create Profile</button>';
-  html += '</div></div>';
-
-  // User Profiles
-  html += '<div class="glass-subtle rounded-2xl p-6"><h3 class="font-bold mb-4">Your Voice Profiles <span class="text-sm font-normal text-gray-500">(' + profiles.length + ')</span></h3>';
-  if (profiles.length === 0) {
-    html += '<div class="text-center py-8 text-gray-600"><div class="text-4xl mb-3">🎤</div><p class="text-sm">No voice profiles yet. Create one above.</p></div>';
-  } else {
-    html += '<div class="space-y-3">';
-    for (const p of profiles) {
-      const av = VOICE_AVATARS[p.preset_voice_id] || { bg: ['#6b7280','#4b5563'], emoji: '🎙️' };
-      html += '<div class="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.05] transition"><div class="flex items-center gap-3">';
-      html += '<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-lg" style="background:linear-gradient(135deg,' + av.bg[0] + ',' + av.bg[1] + ')"><span>' + p.name[0] + '</span></div>';
-      html += '<div><div class="font-semibold text-sm flex items-center gap-1.5">' + p.name + ' <span class="text-xs">' + av.emoji + '</span></div>';
-      html += '<div class="text-xs text-gray-500">' + (LANGUAGES[p.language] || p.language) + ' \u2022 ' + (p.description || (p.preset_voice_id ? 'Preset voice' : 'Cloned voice')) + '</div></div></div>';
-      html += '<div class="flex items-center gap-2">';
-      html += '<button onclick="genProfileId=\'' + p.id + '\';currentTab=\'generate\';render()" class="btn-ghost text-xs">Use</button>';
-      html += '<button onclick="if(confirm(\'Delete ' + p.name + '?\'))deleteProfile(\'' + p.id + '\')" class="btn-ghost text-xs text-rose-400">Delete</button>';
-      html += '</div></div>';
-    }
-    html += '</div>';
-  }
-  html += '</div>';
-
-  // Preset Voices
-  html += '<div class="glass-subtle rounded-2xl p-6"><h3 class="font-bold mb-4">Preset Voices <span class="text-sm font-normal text-gray-500">(Built-in)</span></h3>';
-  html += '<div class="grid md:grid-cols-2 gap-4">';
-  const presetEngines = [
-    { engine: 'kokoro', voices: presetVoices.kokoro, color: '#34d399' },
-    { engine: 'qwen_custom_voice', voices: presetVoices.qwen_custom_voice, color: '#cc5de8' },
-  ];
-  for (const eg of presetEngines) {
-    html += '<div><div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:' + eg.color + '">' + eg.engine + ' \u2014 ' + eg.voices.length + ' voices</div>';
-    if (eg.voices.length === 0) {
-      html += '<div class="text-xs text-gray-600 py-2">Connect to backend to load presets</div>';
-    } else {
-      html += '<div class="max-h-48 overflow-y-auto space-y-1">';
-      for (const v of eg.voices) {
-        html += '<div class="flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.03] text-xs"><span class="text-gray-300">' + v.name + '</span><span class="text-gray-600">' + v.gender + ' \u2022 ' + v.language + '</span></div>';
-      }
-      html += '</div>';
-    }
-    html += '</div>';
-  }
-  html += '</div></div>';
-
-  html += '</div>';
-  return html;
-}
-function renderEffectsTab() {
-  return `
-  <div class="max-w-4xl mx-auto space-y-6">
-    <div class="glass-subtle rounded-2xl p-6">
-      <h3 class="font-bold mb-2">Audio Effects</h3>
-      <p class="text-sm text-gray-500 mb-6">Apply post-processing effects to your generated speech. Effects are applied after generation.</p>
-      <div class="grid md:grid-cols-2 gap-4">
-        ${EFFECTS_LIST.map(e => `
-          <div class="p-4 rounded-xl bg-white/[0.03] border border-white/5">
-            <div class="flex items-center gap-3 mb-3">
-              <span class="text-xl">${e.icon}</span>
-              <span class="font-semibold text-sm">${e.name}</span>
-            </div>
-            <div class="space-y-2">
-              ${Object.entries(e.params).map(([k, v]) => `
-                <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-400">${k.replace(/_/g, ' ')}</span>
-                  <span class="text-gray-500 font-mono">${v}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-
-    <div class="glass-subtle rounded-2xl p-6">
-      <h3 class="font-bold mb-4">Effect Presets</h3>
-      ${effectsPresets.length === 0 ? `
-        <div class="text-center py-6 text-gray-600">
-          <p class="text-sm">No effect presets yet. Create custom presets from the Effects tab in the desktop app.</p>
-          <div class="flex justify-center gap-3 mt-4">
-            ${['Robotic 🤖', 'Radio 📻', 'Echo Chamber 🏟️', 'Deep Voice 🎙️'].map(p => `
-              <span class="text-xs px-3 py-1.5 rounded-full bg-white/5 text-gray-400">${p}</span>
-            `).join('')}
-          </div>
-        </div>
-      ` : `
-        <div class="space-y-2">
-          ${effectsPresets.map(p => `
-            <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.03]">
-              <span class="text-sm font-semibold">${p.name}</span>
-              <span class="text-xs text-gray-500">${(p.effects_chain || []).length} effects</span>
-            </div>
-          `).join('')}
-        </div>
-      `}
-    </div>
-  </div>`;
-}
-
-function renderTranscribeTab() {
-  return `
-  <div class="max-w-3xl mx-auto space-y-6">
-    <div class="glass-subtle rounded-2xl p-8 text-center">
-      <div class="text-5xl mb-4">📝</div>
-      <h3 class="text-xl font-bold mb-2">Speech-to-Text Transcription</h3>
-      <p class="text-gray-400 text-sm mb-6">Upload an audio file and get instant transcription powered by Whisper.</p>
-      <div class="relative">
-        <input type="file" id="transcribe-input" accept=".wav,.mp3,.m4a,.ogg,.flac,.aac,.webm,.opus"
-          class="hidden" onchange="if(this.files[0])transcribeFile(this.files[0])">
-        <label for="transcribe-input"
-          class="block border-2 border-dashed border-white/10 rounded-2xl p-12 cursor-pointer hover:border-brand-500/40 hover:bg-brand-500/5 transition">
-          ${isTranscribing ? `
-            <div class="flex flex-col items-center gap-3">
-              <div class="w-8 h-8 border-2 border-white/30 border-t-brand-500 rounded-full animate-spin"></div>
-              <span class="text-sm text-gray-400">Transcribing...</span>
-            </div>
-          ` : `
-            <div class="text-gray-500">
-              <div class="text-3xl mb-3">📁</div>
-              <p class="text-sm">Click to upload audio file</p>
-              <p class="text-xs text-gray-600 mt-1">Supports WAV, MP3, M4A, OGG, FLAC, AAC, WebM, Opus</p>
-            </div>
-          `}
-        </label>
-      </div>
-    </div>
-
-    ${genText ? `
-      <div class="glass-subtle rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-3">
-          <h4 class="font-semibold text-sm">Transcription Result</h4>
-          <button onclick="currentTab='generate';render()" class="btn-ghost text-xs text-brand-400">Send to Generate →</button>
-        </div>
-        <div class="bg-white/[0.03] rounded-xl p-4 text-sm text-gray-300 font-mono whitespace-pre-wrap">${genText}</div>
-      </div>
-    ` : ''}
-  </div>`;
-}
-
-function renderHistoryTab() {
-  return `
-  <div class="max-w-4xl mx-auto space-y-4">
-    <div class="flex items-center justify-between">
-      <h3 class="font-bold">Generation History</h3>
-      <button onclick="loadHistory()" class="btn-ghost text-xs">Refresh</button>
-    </div>
-    ${history.length === 0 ? `
-      <div class="glass-subtle rounded-2xl p-12 text-center">
-        <div class="text-5xl mb-4">🕐</div>
-        <p class="text-gray-400">No generations yet. Start by generating some speech!</p>
-      </div>
-    ` : `
-      <div class="space-y-3">
-        ${history.map(g => `
-          <div class="glass-subtle rounded-xl p-4 flex items-center gap-4">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${g.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : g.status === 'failed' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}">
-              ${g.status === 'completed' ? '✓' : g.status === 'failed' ? '✗' : '⏳'}
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium truncate">${(g.text || '').substring(0, 80)}</div>
-              <div class="text-xs text-gray-500 mt-0.5">
-                ${g.engine || 'unknown'} • ${g.language || 'en'} • ${g.duration ? g.duration.toFixed(1) + 's' : '—'}
-                ${g.created_at ? ' • ' + new Date(g.created_at).toLocaleDateString() : ''}
-              </div>
-            </div>
-            <div class="flex items-center gap-2 shrink-0">
-              ${g.status === 'completed' && g.id ? `
-                <audio controls preload="none" src="${API}/audio/${g.id}" class="w-48"></audio>
-              ` : ''}
-              ${g.status === 'completed' && g.id ? `
-                <a href="${API}/audio/${g.id}" class="btn-ghost text-xs">↓</a>
-              ` : ''}
-              <button onclick="deleteGeneration('${g.id}')" class="btn-ghost text-xs text-rose-400">✕</button>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `}
-  </div>`;
-}
-
-function renderSettingsTab() {
-  return `
-  <div class="max-w-3xl mx-auto space-y-6">
-    <div class="glass-subtle rounded-2xl p-6">
-      <h3 class="font-bold mb-4">Backend Connection</h3>
-      <div class="space-y-4">
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block">API URL</label>
-          <input type="text" value="${API}" id="api-url-input"
-            class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm font-mono"
-            placeholder="http://localhost:8000">
-          <p class="text-[11px] text-gray-600 mt-1">Default: http://localhost:17493 — The URL of your Voicebox backend.</p>
-        </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block">API Key (optional)</label>
-          <input type="password" value="${settingsApiKey}" id="api-key-input"
-            class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm"
-            placeholder="Leave empty if not using auth">
-        </div>
-        <button onclick="saveSettings()" class="btn-primary rounded-xl">Save & Reconnect</button>
-      </div>
-    </div>
-
-    <div class="glass-subtle rounded-2xl p-6">
-      <h3 class="font-bold mb-4">Server Status</h3>
-      <div class="space-y-3">
-        <div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
-          <span class="text-sm text-gray-400">Connection</span>
-          <span class="flex items-center gap-2 text-sm">
-            <span class="status-dot ${sseConnected ? 'status-connected' : 'status-disconnected'}"></span>
-            ${sseConnected ? 'Connected' : 'Disconnected'}
-          </span>
-        </div>
-        ${health ? `
-          <div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
-            <span class="text-sm text-gray-400">GPU</span>
-            <span class="text-sm">${health.gpu_type || 'Not available'}</span>
-          </div>
-          <div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
-            <span class="text-sm text-gray-400">Model Loaded</span>
-            <span class="text-sm">${health.model_loaded ? '✓ Yes' : '✗ No'} ${health.model_size ? `(${health.model_size})` : ''}</span>
-          </div>
-          <div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
-            <span class="text-sm text-gray-400">Backend</span>
-            <span class="text-sm font-mono">${health.backend_type || 'unknown'} (${health.backend_variant || 'cpu'})</span>
-          </div>
-          ${health.vram_used_mb ? `
-            <div class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
-              <span class="text-sm text-gray-400">VRAM Used</span>
-              <span class="text-sm">${Math.round(health.vram_used_mb)} MB</span>
-            </div>
-          ` : ''}
-        ` : `
-          <div class="text-center py-4 text-gray-600 text-sm">Cannot reach backend. Make sure Voicebox server is running.</div>
-        `}
-      </div>
-    </div>
-
-    <div class="glass-subtle rounded-2xl p-6">
-      <h3 class="font-bold mb-4">About</h3>
-      <div class="space-y-2 text-sm text-gray-400">
-        <p>iknbite AI Voice Studio — A free, open-source voice studio built on <a href="https://github.com/jamiepine/voicebox" target="_blank" class="text-brand-400 hover:underline">Voicebox</a>.</p>
-        <p>All TTS engines are open-source: Kokoro, Qwen3-TTS, Chatterbox, LuxTTS, Hume TADA.</p>
-        <p class="text-gray-600 text-xs mt-4">No data leaves your machine. No API keys required. No subscriptions.</p>
-      </div>
-    </div>
-  </div>`;
-}
-
-function saveSettings() {
-  const urlInput = document.getElementById('api-url-input');
-  const keyInput = document.getElementById('api-key-input');
-  if (urlInput) {
-    API = urlInput.value.replace(/\/+$/, '');
-    localStorage.setItem('iknbite_api_url', API);
-  }
-  if (keyInput) {
-    settingsApiKey = keyInput.value;
-    localStorage.setItem('iknbite_api_key', settingsApiKey);
-  }
-  checkHealth();
-  loadProfiles();
-  loadPresets();
-}
-
-// ─── Event Listeners ──────────────────────────────────────────────
-function attachEventListeners() {
-  // Auto-refresh on tab switch
-  if (currentView === 'app') {
-    if (profiles.length === 0) loadProfiles();
-    if (currentTab === 'history' && history.length === 0) loadHistory();
-    if (currentTab === 'effects' && effectsPresets.length === 0) loadEffects();
-  }
-}
-
-// ─── Init ─────────────────────────────────────────────────────────
+// Init
 render();
-checkHealth().then(() => {
-  loadProfiles();
-  loadPresets();
-});
+checkHealth().then(function(){loadProfiles();loadPresets();});
 </script>
 </body>
 </html>
