@@ -139,7 +139,7 @@
 
 <script>
 // ─── Configuration ────────────────────────────────────────────────
-const DEFAULT_API = 'http://localhost:17493';
+const DEFAULT_API = 'http://localhost:8000';
 let API = localStorage.getItem('iknbite_api_url') || DEFAULT_API;
 
 // ─── State ────────────────────────────────────────────────────────
@@ -311,20 +311,24 @@ async function generateSpeech() {
 async function pollGeneration(id) {
   const maxAttempts = 120;
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 2000));
     try {
-      const gen = await apiFetch(`/generations/${id}`);
-      if (gen.status === 'completed') {
-        activeTasks = activeTasks.filter(t => t.id !== id);
-        await loadHistory();
-        render();
-        return;
-      }
-      if (gen.status === 'failed') {
-        activeTasks = activeTasks.filter(t => t.id !== id);
-        alert('Generation failed: ' + (gen.error || 'Unknown error'));
-        render();
-        return;
+      const data = await apiFetch('/history?limit=50');
+      const items = data.items || data.generations || data || [];
+      const gen = items.find(g => g.id === id);
+      if (gen) {
+        if (gen.status === 'completed') {
+          activeTasks = activeTasks.filter(t => t.id !== id);
+          await loadHistory();
+          render();
+          return;
+        }
+        if (gen.status === 'failed') {
+          activeTasks = activeTasks.filter(t => t.id !== id);
+          alert('Generation failed: ' + (gen.error || 'Unknown error'));
+          render();
+          return;
+        }
       }
     } catch { /* retry */ }
   }
@@ -361,14 +365,14 @@ async function transcribeFile(file) {
 async function loadHistory() {
   try {
     const data = await apiFetch('/history?limit=50');
-    history = data.generations || data || [];
+    history = data.items || data.generations || data || [];
   } catch { history = []; }
   render();
 }
 
 async function deleteGeneration(id) {
   try {
-    await apiFetch(`/generations/${id}`, { method: 'DELETE' });
+    await apiFetch(`/history/${id}`, { method: 'DELETE' });
     await loadHistory();
   } catch (e) { alert('Delete failed: ' + e.message); }
 }
@@ -897,10 +901,10 @@ function renderHistoryTab() {
             </div>
             <div class="flex items-center gap-2 shrink-0">
               ${g.status === 'completed' && g.id ? `
-                <audio controls preload="none" src="${API}/generations/${g.id}/audio" class="w-48"></audio>
+                <audio controls preload="none" src="${API}/audio/${g.id}" class="w-48"></audio>
               ` : ''}
               ${g.status === 'completed' && g.id ? `
-                <a href="${API}/generations/${g.id}/download" class="btn-ghost text-xs">↓</a>
+                <a href="${API}/audio/${g.id}" class="btn-ghost text-xs">↓</a>
               ` : ''}
               <button onclick="deleteGeneration('${g.id}')" class="btn-ghost text-xs text-rose-400">✕</button>
             </div>
@@ -921,7 +925,7 @@ function renderSettingsTab() {
           <label class="text-xs text-gray-400 mb-1 block">API URL</label>
           <input type="text" value="${API}" id="api-url-input"
             class="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-sm font-mono"
-            placeholder="http://localhost:17493">
+            placeholder="http://localhost:8000">
           <p class="text-[11px] text-gray-600 mt-1">Default: http://localhost:17493 — The URL of your Voicebox backend.</p>
         </div>
         <div>
