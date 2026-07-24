@@ -1,6 +1,7 @@
-"""Lightweight Edge TTS API server for iknbite.
+"""Lightweight Edge TTS API server + static file server for iknbite.
 Run: python3 edge-tts-server.py
 Provides free Microsoft Edge TTS with 400+ voices, no API key needed.
+Also serves the index.html on the same port.
 """
 import asyncio, io, json, os, uuid
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -9,8 +10,8 @@ from urllib.parse import urlparse, parse_qs
 import edge_tts
 
 PORT = int(os.environ.get("EDGE_TTS_PORT", 5050))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Popular voices organized by language
 POPULAR_VOICES = {
     "en": [
         {"id": "en-US-AvaNeural", "name": "Ava", "gender": "Female", "label": "Warm"},
@@ -91,14 +92,24 @@ class TTSHandler(BaseHTTPRequestHandler):
             self._cors()
             self.end_headers()
             self.wfile.write(json.dumps({"status": "healthy", "engine": "edge-tts"}).encode())
-
         elif parsed.path == "/voices":
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self._cors()
             self.end_headers()
             self.wfile.write(json.dumps(POPULAR_VOICES).encode())
-
+        elif parsed.path == "/" or parsed.path == "/index.html":
+            filepath = os.path.join(BASE_DIR, "index.html")
+            if os.path.exists(filepath):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self._cors()
+                self.end_headers()
+                with open(filepath, "rb") as f:
+                    self.wfile.write(f.read())
+            else:
+                self.send_response(404)
+                self.end_headers()
         else:
             self.send_response(404)
             self.end_headers()
@@ -119,7 +130,6 @@ class TTSHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b'{"error":"text is required"}')
                 return
 
-            # Generate audio
             loop = asyncio.new_event_loop()
             audio_data = loop.run_until_complete(self._generate(text, voice, rate, volume))
             loop.close()
@@ -154,11 +164,12 @@ class TTSHandler(BaseHTTPRequestHandler):
             return None
 
     def log_message(self, format, *args):
-        pass  # Suppress logs
+        pass
 
 if __name__ == "__main__":
     server = HTTPServer(("0.0.0.0", PORT), TTSHandler)
-    print(f"🗣️  Edge TTS server running on http://0.0.0.0:{PORT}")
+    print(f"🗣️  iknbite server running on http://0.0.0.0:{PORT}")
     print(f"   Voices: {sum(len(v) for v in POPULAR_VOICES.values())} popular + 400+ total")
+    print(f"   Serves index.html + TTS API")
     print(f"   Free, no API key needed!")
     server.serve_forever()

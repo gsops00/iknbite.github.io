@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>iknbite — AI Voice Studio</title>
-  <meta name="description" content="Free, open-source AI voice studio. Clone voices, generate speech, transcribe audio.">
+  <meta name="description" content="Free, open-source AI voice studio. Generate speech in 40+ voices across 12 languages. No API keys needed.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -24,435 +25,766 @@
   <style>
     * { scrollbar-width: thin; scrollbar-color: #d4d4d4 transparent; }
     ::selection { background: #4c6ef530; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #fafafa; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
     .card-shadow { box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.02), 0px 1px 8px 0px rgba(0,0,0,0.08), 0px 24px 24px -8px rgba(0,0,0,0.05); }
     .card-shadow-sm { box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.06), 0px 1px 2px 0px rgba(0,0,0,0.04), 0px 2px 4px 0px rgba(0,0,0,0.04); }
     .btn-primary { background: #0f0e0d; color: white; padding: 10px 24px; border-radius: 12px; font-weight: 600; font-size: 14px; transition: all 0.2s; cursor: pointer; border: none; }
     .btn-primary:hover { background: #262626; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     .btn-secondary { background: white; color: #0f0e0d; padding: 10px 24px; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid #e5e5e5; transition: all 0.2s; cursor: pointer; }
     .btn-secondary:hover { background: #f5f5f5; }
-    .voice-card { background: white; border: 1px solid #e5e5e5; border-radius: 20px; overflow: hidden; transition: all 0.3s; }
-    .voice-card:hover { box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.02), 0px 1px 8px 0px rgba(0,0,0,0.08), 0px 24px 24px -8px rgba(0,0,0,0.05); transform: translateY(-4px); }
-    .voice-card:hover .voice-play { opacity: 1; }
-    .voice-play { opacity: 0; transition: opacity 0.2s; }
+    .dark .btn-primary { background: #f5f5f5; color: #0f0e0d; }
+    .dark .btn-primary:hover { background: #e5e5e5; }
+    .dark .btn-secondary { background: #262626; color: #e5e5e5; border-color: #404040; }
+    .dark .btn-secondary:hover { background: #404040; }
+    .voice-card { background: white; border: 1px solid #e5e5e5; border-radius: 16px; overflow: hidden; transition: all 0.3s; cursor: pointer; }
+    .voice-card:hover { box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.02), 0px 8px 24px -4px rgba(0,0,0,0.12); transform: translateY(-2px); }
+    .dark .voice-card { background: #262626; border-color: #404040; }
+    .dark .voice-card:hover { border-color: #525252; }
     textarea:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 2px #4c6ef5; }
-    .slide-up { animation: slideUp 0.5s ease-out both; }
-    @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .slide-up { animation: slideUp 0.4s ease-out both; }
+    @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
     @keyframes waveform { 0%,100% { height:4px; } 50% { height:20px; } }
     .waveform-bar { animation: waveform 1s ease-in-out infinite; width:3px; border-radius:2px; }
-    .waveform-bar:nth-child(2) { animation-delay:0.1s; }
-    .waveform-bar:nth-child(3) { animation-delay:0.2s; }
-    .waveform-bar:nth-child(4) { animation-delay:0.3s; }
-    .waveform-bar:nth-child(5) { animation-delay:0.4s; }
-    .waveform-bar:nth-child(6) { animation-delay:0.5s; }
-    .waveform-bar:nth-child(7) { animation-delay:0.6s; }
-    .waveform-bar:nth-child(8) { animation-delay:0.7s; }
     .tab-pill { padding: 8px 20px; border-radius: 10px; font-weight: 500; font-size: 14px; color: #737373; cursor: pointer; transition: all 0.2s; border: none; background: none; }
     .tab-pill:hover { background: #f5f5f5; color: #171717; }
     .tab-pill.active { background: #0f0e0d; color: white; }
+    .dark .tab-pill:hover { background: #404040; color: #e5e5e5; }
+    .dark .tab-pill.active { background: #e5e5e5; color: #0f0e0d; }
+    .dark body, .dark { background: #0f0f0f; color: #e5e5e5; }
+    .dark .bg-surface-50 { background: #262626; }
+    .dark .border-surface-200 { border-color: #404040; }
     .hidden { display: none !important; }
+    @keyframes pulse-glow { 0%,100%{box-shadow:0 0 0 0 rgba(76,110,245,0.4)} 50%{box-shadow:0 0 0 8px rgba(76,110,245,0)} }
+    .pulse-glow { animation: pulse-glow 2s infinite; }
+    .avatar-ring { box-shadow: 0 0 0 3px #4c6ef5, 0 0 0 5px rgba(76,110,245,0.3); }
   </style>
 </head>
-<body class="bg-[#fafafa] text-[#0f0e0d] min-h-screen">
+<body class="bg-[#fafafa] dark:bg-[#0f0f0f] text-[#0f0e0d] dark:text-[#e5e5e5] min-h-screen">
   <div id="app"></div>
 
 <script>
-const DEFAULT_API = 'http://localhost:8000';
-const EDGE_TTS_API = localStorage.getItem('iknbite_edge_tts_url') || 'http://localhost:5050';
-let API = localStorage.getItem('iknbite_api_url') || DEFAULT_API;
-let currentView = 'landing';
-let currentTab = 'generate';
-let health = null;
-let profiles = [];
-let presetVoices = { kokoro: [], qwen_custom_voice: [] };
-let history = [];
-let isGenerating = false;
-let genText = '';
-let genProfileId = '';
-let genEngine = 'kokoro';
-let genLanguage = 'en';
-let genInstruct = '';
-let genSeed = '';
-let sseConnected = false;
-let activeTasks = [];
-let edgeTTSVoices = {};
-let useEdgeTTS = false;
-let edgeVoice = 'en-US-AvaNeural';
+var DEFAULT_API = 'http://localhost:8000';
+var EDGE_TTS_API = localStorage.getItem('iknbite_edge_tts_url') || 'http://localhost:5050';
+var API = localStorage.getItem('iknbite_api_url') || DEFAULT_API;
+var isDark = localStorage.getItem('iknbite_dark') === 'true';
+var currentView = 'landing';
+var currentTab = 'generate';
+var health = null;
+var profiles = [];
+var history = [];
+var isGenerating = false;
+var genText = '';
+var genProfileId = '';
+var genEdgeVoice = 'en-US-AvaNeural';
+var edgeTTSVoices = {};
+var currentCharacter = null;
+var generationAudioUrl = null;
+var generationStatus = '';
 
-const VOICE_AVATARS = {
-  'af_alloy':{bg:['#94a3b8','#64748b'],emoji:'🤖',label:'Synthetic'},'af_aoede':{bg:['#c084fc','#a855f7'],emoji:'🎼',label:'Melodic'},
-  'af_bella':{bg:['#f472b6','#ec4899'],emoji:'💜',label:'Warm'},'af_heart':{bg:['#fb7185','#e11d48'],emoji:'💕',label:'Heartfelt'},
-  'af_jessica':{bg:['#a78bfa','#8b5cf6'],emoji:'🌟',label:'Bright'},'af_kore':{bg:['#2dd4bf','#14b8a6'],emoji:'🌊',label:'Calm'},
-  'af_nicole':{bg:['#f9a8d4','#f472b6'],emoji:'✨',label:'Gentle'},'af_nova':{bg:['#fbbf24','#f59e0b'],emoji:'⭐',label:'Radiant'},
-  'af_river':{bg:['#38bdf8','#0ea5e9'],emoji:'🏞️',label:'Flowing'},'af_sarah':{bg:['#818cf8','#6366f1'],emoji:'🎶',label:'Smooth'},
-  'af_sky':{bg:['#67e8f9','#06b6d4'],emoji:'☁️',label:'Airy'},
-  'am_adam':{bg:['#3b82f6','#2563eb'],emoji:'💪',label:'Deep'},'am_echo':{bg:['#60a5fa','#3b82f6'],emoji:'🔊',label:'Resonant'},
-  'am_eric':{bg:['#fb923c','#ea580c'],emoji:'🔥',label:'Bold'},'am_fenrir':{bg:['#6b7280','#4b5563'],emoji:'🐺',label:'Fierce'},
-  'am_liam':{bg:['#4ade80','#22c55e'],emoji:'🌿',label:'Natural'},'am_michael':{bg:['#10b981','#059669'],emoji:'🎹',label:'Rich'},
-  'am_onyx':{bg:['#1e293b','#0f172a'],emoji:'🖤',label:'Dark'},'am_puck':{bg:['#a855f7','#9333ea'],emoji:'⚡',label:'Energetic'},
-  'am_santa':{bg:['#ef4444','#dc2626'],emoji:'🎄',label:'Festive'},
-  'bf_alice':{bg:['#fda4af','#fb7185'],emoji:'🌸',label:'Sweet'},'bf_emma':{bg:['#d8b4fe','#c084fc'],emoji:'🦋',label:'Elegant'},
-  'bf_isabella':{bg:['#fca5a5','#f87171'],emoji:'🌹',label:'Romantic'},'bf_lily':{bg:['#bbf7d0','#4ade80'],emoji:'🌷',label:'Fresh'},
-  'bm_daniel':{bg:['#93c5fd','#60a5fa'],emoji:'📘',label:'Clear'},'bm_fable':{bg:['#c4b5fd','#a78bfa'],emoji:'📖',label:'Storyteller'},
-  'bm_george':{bg:['#a3e635','#84cc16'],emoji:'🏛️',label:'Authoritative'},'bm_lewis':{bg:['#fdba74','#f97316'],emoji:'🎭',label:'Theatrical'},
-  'ef_dora':{bg:['#fde047','#eab308'],emoji:'💃',label:'Español'},'em_alex':{bg:['#86efac','#22c55e'],emoji:'🇪🇸',label:'Español M'},
-  'ff_siwis':{bg:['#60a5fa','#2563eb'],emoji:'🇫🇷',label:'Français'},
-  'hf_alpha':{bg:['#fbbf24','#d97706'],emoji:'🇮🇳',label:'Hindi'},'hf_beta':{bg:['#f59e0b','#b45309'],emoji:'🪷',label:'Hindi β'},
-  'hm_omega':{bg:['#f97316','#c2410c'],emoji:'🕉️',label:'Omega'},'hm_psi':{bg:['#ea580c','#9a3412'],emoji:'🙏',label:'Psi'},
-  'if_sara':{bg:['#34d399','#059669'],emoji:'🇮🇹',label:'Italiano'},'im_nicola':{bg:['#10b981','#047857'],emoji:'🍝',label:'Nicola'},
-  'jf_alpha':{bg:['#fb923c','#ea580c'],emoji:'🌸',label:'日本語'},'jf_gongitsune':{bg:['#f472b6','#db2777'],emoji:'🦊',label:'きつね'},
-  'jf_nezumi':{bg:['#a78bfa','#7c3aed'],emoji:'🐭',label:'ねずみ'},'jf_tebukuro':{bg:['#f87171','#dc2626'],emoji:'🧤',label:'てぶくろ'},
-  'jm_kumo':{bg:['#94a3b8','#64748b'],emoji:'☁️',label:'くも'},
-  'pf_dora':{bg:['#4ade80','#16a34a'],emoji:'🇧🇷',label:'Português'},'pm_alex':{bg:['#22c55e','#15803d'],emoji:'🌴',label:'Alex PT'},
-  'zf_xiaobei':{bg:['#f472b6','#db2777'],emoji:'🌺',label:'小北'},'zf_xiaoni':{bg:['#e879f9','#c026d3'],emoji:'🦢',label:'小妮'},
-  'zf_xiaoxiao':{bg:['#c084fc','#9333ea'],emoji:'🦋',label:'小晓'},'zf_xiaoyi':{bg:['#f9a8d4','#ec4899'],emoji:'🎋',label:'小艺'},
-  'zm_yunjian':{bg:['#3b82f6','#1d4ed8'],emoji:'⛰️',label:'云健'},'zm_yunxi':{bg:['#60a5fa','#2563eb'],emoji:'🐉',label:'云希'},
-  'zm_yunxia':{bg:['#818cf8','#4f46e5'],emoji:'🌙',label:'云夏'},'zm_yunyang':{bg:['#a78bfa','#7c3aed'],emoji:'☀️',label:'云扬'},
-  'Vivian':{bg:['#f472b6','#be185d'],emoji:'🎀',label:'Vivian'},'Serena':{bg:['#a855f7','#7e22ce'],emoji:'🔮',label:'Serena'},
-  'Uncle_Fu':{bg:['#0891b2','#0e7490'],emoji:'🎩',label:'Uncle Fu'},'Dylan':{bg:['#059669','#047857'],emoji:'🎸',label:'Dylan'},
-  'Eric':{bg:['#d97706','#92400e'],emoji:'🔥',label:'Eric'},'Ryan':{bg:['#2563eb','#1e40af'],emoji:'🎙️',label:'Ryan'},
-  'Aiden':{bg:['#4f46e5','#3730a3'],emoji:'⚡',label:'Aiden'},'Ono_Anna':{bg:['#e11d48','#9f1239'],emoji:'🎎',label:'小野アンナ'},
-  'Sohee':{bg:['#7c3aed','#5b21b6'],emoji:'🇰🇷',label:'소희'},
-};
-
-const CHARACTER_VOICES = [
-  // English Characters
-  {id:'char_ava',name:'Ava',desc:'Warm American female voice',avatar:'👩',color:['#f472b6','#ec4899'],edge:'en-US-AvaNeural',type:'character'},
-  {id:'char_andrew',name:'Andrew',desc:'Deep American male voice',avatar:'👨',color:['#3b82f6','#2563eb'],edge:'en-US-AndrewNeural',type:'character'},
-  {id:'char_brian',name:'Brian',desc:'Natural friendly male voice',avatar:'🧑',color:['#10b981','#059669'],edge:'en-US-BrianNeural',type:'character'},
-  {id:'char_emma',name:'Emma',desc:'Bright cheerful female voice',avatar:'👧',color:['#fbbf24','#f59e0b'],edge:'en-US-EmmaNeural',type:'character'},
-  {id:'char_jenny',name:'Jenny',desc:'Friendly customer service voice',avatar:'👩‍💼',color:['#a78bfa','#8b5cf6'],edge:'en-US-JennyNeural',type:'character'},
-  {id:'char_guy',name:'Guy',desc:'Casual laid-back male voice',avatar:'🧔',color:['#6b7280','#4b5563'],edge:'en-US-GuyNeural',type:'character'},
-  {id:'char_aria',name:'Aria',desc:'Expressive dramatic female voice',avatar:'🎭',color:['#ef4444','#dc2626'],edge:'en-US-AriaNeural',type:'character'},
-  {id:'char_davis',name:'Davis',desc:'Strong authoritative male voice',avatar:'💪',color:['#1e293b','#0f172a'],edge:'en-US-DavisNeural',type:'character'},
-  {id:'char_sonia',name:'Sonia',desc:'Elegant British female voice',avatar:'👩‍🦰',color:['#be185d','#9d174d'],edge:'en-GB-SoniaNeural',type:'character'},
-  {id:'char_ryan',name:'Ryan',desc:'Confident British male voice',avatar:'🎩',color:['#0891b2','#0e7490'],edge:'en-GB-RyanNeural',type:'character'},
-  
-  // Japanese Characters
-  {id:'char_nanami',name:'Nanami',desc:'Soft Japanese female voice',avatar:'🌸',color:['#fb923c','#ea580c'],edge:'ja-JP-NanamiNeural',type:'character'},
-  {id:'char_keita',name:'Keita',desc:'Cool Japanese male voice',avatar:'⚔️',color:['#f87171','#dc2626'],edge:'ja-JP-KeitaNeural',type:'character'},
-  
-  // Chinese Characters
-  {id:'char_xiaoxiao',name:'Xiaoxiao',desc:'Sweet Chinese female voice',avatar:'🦋',color:['#c084fc','#9333ea'],edge:'zh-CN-XiaoxiaoNeural',type:'character'},
-  {id:'char_yunxi',name:'Yunxi',desc:'Gentle Chinese male voice',avatar:'🐉',color:['#60a5fa','#2563eb'],edge:'zh-CN-YunxiNeural',type:'character'},
-  
-  // Korean Characters
-  {id:'char_sunhi',name:'SunHi',desc:'Clear Korean female voice',avatar:'🇰🇷',color:['#f472b6','#db2777'],edge:'ko-KR-SunHiNeural',type:'character'},
-  {id:'char_injoon',name:'InJoon',desc:'Calm Korean male voice',avatar:'🎮',color:['#6366f1','#4f46e5'],edge:'ko-KR-InJoonNeural',type:'character'},
-  
-  // French Characters
-  {id:'char_denise',name:'Denise',desc:'Charming French female voice',avatar:'🗼',color:['#60a5fa','#2563eb'],edge:'fr-FR-DeniseNeural',type:'character'},
-  {id:'char_henri',name:'Henri',desc:'Sophisticated French male voice',avatar:'🥐',color:['#a855f7','#7e22ce'],edge:'fr-FR-HenriNeural',type:'character'},
-  
-  // Spanish Characters
-  {id:'char_elvira',name:'Elvira',desc:'Warm Spanish female voice',avatar:'💃',color:['#fde047','#eab308'],edge:'es-ES-ElviraNeural',type:'character'},
-  {id:'char_alvaro',name:'Alvaro',desc:'Friendly Spanish male voice',avatar:'🎸',color:['#22c55e','#16a34a'],edge:'es-ES-AlvaroNeural',type:'character'},
-  
-  // Arabic Characters
-  {id:'char_zariyah',name:'Zariyah',desc:'Gentle Arabic female voice',avatar:'🌙',color:['#fbbf24','#d97706'],edge:'ar-SA-ZariyahNeural',type:'character'},
-  {id:'char_hamed',name:'Hamed',desc:'Deep Arabic male voice',avatar:'🕌',color:['#f97316','#c2410c'],edge:'ar-SA-HamedNeural',type:'character'},
-  
-  // Hindi Characters
-  {id:'char_swara',name:'Swara',desc:'Melodious Hindi female voice',avatar:'🪷',color:['#f59e0b','#b45309'],edge:'hi-IN-SwaraNeural',type:'character'},
-  {id:'char_madhur',name:'Madhur',desc:'Rich Hindi male voice',avatar:'🕉️',color:['#ea580c','#9a3412'],edge:'hi-IN-MadhurNeural',type:'character'},
-  
-  // German Characters
-  {id:'char_katja',name:'Katja',desc:'Clear German female voice',avatar:'🇩🇪',color:['#10b981','#059669'],edge:'de-DE-KatjaNeural',type:'character'},
-  {id:'char_conrad',name:'Conrad',desc:'Strong German male voice',avatar:'🏔️',color:['#059669','#047857'],edge:'de-DE-ConradNeural',type:'character'},
-  
-  // Portuguese Characters
-  {id:'char_francisca',name:'Francisca',desc:'Warm Brazilian female voice',avatar:'🇧🇷',color:['#4ade80','#16a34a'],edge:'pt-BR-FranciscaNeural',type:'character'},
-  {id:'char_antonio',name:'Antonio',desc:'Friendly Brazilian male voice',avatar:'🌴',color:['#22c55e','#15803d'],edge:'pt-BR-AntonioNeural',type:'character'},
-  
-  // Italian Characters
-  {id:'char_elsa',name:'Elsa',desc:'Expressive Italian female voice',avatar:'🇮🇹',color:['#34d399','#059669'],edge:'it-IT-ElsaNeural',type:'character'},
-  {id:'char_diego',name:'Diego',desc:'Passionate Italian male voice',avatar:'🍝',color:['#10b981','#047857'],edge:'it-IT-DiegoNeural',type:'character'},
-  
-  // Russian Characters
-  {id:'char_svetlana',name:'Svetlana',desc:'Graceful Russian female voice',avatar:'❄️',color:['#93c5fd','#60a5fa'],edge:'ru-RU-SvetlanaNeural',type:'character'},
-  {id:'char_dmitry',name:'Dmitry',desc:'Strong Russian male voice',avatar:'🐻',color:['#3b82f6','#1d4ed8'],edge:'ru-RU-DmitryNeural',type:'character'},
+var CHARACTER_VOICES = [
+  {id:'ava',name:'Ava',desc:'Warm American female',avatar:'👩',color:['#f472b6','#ec4899'],edge:'en-US-AvaNeural',lang:'en'},
+  {id:'andrew',name:'Andrew',desc:'Deep American male',avatar:'👨',color:['#3b82f6','#2563eb'],edge:'en-US-AndrewNeural',lang:'en'},
+  {id:'brian',name:'Brian',desc:'Natural friendly male',avatar:'🧑',color:['#10b981','#059669'],edge:'en-US-BrianNeural',lang:'en'},
+  {id:'emma',name:'Emma',desc:'Bright cheerful female',avatar:'👧',color:['#fbbf24','#f59e0b'],edge:'en-US-EmmaNeural',lang:'en'},
+  {id:'jenny',name:'Jenny',desc:'Friendly female',avatar:'👩‍💼',color:['#a78bfa','#8b5cf6'],edge:'en-US-JennyNeural',lang:'en'},
+  {id:'guy',name:'Guy',desc:'Casual laid-back male',avatar:'🧔',color:['#6b7280','#4b5563'],edge:'en-US-GuyNeural',lang:'en'},
+  {id:'aria',name:'Aria',desc:'Expressive dramatic female',avatar:'🎭',color:['#ef4444','#dc2626'],edge:'en-US-AriaNeural',lang:'en'},
+  {id:'davis',name:'Davis',desc:'Strong authoritative male',avatar:'💪',color:['#1e293b','#0f172a'],edge:'en-US-DavisNeural',lang:'en'},
+  {id:'sonia',name:'Sonia',desc:'Elegant British female',avatar:'👩‍🦰',color:['#be185d','#9d174d'],edge:'en-GB-SoniaNeural',lang:'en'},
+  {id:'ryan',name:'Ryan',desc:'Confident British male',avatar:'🎩',color:['#0891b2','#0e7490'],edge:'en-GB-RyanNeural',lang:'en'},
+  {id:'natasha',name:'Natasha',desc:'Australian female',avatar:'🦘',color:['#16a34a','#15803d'],edge:'en-AU-NatashaNeural',lang:'en'},
+  {id:'neerja',name:'Neerja',desc:'Indian female',avatar:'🇮🇳',color:['#f59e0b','#d97706'],edge:'en-IN-NeerjaNeural',lang:'en'},
+  {id:'nanami',name:'Nanami',desc:'Soft Japanese female',avatar:'🌸',color:['#fb923c','#ea580c'],edge:'ja-JP-NanamiNeural',lang:'ja'},
+  {id:'keita',name:'Keita',desc:'Cool Japanese male',avatar:'⚔️',color:['#f87171','#dc2626'],edge:'ja-JP-KeitaNeural',lang:'ja'},
+  {id:'xiaoxiao',name:'Xiaoxiao',desc:'Sweet Chinese female',avatar:'🦋',color:['#c084fc','#9333ea'],edge:'zh-CN-XiaoxiaoNeural',lang:'zh'},
+  {id:'yunxi',name:'Yunxi',desc:'Gentle Chinese male',avatar:'🐉',color:['#60a5fa','#2563eb'],edge:'zh-CN-YunxiNeural',lang:'zh'},
+  {id:'sunhi',name:'SunHi',desc:'Clear Korean female',avatar:'🇰🇷',color:['#f472b6','#db2777'],edge:'ko-KR-SunHiNeural',lang:'ko'},
+  {id:'injoon',name:'InJoon',desc:'Calm Korean male',avatar:'🎮',color:['#6366f1','#4f46e5'],edge:'ko-KR-InJoonNeural',lang:'ko'},
+  {id:'denise',name:'Denise',desc:'Charming French female',avatar:'🗼',color:['#60a5fa','#2563eb'],edge:'fr-FR-DeniseNeural',lang:'fr'},
+  {id:'henri',name:'Henri',desc:'Sophisticated French male',avatar:'🥐',color:['#a855f7','#7e22ce'],edge:'fr-FR-HenriNeural',lang:'fr'},
+  {id:'elvira',name:'Elvira',desc:'Warm Spanish female',avatar:'💃',color:['#fde047','#eab308'],edge:'es-ES-ElviraNeural',lang:'es'},
+  {id:'alvaro',name:'Alvaro',desc:'Friendly Spanish male',avatar:'🎸',color:['#22c55e','#16a34a'],edge:'es-ES-AlvaroNeural',lang:'es'},
+  {id:'zariyah',name:'Zariyah',desc:'Gentle Arabic female',avatar:'🌙',color:['#fbbf24','#d97706'],edge:'ar-SA-ZariyahNeural',lang:'ar'},
+  {id:'hamed',name:'Hamed',desc:'Deep Arabic male',avatar:'🕌',color:['#f97316','#c2410c'],edge:'ar-SA-HamedNeural',lang:'ar'},
+  {id:'swara',name:'Swara',desc:'Melodious Hindi female',avatar:'🪷',color:['#f59e0b','#b45309'],edge:'hi-IN-SwaraNeural',lang:'hi'},
+  {id:'madhur',name:'Madhur',desc:'Rich Hindi male',avatar:'🕉️',color:['#ea580c','#9a3412'],edge:'hi-IN-MadhurNeural',lang:'hi'},
+  {id:'katja',name:'Katja',desc:'Clear German female',avatar:'🇩🇪',color:['#10b981','#059669'],edge:'de-DE-KatjaNeural',lang:'de'},
+  {id:'conrad',name:'Conrad',desc:'Strong German male',avatar:'🏔️',color:['#059669','#047857'],edge:'de-DE-ConradNeural',lang:'de'},
+  {id:'francisca',name:'Francisca',desc:'Warm Brazilian female',avatar:'🇧🇷',color:['#4ade80','#16a34a'],edge:'pt-BR-FranciscaNeural',lang:'pt'},
+  {id:'antonio',name:'Antonio',desc:'Friendly Brazilian male',avatar:'🌴',color:['#22c55e','#15803d'],edge:'pt-BR-AntonioNeural',lang:'pt'},
+  {id:'elsa',name:'Elsa',desc:'Expressive Italian female',avatar:'🇮🇹',color:['#34d399','#059669'],edge:'it-IT-ElsaNeural',lang:'it'},
+  {id:'diego',name:'Diego',desc:'Passionate Italian male',avatar:'🍝',color:['#10b981','#047857'],edge:'it-IT-DiegoNeural',lang:'it'},
+  {id:'svetlana',name:'Svetlana',desc:'Graceful Russian female',avatar:'❄️',color:['#93c5fd','#60a5fa'],edge:'ru-RU-SvetlanaNeural',lang:'ru'},
+  {id:'dmitry',name:'Dmitry',desc:'Strong Russian male',avatar:'🐻',color:['#3b82f6','#1d4ed8'],edge:'ru-RU-DmitryNeural',lang:'ru'}
 ];
 
-let currentCharacter = null;
-};
+var LANGUAGES = {en:'English',ja:'Japanese',zh:'Chinese',ko:'Korean',fr:'French',es:'Spanish',de:'German',ru:'Russian',ar:'Arabic',hi:'Hindi',pt:'Portuguese',it:'Italian'};
 
-const ENGINES = [
-  {id:'kokoro',name:'Kokoro',desc:'82M · Fast CPU · 50 voices',badge:'Fast',color:'#10b981'},
-  {id:'qwen',name:'Qwen3-TTS',desc:'0.6B/1.7B · High quality cloning',badge:'Quality',color:'#6366f1'},
-  {id:'qwen_custom_voice',name:'Qwen CustomVoice',desc:'9 presets · Delivery control',badge:'Presets',color:'#a855f7'},
-  {id:'chatterbox',name:'Chatterbox',desc:'23 languages · Multilingual',badge:'23 Langs',color:'#f59e0b'},
-  {id:'chatterbox_turbo',name:'Chatterbox Turbo',desc:'350M · Paralinguistic tags',badge:'Expressive',color:'#f97316'},
-  {id:'luxtts',name:'LuxTTS',desc:'~1GB · 48kHz · 150x realtime',badge:'Light',color:'#06b6d4'},
-  {id:'hume',name:'Hume TADA',desc:'1B/3B · 700s+ coherent audio',badge:'Long',color:'#ef4444'},
-];
-
-const LANGUAGES = {en:'English',ja:'Japanese',zh:'Chinese',ko:'Korean',fr:'French',es:'Spanish',de:'German',ru:'Russian',ar:'Arabic',hi:'Hindi',pt:'Portuguese',it:'Italian'};
-
-function apiHeaders(){return{'Content-Type':'application/json'};}
-async function apiFetch(path,opts={}){try{const r=await fetch(API+path,{...opts,headers:{...apiHeaders(),...(opts.headers||{})}});if(!r.ok){const e=await r.json().catch(()=>({detail:r.statusText}));throw new Error(e.detail||r.statusText);}return await r.json();}catch(e){throw e;}}
-
-function getAvatar(p){if(!p)return{bg:['#e5e5e5','#d4d4d4'],emoji:'🎙️',label:'?'};return VOICE_AVATARS[p.preset_voice_id]||{bg:['#e5e5e5','#d4d4d4'],emoji:'🎙️',label:p.name};}
-
-async function checkHealth(){try{health=await apiFetch('/health');sseConnected=true;}catch{health=null;sseConnected=false;}render();}
-
-async function loadProfiles(){try{profiles=await apiFetch('/profiles');if(profiles.length>0&&!genProfileId)genProfileId=profiles[0].id;}catch{profiles=[];}render();}
-
-async function loadPresets(){for(const e of['kokoro','qwen_custom_voice']){try{const d=await apiFetch('/profiles/presets/'+e);presetVoices[e]=d.voices||[];}catch{presetVoices[e]=[];}}render();}
-async function loadEdgeVoices(){try{const r=await fetch(EDGE_TTS_API+'/voices');if(r.ok){edgeTTSVoices=await r.json();}}catch{edgeTTSVoices={};}}
-
-async function loadHistory(){try{const d=await apiFetch('/history?limit=50');history=d.items||d||[];}catch{history=[];}render();}
-
-async function generateEdgeTTS(text,voice){if(!text.trim())return;isGenerating=true;render();try{const r=await fetch(EDGE_TTS_API+'/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text,voice:voice||edgeVoice})});if(!r.ok)throw new Error('TTS failed');const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='speech.mp3';a.click();URL.revokeObjectURL(url);}catch(e){alert('Edge TTS failed: '+e.message);}finally{isGenerating=false;render();}}
-
-async function generateSpeech(){if(!genText.trim()||isGenerating||!genProfileId)return;isGenerating=true;render();try{const b={text:genText,engine:genEngine,language:genLanguage};if(genProfileId)b.profile_id=genProfileId;if(genInstruct)b.instruct=genInstruct;if(genSeed)b.seed=parseInt(genSeed);const r=await apiFetch('/generate',{method:'POST',body:JSON.stringify(b)});if(r.id){activeTasks.push({id:r.id});pollGen(r.id);}}catch(e){alert('Generation failed: '+e.message);}finally{isGenerating=false;render();}}
-
-async function pollGen(id){for(let i=0;i<60;i++){await new Promise(r=>setTimeout(r,3000));try{const d=await apiFetch('/history?limit=50');const g=(d.items||[]).find(x=>x.id===id);if(g&&(g.status==='completed'||g.status==='failed')){activeTasks=activeTasks.filter(t=>t.id!==id);await loadHistory();render();return;}}catch{}}}
-
-async function transcribe(file){isGenerating=true;render();try{const fd=new FormData();fd.append('file',file);const r=await fetch(API+'/transcribe',{method:'POST',body:fd});if(!r.ok)throw new Error('Failed');const d=await r.json();genText=d.text||'';currentTab='generate';render();}catch(e){alert('Transcription failed: '+e.message);}finally{isGenerating=false;render();}}
-
-function render(){
-  const app=document.getElementById('app');
-  app.innerHTML=currentView==='landing'?renderLanding():renderApp();
+function applyTheme() {
+  if (isDark) {
+    document.documentElement.classList.add('dark');
+    document.body.className = 'bg-[#0f0f0f] text-[#e5e5e5] min-h-screen';
+  } else {
+    document.documentElement.classList.remove('dark');
+    document.body.className = 'bg-[#fafafa] text-[#0f0e0d] min-h-screen';
+  }
 }
 
-function renderLanding(){
-  return '<div class="min-h-screen bg-[#fafafa]">'+nav()+'<section class="pt-24 pb-16 px-6 max-w-5xl mx-auto text-center slide-up"><div class="inline-flex items-center gap-2 bg-white border border-surface-200 rounded-full px-4 py-2 mb-8 text-sm text-surface-600 card-shadow-sm"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Free & Open Source — No API Keys</div><h1 class="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight">AI Voice Studio<br><span class="bg-gradient-to-r from-brand-600 via-purple-500 to-pink-500 bg-clip-text text-transparent">That Runs Locally</span></h1><p class="text-lg text-surface-500 max-w-2xl mx-auto mb-10">Clone any voice. Generate speech in 23 languages.<br>Transcribe audio — all on your machine.</p><div class="flex items-center justify-center gap-4 mb-16"><button onclick="currentView=\'app\';render()" class="btn-primary text-base px-8 py-3.5 rounded-2xl">⚡ Open Studio</button><a href="#engines" class="btn-secondary text-base px-8 py-3.5 rounded-2xl">See Engines ↓</a></div><div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto"><div class="bg-white border border-surface-200 rounded-2xl p-5 card-shadow-sm"><div class="text-3xl font-black">7</div><div class="text-xs text-surface-400 mt-1 uppercase tracking-wider">TTS Engines</div></div><div class="bg-white border border-surface-200 rounded-2xl p-5 card-shadow-sm"><div class="text-3xl font-black">23</div><div class="text-xs text-surface-400 mt-1 uppercase tracking-wider">Languages</div></div><div class="bg-white border border-surface-200 rounded-2xl p-5 card-shadow-sm"><div class="text-3xl font-black">61</div><div class="text-xs text-surface-400 mt-1 uppercase tracking-wider">Voice Profiles</div></div><div class="bg-white border border-surface-200 rounded-2xl p-5 card-shadow-sm"><div class="text-3xl font-black">0</div><div class="text-xs text-surface-400 mt-1 uppercase tracking-wider">API Keys</div></div></div></section><div class="flex items-end justify-center gap-1 h-12 mb-16 opacity-40">'+Array.from({length:30},(_,i)=>'<div class="waveform-bar bg-brand-500" style="height:'+(4+Math.random()*16)+'px;animation-delay:'+i*0.05+'s"></div>').join('')+'</div><section id="engines" class="py-16 px-6 max-w-6xl mx-auto"><div class="text-center mb-12"><h2 class="text-3xl font-bold mb-2">Open Source Engines</h2><p class="text-surface-500">Choose the right engine for your use case</p></div><div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">'+ENGINES.map(e=>'<div class="bg-white border border-surface-200 rounded-2xl p-5 card-shadow-sm hover:card-shadow transition-all hover:-translate-y-1"><div class="flex items-center gap-3 mb-2"><span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:'+e.color+'15;color:'+e.color+'">'+e.badge+'</span><span class="font-semibold text-sm">'+e.name+'</span></div><p class="text-xs text-surface-500">'+e.desc+'</p></div>').join('')+'</div></section><section class="py-16 px-6"><div class="max-w-3xl mx-auto text-center bg-white border border-surface-200 rounded-3xl p-10 card-shadow"><h2 class="text-2xl font-bold mb-3">Ready to Start?</h2><p class="text-surface-500 mb-6">Launch the studio and create with AI voices</p><button onclick="currentView=\'app\';render()" class="btn-primary text-base px-8 py-3.5 rounded-2xl">⚡ Open iknbite</button></div></section>'+footer()+'</div>';
+function toggleDark() {
+  isDark = !isDark;
+  localStorage.setItem('iknbite_dark', isDark);
+  applyTheme();
+  render();
 }
 
-function nav(){return '<nav class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-surface-200"><div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-[#0f0e0d] flex items-center justify-center text-white font-bold text-xs">iK</div><span class="font-bold text-[15px]">iknbite</span></div><div class="flex items-center gap-3"><a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="btn-secondary text-sm px-4 py-2 rounded-xl flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>GitHub</a><button onclick="currentView=\'app\';render()" class="btn-primary text-sm px-5 py-2 rounded-xl">Open Studio →</button></div></div></nav>';
+function apiFetch(path, opts) {
+  opts = opts || {};
+  return fetch(API + path, {
+    method: opts.method || 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: opts.body || undefined
+  }).then(function(r) {
+    if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || r.statusText); }).catch(function(err) { if (err.message) throw err; throw new Error(r.statusText); });
+    return r.json();
+  });
 }
 
-function footer(){return '<footer class="border-t border-surface-200 py-8 px-6"><div class="max-w-6xl mx-auto flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-[#0f0e0d] flex items-center justify-center text-white font-bold text-[10px]">iK</div><span class="font-semibold text-sm">iknbite</span><span class="text-surface-400 text-sm">AI Voice Studio</span></div><div class="flex items-center gap-6 text-sm text-surface-400"><a href="https://github.com/gsops00/iknbite.github.io" class="hover:text-[#0f0e0d]">GitHub</a><span>MIT License</span></div></div></footer>';
+function checkHealth() {
+  return fetch(API + '/health').then(function(r) {
+    if (!r.ok) throw new Error('not ok');
+    return r.json();
+  }).then(function(d) {
+    health = d;
+    render();
+  }).catch(function() {
+    health = null;
+    render();
+  });
 }
 
-function renderApp(){
-  const tabs=[
-    {id:'generate',label:'Generate',icon:'⚡'},{id:'voices',label:'Voices',icon:'🎤'},
-    {id:'transcribe',label:'Transcribe',icon:'📝'},{id:'history',label:'History',icon:'🕐'},
+function loadProfiles() {
+  return apiFetch('/profiles').then(function(d) {
+    profiles = d || [];
+    if (profiles.length > 0 && !genProfileId) genProfileId = profiles[0].id;
+    render();
+  }).catch(function() {
+    profiles = [];
+  });
+}
+
+function loadEdgeVoices() {
+  return fetch(EDGE_TTS_API + '/voices').then(function(r) {
+    if (!r.ok) throw new Error('no');
+    return r.json();
+  }).then(function(d) {
+    edgeTTSVoices = d || {};
+    render();
+  }).catch(function() {
+    edgeTTSVoices = {};
+  });
+}
+
+function loadHistory() {
+  return apiFetch('/history?limit=50').then(function(d) {
+    history = (d && d.items) ? d.items : (d || []);
+    render();
+  }).catch(function() {
+    history = [];
+  });
+}
+
+function generateEdgeTTS(text, voice) {
+  if (!text.trim() || isGenerating) return;
+  isGenerating = true;
+  generationStatus = 'generating';
+  generationAudioUrl = null;
+  render();
+  fetch(EDGE_TTS_API + '/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text, voice: voice || genEdgeVoice })
+  }).then(function(r) {
+    if (!r.ok) throw new Error('TTS failed');
+    return r.blob();
+  }).then(function(blob) {
+    var url = URL.createObjectURL(blob);
+    generationAudioUrl = url;
+    generationStatus = 'done';
+    isGenerating = false;
+    render();
+    var audio = document.getElementById('gen-audio');
+    if (audio) audio.play();
+  }).catch(function(e) {
+    generationStatus = 'error';
+    isGenerating = false;
+    alert('Edge TTS failed: ' + e.message);
+    render();
+  });
+}
+
+function selectCharacter(cid) {
+  var c = null;
+  for (var i = 0; i < CHARACTER_VOICES.length; i++) {
+    if (CHARACTER_VOICES[i].id === cid) { c = CHARACTER_VOICES[i]; break; }
+  }
+  if (c) {
+    currentCharacter = c;
+    genEdgeVoice = c.edge;
+    currentTab = 'generate';
+    generationAudioUrl = null;
+    generationStatus = '';
+    render();
+  }
+}
+
+function clearCharacter() {
+  currentCharacter = null;
+  generationAudioUrl = null;
+  generationStatus = '';
+  render();
+}
+
+function selectEdgeVoice(voiceId) {
+  genEdgeVoice = voiceId;
+  currentCharacter = null;
+  generationAudioUrl = null;
+  generationStatus = '';
+  render();
+}
+
+function createProfile() {
+  var nameEl = document.getElementById('np-name');
+  var langEl = document.getElementById('np-lang');
+  var name = nameEl ? nameEl.value.trim() : '';
+  var lang = langEl ? langEl.value : 'en';
+  if (!name) return;
+  apiFetch('/profiles', {
+    method: 'POST',
+    body: JSON.stringify({ name: name, language: lang })
+  }).then(function() {
+    return loadProfiles();
+  }).catch(function(e) {
+    alert('Failed: ' + e.message);
+  });
+}
+
+function deleteProfile(id) {
+  if (!confirm('Delete this profile?')) return;
+  apiFetch('/profiles/' + id, { method: 'DELETE' }).then(function() {
+    return loadProfiles();
+  }).catch(function(e) {
+    alert('Failed: ' + e.message);
+  });
+}
+
+function downloadAudio() {
+  if (!generationAudioUrl) return;
+  var a = document.createElement('a');
+  a.href = generationAudioUrl;
+  a.download = 'iknbite-speech.mp3';
+  a.click();
+}
+
+function render() {
+  applyTheme();
+  var app = document.getElementById('app');
+  if (currentView === 'landing') {
+    app.innerHTML = renderLanding();
+  } else {
+    app.innerHTML = renderApp();
+  }
+}
+
+function renderNav() {
+  var bg = isDark ? 'bg-[#0f0f0f]/90 border-[#262626]' : 'bg-white/80 border-surface-200';
+  var textMain = isDark ? 'text-white' : 'text-surface-900';
+  var textSub = isDark ? 'text-surface-400' : 'text-surface-500';
+  return '<nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b ' + bg + '">'
+    + '<div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">'
+    + '<div class="flex items-center gap-2">'
+    + '<span class="text-xl">🎙️</span>'
+    + '<span class="font-bold text-lg ' + textMain + '">iknbite</span>'
+    + '<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Free</span>'
+    + '</div>'
+    + '<div class="flex items-center gap-3">'
+    + '<button onclick="toggleDark()" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-surface-100 dark:hover:bg-surface-800 transition text-lg">' + (isDark ? '☀️' : '🌙') + '</button>'
+    + '<a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-surface-100 dark:hover:bg-surface-800 transition text-lg">⭐</a>'
+    + '</div>'
+    + '</div></nav>';
+}
+
+function renderLanding() {
+  var tBg = isDark ? 'bg-[#0f0f0f]' : 'bg-[#fafafa]';
+  var tMain = isDark ? 'text-white' : 'text-surface-900';
+  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
+  var cardBg = isDark ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-surface-200';
+  var statBg = isDark ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-surface-200';
+
+  var waveformBars = '';
+  for (var i = 0; i < 30; i++) {
+    var h = 4 + Math.floor(Math.random() * 16);
+    waveformBars += '<div class="waveform-bar bg-brand-500" style="height:' + h + 'px;animation-delay:' + (i * 0.05) + 's"></div>';
+  }
+
+  var engineCards = '';
+  var engines = [
+    {icon:'⚡',name:'Edge TTS',desc:'400+ Microsoft neural voices, free forever',badge:'Recommended',color:'emerald'},
+    {icon:'🎵',name:'Kokoro',desc:'82M params, 50 voices, runs on CPU',badge:'Fast',color:'blue'},
+    {icon:'🎯',name:'Chatterbox',desc:'23 languages, voice cloning',badge:'Multilingual',color:'purple'},
+    {icon:'🔥',name:'Qwen3-TTS',desc:'High quality, voice cloning support',badge:'Quality',color:'orange'},
+    {icon:'💎',name:'LuxTTS',desc:'48kHz audio, 150x realtime speed',badge:'Pro',color:'cyan'},
+    {icon:'🧠',name:'Hume TADA',desc:'700s+ coherent audio generation',badge:'Long',color:'red'}
+  ];
+  for (var e = 0; e < engines.length; e++) {
+    var eng = engines[e];
+    engineCards += '<div class="' + cardBg + ' rounded-2xl p-5 card-shadow-sm hover:card-shadow transition-all">'
+      + '<div class="flex items-center gap-3 mb-2">'
+      + '<span class="text-2xl">' + eng.icon + '</span>'
+      + '<div><div class="font-bold text-sm">' + eng.name + '</div>'
+      + '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-' + eng.color + '-100 text-' + eng.color + '-700 dark:bg-' + eng.color + '-900/30 dark:text-' + eng.color + '-400">' + eng.badge + '</span></div>'
+      + '</div>'
+      + '<p class="text-xs ' + tSub + ' leading-relaxed">' + eng.desc + '</p>'
+      + '</div>';
+  }
+
+  var stats = [
+    {val:'6',label:'TTS Engines'},
+    {val:'12',label:'Languages'},
+    {val:'34',label:'Characters'},
+    {val:'$0',label:'API Keys'}
+  ];
+  var statCards = '';
+  for (var s = 0; s < stats.length; s++) {
+    statCards += '<div class="' + statBg + ' rounded-2xl p-5 card-shadow-sm text-center">'
+      + '<div class="text-3xl font-black">' + stats[s].val + '</div>'
+      + '<div class="text-xs ' + tSub + ' mt-1 uppercase tracking-wider">' + stats[s].label + '</div>'
+      + '</div>';
+  }
+
+  return renderNav()
+    + '<div class="min-h-screen ' + tBg + '">'
+    + '<section class="pt-28 pb-16 px-6 max-w-5xl mx-auto text-center slide-up">'
+    + '<div class="inline-flex items-center gap-2 ' + cardBg + ' border rounded-full px-4 py-2 mb-8 text-sm ' + tSub + ' card-shadow-sm">'
+    + '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>'
+    + 'Free & Open Source — No API Keys Required'
+    + '</div>'
+    + '<h1 class="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight ' + tMain + '">'
+    + 'AI Voice Studio<br>'
+    + '<span class="bg-gradient-to-r from-brand-600 via-purple-500 to-pink-500 bg-clip-text text-transparent">For Everyone</span>'
+    + '</h1>'
+    + '<p class="text-lg ' + tSub + ' max-w-2xl mx-auto mb-10">'
+    + 'Generate natural speech in 12 languages with 34 character voices.<br>Free forever — no sign-up, no API keys.'
+    + '</p>'
+    + '<div class="flex items-center justify-center gap-4 mb-16">'
+    + '<button onclick="currentView=\'app\';currentTab=\'generate\';render()" class="btn-primary text-base px-8 py-3.5 rounded-2xl">⚡ Start Generating</button>'
+    + '<a href="#engines" class="btn-secondary text-base px-8 py-3.5 rounded-2xl">See Engines ↓</a>'
+    + '</div>'
+    + '<div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">' + statCards + '</div>'
+    + '</section>'
+    + '<div class="flex items-end justify-center gap-1 h-12 mb-16 opacity-30">' + waveformBars + '</div>'
+    + '<section id="engines" class="py-16 px-6 max-w-6xl mx-auto">'
+    + '<div class="text-center mb-12">'
+    + '<h2 class="text-3xl font-bold mb-2 ' + tMain + '">Open Source Engines</h2>'
+    + '<p class="' + tSub + '">Choose the right engine for your use case</p>'
+    + '</div>'
+    + '<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">' + engineCards + '</div>'
+    + '</section>'
+    + '<section class="py-16 px-6 max-w-5xl mx-auto text-center">'
+    + '<div class="' + cardBg + ' border rounded-3xl p-10 card-shadow">'
+    + '<h2 class="text-2xl font-bold mb-3 ' + tMain + '">Ready to create?</h2>'
+    + '<p class="' + tSub + ' mb-6">Start generating speech in seconds. No installation needed.</p>'
+    + '<button onclick="currentView=\'app\';currentTab=\'generate\';render()" class="btn-primary text-base px-8 py-3.5 rounded-2xl">⚡ Open Studio</button>'
+    + '</div>'
+    + '</section>'
+    + '<footer class="py-8 text-center text-xs ' + tSub + ' border-t ' + (isDark ? 'border-[#262626]' : 'border-surface-200') + '">'
+    + 'iknbite — Free & Open Source AI Voice Studio'
+    + '</footer>'
+    + '</div>';
+}
+
+function renderApp() {
+  var tBg = isDark ? 'bg-[#0f0f0f]' : 'bg-[#fafafa]';
+  var tabs = [
+    {id:'generate',label:'Generate',icon:'⚡'},
+    {id:'voices',label:'Voices',icon:'🎤'},
+    {id:'transcribe',label:'Transcribe',icon:'📝'},
+    {id:'history',label:'History',icon:'🕐'},
     {id:'settings',label:'Settings',icon:'⚙️'}
   ];
-  return '<div class="min-h-screen bg-[#fafafa]">'+nav()+'<div class="pt-20 px-6 max-w-6xl mx-auto pb-12"><div class="flex items-center gap-2 mb-6 border-b border-surface-200 pb-0">'+tabs.map(t=>'<button class="tab-pill '+(currentTab===t.id?'active':'')+'" onclick="currentTab=\''+t.id+'\';render()">'+t.icon+' '+t.label+'</button>').join('')+'</div><div class="pt-6">'+(currentTab==='generate'?renderGenerate():currentTab==='voices'?renderVoices():currentTab==='transcribe'?renderTranscribe():currentTab==='history'?renderHistory():renderSettings())+'</div></div>'+footer()+'</div>';
+  var tabHtml = '';
+  for (var i = 0; i < tabs.length; i++) {
+    var t = tabs[i];
+    tabHtml += '<button class="tab-pill ' + (currentTab === t.id ? 'active' : '') + '" onclick="currentTab=\'' + t.id + '\';render()">' + t.icon + ' ' + t.label + '</button>';
+  }
+
+  var content = '';
+  if (currentTab === 'generate') content = renderGenerate();
+  else if (currentTab === 'voices') content = renderVoices();
+  else if (currentTab === 'transcribe') content = renderTranscribe();
+  else if (currentTab === 'history') content = renderHistory();
+  else content = renderSettings();
+
+  return renderNav()
+    + '<div class="min-h-screen ' + tBg + '">'
+    + '<div class="pt-20 px-6 max-w-6xl mx-auto pb-12">'
+    + '<div class="flex items-center gap-1 mb-6 border-b ' + (isDark ? 'border-[#333]' : 'border-surface-200') + ' pb-0 overflow-x-auto">' + tabHtml + '</div>'
+    + '<div class="pt-6">' + content + '</div>'
+    + '</div>'
+    + '</div>';
 }
 
-function renderGenerate(){
-  var av=profiles.find(function(p){return p.id===genProfileId;});
-  var avData=av?getAvatar(av):null;
-  var h='<div class="max-w-3xl mx-auto space-y-6 slide-up">';
+function renderGenerate() {
+  var tBg = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
+  var tBdr = isDark ? 'border-[#333]' : 'border-surface-200';
+  var tText = isDark ? 'text-white' : 'text-surface-900';
+  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
+  var tInput = isDark ? 'bg-[#262626] border-[#404040]' : 'bg-surface-50 border-surface-200';
 
-  // Character Quick Picker
-  if(!currentCharacter){
-    h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
-    h+='<h3 class="font-bold mb-1">Choose a Character Voice</h3>';
-    h+='<p class="text-xs text-surface-400 mb-4">Pick a character or use your own voice profile below</p>';
-    h+='<div class="grid grid-cols-5 md:grid-cols-10 gap-2">';
-    for(var i=0;i<CHARACTER_VOICES.length;i++){
-      var c=CHARACTER_VOICES[i];
-      h+='<button onclick="selectCharacter(\''+c.id+'\')" class="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-surface-50 transition-all hover:scale-105 active:scale-95">';
-      h+='<div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl text-white font-bold shadow-sm" style="background:linear-gradient(135deg,'+c.color[0]+','+c.color[1]+')">'+c.avatar+'</div>';
-      h+='<div class="text-[10px] font-medium text-surface-600 truncate w-full text-center">'+c.name+'</div>';
-      h+='</button>';
+  var h = '<div class="max-w-3xl mx-auto space-y-4 slide-up">';
+
+  // Character Voice Picker
+  if (!currentCharacter) {
+    h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-5 card-shadow-sm">';
+    h += '<h3 class="font-bold mb-1 ' + tText + '">Choose a Character</h3>';
+    h += '<p class="text-xs ' + tSub + ' mb-3">34 voices across 12 languages — or use Edge TTS directly</p>';
+
+    // Language filter
+    var charLangs = {en:'English',ja:'Japanese',zh:'Chinese',ko:'Korean',fr:'French',es:'Spanish',ar:'Arabic',hi:'Hindi',de:'German',pt:'Portuguese',it:'Italian',ru:'Russian'};
+    var filterHtml = '<div class="flex flex-wrap gap-1.5 mb-3">';
+    filterHtml += '<button onclick="filterCharLang(\'all\')" id="cf-all" class="text-[10px] px-2 py-1 rounded-full font-medium bg-surface-900 text-white dark:bg-white dark:text-surface-900">All</button>';
+    for (var lang in charLangs) {
+      filterHtml += '<button onclick="filterCharLang(\'' + lang + '\')" id="cf-' + lang + '" class="text-[10px] px-2 py-1 rounded-full font-medium ' + tInput + ' ' + tSub + ' hover:opacity-80">' + charLangs[lang] + '</button>';
     }
-    h+='</div></div>';
+    filterHtml += '</div>';
+    h += filterHtml;
+
+    h += '<div id="char-grid" class="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-2">';
+    for (var i = 0; i < CHARACTER_VOICES.length; i++) {
+      var c = CHARACTER_VOICES[i];
+      h += '<button onclick="selectCharacter(\'' + c.id + '\')" class="voice-card flex flex-col items-center gap-1.5 p-2 transition-all hover:scale-105 active:scale-95" data-lang="' + c.lang + '">';
+      h += '<div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg text-white font-bold shadow-sm" style="background:linear-gradient(135deg,' + c.color[0] + ',' + c.color[1] + ')">' + c.avatar + '</div>';
+      h += '<div class="text-[9px] font-medium ' + tSub + ' truncate w-full text-center">' + c.name + '</div>';
+      h += '</button>';
+    }
+    h += '</div></div>';
   }
 
   // Active Voice Card
-  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
-  if(currentCharacter){
-    h+='<div class="flex items-center gap-3 mb-4">';
-    h+='<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl text-white font-bold shadow-md" style="background:linear-gradient(135deg,'+currentCharacter.color[0]+','+currentCharacter.color[1]+')">'+currentCharacter.avatar+'</div>';
-    h+='<div class="flex-1"><div class="font-bold text-sm">'+currentCharacter.name+'</div>';
-    h+='<div class="text-xs text-surface-400">'+currentCharacter.desc+'</div></div>';
-    h+='<button onclick="clearCharacter()" class="text-xs text-surface-400 hover:text-red-500 px-2 py-1 rounded-lg hover:bg-red-50 transition">✕ Change</button>';
-    h+='</div>';
-  } else if(useEdgeTTS){
-    h+='<div class="flex items-center gap-3 mb-4">';
-    h+='<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-surface-100">🌐</div>';
-    h+='<div class="flex-1"><div class="font-bold text-sm">Edge TTS</div>';
-    h+='<div class="text-xs text-surface-400">'+edgeVoice+'</div></div>';
-    h+='<button onclick="useEdgeTTS=false;currentCharacter=null;render()" class="text-xs text-surface-400 hover:text-surface-800 px-2 py-1 rounded-lg hover:bg-surface-100 transition">Switch</button>';
-    h+='</div>';
+  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-5 card-shadow-sm">';
+  if (currentCharacter) {
+    h += '<div class="flex items-center gap-3">';
+    h += '<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl text-white font-bold shadow-md avatar-ring" style="background:linear-gradient(135deg,' + currentCharacter.color[0] + ',' + currentCharacter.color[1] + ')">' + currentCharacter.avatar + '</div>';
+    h += '<div class="flex-1"><div class="font-bold text-sm ' + tText + '">' + currentCharacter.name + '</div>';
+    h += '<div class="text-xs ' + tSub + '">' + currentCharacter.desc + ' · ' + (LANGUAGES[currentCharacter.lang] || currentCharacter.lang) + '</div></div>';
+    h += '<button onclick="clearCharacter()" class="text-xs ' + tSub + ' hover:text-red-500 px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">✕ Change</button>';
+    h += '</div>';
   } else {
-    h+='<div class="flex items-center gap-3 mb-4">';
-    if(avData){
-      h+='<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl text-white font-bold shadow-sm" style="background:linear-gradient(135deg,'+avData.bg[0]+','+avData.bg[1]+')">'+avData.emoji+'</div>';
-      h+='<div class="flex-1"><div class="font-bold text-sm">'+(av?av.name:'Select voice')+'</div>';
-      h+='<div class="text-xs text-surface-400">'+(av?(LANGUAGES[av.language]||av.language):'Local TTS engine')+'</div></div>';
-    } else {
-      h+='<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-surface-100">🎙️</div>';
-      h+='<div class="flex-1"><div class="font-bold text-sm text-surface-400">Select a voice</div>';
-      h+='<div class="text-xs text-surface-400">Choose from profiles below</div></div>';
-    }
-    h+='<button onclick="useEdgeTTS=true;loadEdgeVoices();currentCharacter=null;render()" class="text-xs text-emerald-600 hover:text-emerald-800 px-2 py-1 rounded-lg hover:bg-emerald-50 transition">🌐 Edge TTS</button>';
-    h+='</div>';
-  }
+    h += '<div class="flex items-center gap-3">';
+    h += '<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-surface-100 dark:bg-surface-800">🌐</div>';
+    h += '<div class="flex-1"><div class="font-bold text-sm ' + tText + '">Edge TTS</div>';
+    h += '<div class="text-xs ' + tSub + '">' + genEdgeVoice + '</div></div>';
+    h += '<button onclick="currentCharacter=null;render()" class="text-xs text-brand-600 hover:text-brand-700 px-3 py-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 transition">Pick Character ↑</button>';
+    h += '</div>';
 
-  // Voice Selector (for local TTS)
-  if(!currentCharacter && !useEdgeTTS){
-    h+='<select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm mb-3" onchange="genProfileId=this.value">';
-    for(var i=0;i<profiles.length;i++){
-      var p=profiles[i];var pa=getAvatar(p);
-      h+='<option value="'+p.id+'"'+(genProfileId===p.id?' selected':'')+'>'+pa.emoji+' '+p.name+' — '+(LANGUAGES[p.language]||p.language)+'</option>';
-    }
-    h+='</select>';
-  }
-  if(useEdgeTTS && !currentCharacter){
-    h+='<select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm mb-3" onchange="edgeVoice=this.value">';
-    for(var lang in edgeTTSVoices){
-      var voices=edgeTTSVoices[lang];
-      for(var i=0;i<voices.length;i++){
-        var v=voices[i];
-        h+='<option value="'+v.id+'"'+(edgeVoice===v.id?' selected':'')+'>'+lang.toUpperCase()+' • '+v.name+' ('+v.gender+') — '+v.label+'</option>';
+    // Edge TTS voice selector
+    h += '<select class="w-full ' + tInput + ' border rounded-xl px-4 py-3 text-sm mt-3" onchange="genEdgeVoice=this.value;currentCharacter=null">';
+    for (var lang in edgeTTSVoices) {
+      var voices = edgeTTSVoices[lang];
+      for (var vi = 0; vi < voices.length; vi++) {
+        var v = voices[vi];
+        h += '<option value="' + v.id + '"' + (genEdgeVoice === v.id ? ' selected' : '') + '>' + lang.toUpperCase() + ' · ' + v.name + ' (' + v.gender + ') — ' + v.label + '</option>';
       }
     }
-    if(Object.keys(edgeTTSVoices).length===0)h+='<option>Loading voices...</option>';
-    h+='</select>';
+    if (Object.keys(edgeTTSVoices).length === 0) h += '<option>Loading voices...</option>';
+    h += '</select>';
   }
-  h+='</div>';
+  h += '</div>';
 
-  // Text input
-  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
-  h+='<div class="flex items-center justify-between mb-3">';
-  h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider">Text to Speak</label>';
-  h+='<span class="text-xs text-surface-400">'+genText.length.toLocaleString()+' chars</span>';
-  h+='</div>';
-  h+='<textarea rows="6" placeholder="Type or paste your text here..." class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm resize-none leading-relaxed" oninput="genText=this.value">'+genText+'</textarea>';
-  h+='</div>';
+  // Text Input
+  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-5 card-shadow-sm">';
+  h += '<div class="flex items-center justify-between mb-3">';
+  h += '<label class="text-xs font-semibold ' + tSub + ' uppercase tracking-wider">Text to Speak</label>';
+  h += '<span class="text-xs ' + tSub + '">' + genText.length.toLocaleString() + ' chars</span>';
+  h += '</div>';
+  h += '<textarea id="gen-textarea" rows="6" placeholder="Type or paste your text here..." class="w-full ' + tInput + ' border rounded-xl px-4 py-3 text-sm resize-none leading-relaxed" oninput="genText=this.value">' + genText + '</textarea>';
+  h += '</div>';
+
+  // Audio Player (after generation)
+  if (generationAudioUrl) {
+    h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-5 card-shadow-sm">';
+    h += '<div class="flex items-center gap-3 mb-3">';
+    h += '<div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">✓</div>';
+    h += '<span class="font-bold text-sm ' + tText + '">Generated</span>';
+    h += '<span class="text-xs ' + tSub + '">' + genEdgeVoice + '</span>';
+    h += '</div>';
+    h += '<audio id="gen-audio" controls autoplay class="w-full h-10" src="' + generationAudioUrl + '"></audio>';
+    h += '<div class="flex gap-2 mt-3">';
+    h += '<button onclick="downloadAudio()" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition">⬇ Download MP3</button>';
+    h += '<button onclick="generationAudioUrl=null;generationStatus=\'\';render()" class="text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition">Clear</button>';
+    h += '</div>';
+    h += '</div>';
+  }
 
   // Actions
-  h+='<div class="flex flex-wrap gap-3">';
-  if(currentCharacter){
-    h+='<button onclick="generateEdgeTTS(genText,edgeVoice)"'+(isGenerating||!genText.trim()?' disabled':'')+' class="btn-primary px-8 py-3 rounded-xl">'+(isGenerating?'<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...':'⚡ Generate as '+currentCharacter.name)+'</button>';
-  } else if(useEdgeTTS){
-    h+='<button onclick="generateEdgeTTS(genText,edgeVoice)"'+(isGenerating||!genText.trim()?' disabled':'')+' class="btn-primary px-8 py-3 rounded-xl">'+(isGenerating?'<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...':'⚡ Generate with Edge TTS')+'</button>';
+  h += '<div class="flex flex-wrap gap-3">';
+  if (isGenerating) {
+    h += '<button disabled class="btn-primary px-8 py-3 rounded-xl opacity-70 cursor-wait">';
+    h += '<div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...</div>';
+    h += '</button>';
   } else {
-    h+='<button onclick="generateSpeech()"'+(isGenerating||!genText.trim()?' disabled':'')+' class="btn-primary px-8 py-3 rounded-xl">'+(isGenerating?'<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Generating...':'⚡ Generate Speech')+'</button>';
+    var voiceLabel = currentCharacter ? currentCharacter.name : 'Edge TTS';
+    h += '<button onclick="generateEdgeTTS(genText, genEdgeVoice)"' + (!genText.trim() ? ' disabled style="opacity:0.5;cursor:not-allowed"' : '') + ' class="btn-primary px-8 py-3 rounded-xl">⚡ Generate with ' + voiceLabel + '</button>';
   }
-  h+='</div>';
-  h+='</div>';
+  h += '<button onclick="genText=\'\';generationAudioUrl=null;generationStatus=\'\';render()" class="btn-secondary px-5 py-3 rounded-xl text-sm">Clear</button>';
+  h += '</div>';
+
+  h += '</div>';
   return h;
 }
 
+function filterCharLang(lang) {
+  var buttons = document.querySelectorAll('[id^="cf-"]');
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].className = buttons[i].className.replace(/bg-surface-900 text-white|dark:bg-white dark:text-surface-900/g, '');
+    if (!buttons[i].className.includes('bg-')) {
+      buttons[i].classList.add(isDark ? 'bg-[#262626]' : 'bg-surface-50');
+      buttons[i].classList.add(isDark ? 'text-surface-400' : 'text-surface-500');
+    }
+  }
+  var activeBtn = document.getElementById('cf-' + lang);
+  if (activeBtn) {
+    activeBtn.className = activeBtn.className.replace(/bg-\[#262626\]|bg-surface-50|text-surface-400|text-surface-500/g, '');
+    activeBtn.classList.add('bg-surface-900', 'text-white');
+    if (isDark) { activeBtn.classList.remove('bg-surface-900', 'text-white'); activeBtn.classList.add('bg-white', 'text-surface-900'); }
+  }
 
-function renderVoices(){ return h;
+  var cards = document.querySelectorAll('#char-grid .voice-card');
+  for (var j = 0; j < cards.length; j++) {
+    var cardLang = cards[j].getAttribute('data-lang');
+    if (lang === 'all' || cardLang === lang) {
+      cards[j].style.display = '';
+    } else {
+      cards[j].style.display = 'none';
+    }
+  }
 }
 
+function renderVoices() {
+  var tBg = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
+  var tBdr = isDark ? 'border-[#333]' : 'border-surface-200';
+  var tText = isDark ? 'text-white' : 'text-surface-900';
+  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
+  var tInput = isDark ? 'bg-[#262626] border-[#404040]' : 'bg-surface-50 border-surface-200';
 
-function renderVoices(){
-  var h='<div class="max-w-4xl mx-auto space-y-6 slide-up">';
+  var h = '<div class="max-w-4xl mx-auto space-y-6 slide-up">';
 
-  // Voice Gallery card
-  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
-  h+='<div class="flex items-center justify-between mb-4">';
-  h+='<h3 class="font-bold">Voice Gallery</h3>';
-  h+='<span class="text-xs text-surface-400">'+Object.keys(VOICE_AVATARS).length+' voices</span>';
-  h+='</div>';
+  // Character Gallery
+  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
+  h += '<div class="flex items-center justify-between mb-4">';
+  h += '<h3 class="font-bold ' + tText + '">Character Voices</h3>';
+  h += '<span class="text-xs ' + tSub + '">' + CHARACTER_VOICES.length + ' characters</span>';
+  h += '</div>';
 
-  var groups={'English Female':['af_alloy','af_aoede','af_bella','af_heart','af_jessica','af_kore','af_nicole','af_nova','af_river','af_sarah','af_sky','bf_alice','bf_emma','bf_isabella','bf_lily'],'English Male':['am_adam','am_echo','am_eric','am_fenrir','am_liam','am_michael','am_onyx','am_puck','am_santa','bm_daniel','bm_fable','bm_george','bm_lewis'],'Chinese':['zf_xiaobei','zf_xiaoni','zf_xiaoxiao','zf_xiaoyi','zm_yunjian','zm_yunxi','zm_yunxia','zm_yunyang'],'Japanese':['jf_alpha','jf_gongitsune','jf_nezumi','jf_tebukuro','jm_kumo'],'Spanish':['ef_dora','em_alex'],'French':['ff_siwis'],'Hindi':['hf_alpha','hf_beta','hm_omega','hm_psi'],'Italian':['if_sara','im_nicola'],'Portuguese':['pf_dora','pm_alex'],'Qwen Custom':['Vivian','Serena','Uncle_Fu','Dylan','Eric','Ryan','Aiden','Ono_Anna','Sohee']};
-
-  for(var label in groups){
-    var ids=groups[label];
-    var voices=[];
-    for(var k=0;k<ids.length;k++){if(VOICE_AVATARS[ids[k]])voices.push({id:ids[k],av:VOICE_AVATARS[ids[k]]});}
-    if(voices.length===0)continue;
-    h+='<div class="mb-4">';
-    h+='<div class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">'+label+' <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-100 font-normal">'+voices.length+'</span></div>';
-    h+='<div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">';
-    for(var i=0;i<voices.length;i++){
-      var v=voices[i];
-      h+='<button onclick="selectVoice(\''+v.id+'\')" class="voice-card flex flex-col items-center gap-2 p-3 cursor-pointer">';
-      h+='<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl text-white font-bold" style="background:linear-gradient(135deg,'+v.av.bg[0]+','+v.av.bg[1]+')">'+v.av.emoji+'</div>';
-      h+='<div class="text-[11px] font-medium text-surface-600 text-center truncate w-full">'+v.av.label+'</div>';
-      h+='</button>';
-    }
-    h+='</div></div>';
+  var charGroups = {};
+  for (var i = 0; i < CHARACTER_VOICES.length; i++) {
+    var cv = CHARACTER_VOICES[i];
+    var langLabel = LANGUAGES[cv.lang] || cv.lang;
+    if (!charGroups[langLabel]) charGroups[langLabel] = [];
+    charGroups[langLabel].push(cv);
   }
-  h+='</div>';
 
-  // Create Profile card
-  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
-  h+='<h3 class="font-bold mb-3">Create Profile</h3>';
-  h+='<div class="flex gap-3">';
-  h+='<input id="np-name" placeholder="Name" class="flex-1 bg-surface-50 border border-surface-200 rounded-xl px-4 py-2.5 text-sm">';
-  h+='<select id="np-lang" class="bg-surface-50 border border-surface-200 rounded-xl px-4 py-2.5 text-sm">';
-  h+='<option value="en">English</option><option value="ja">Japanese</option><option value="zh">Chinese</option><option value="ko">Korean</option><option value="fr">French</option><option value="es">Spanish</option><option value="de">German</option><option value="hi">Hindi</option><option value="pt">Portuguese</option><option value="it">Italian</option>';
-  h+='</select>';
-  h+='<button onclick="createProfile(document.getElementById(\'np-name\').value,document.getElementById(\'np-lang\').value)" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Create</button>';
-  h+='</div></div>';
+  for (var gl in charGroups) {
+    var chars = charGroups[gl];
+    h += '<div class="mb-4">';
+    h += '<div class="text-xs font-semibold ' + tSub + ' uppercase tracking-wider mb-2">' + gl + ' <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 font-normal">' + chars.length + '</span></div>';
+    h += '<div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">';
+    for (var ci = 0; ci < chars.length; ci++) {
+      var ch = chars[ci];
+      h += '<button onclick="selectCharacter(\'' + ch.id + '\')" class="voice-card flex flex-col items-center gap-2 p-3">';
+      h += '<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl text-white font-bold" style="background:linear-gradient(135deg,' + ch.color[0] + ',' + ch.color[1] + ')">' + ch.avatar + '</div>';
+      h += '<div class="text-[11px] font-medium ' + tSub + ' text-center">' + ch.name + '</div>';
+      h += '</button>';
+    }
+    h += '</div></div>';
+  }
+  h += '</div>';
 
-  // Your Profiles card
-  h+='<div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm">';
-  h+='<h3 class="font-bold mb-3">Your Profiles <span class="text-sm font-normal text-surface-400">('+profiles.length+')</span></h3>';
-  if(profiles.length===0){
-    h+='<div class="text-center py-6 text-surface-400 text-sm">No profiles yet. Create one above.</div>';
+  // Voice Profiles (from backend)
+  if (profiles.length > 0) {
+    h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
+    h += '<div class="flex items-center justify-between mb-4">';
+    h += '<h3 class="font-bold ' + tText + '">Your Voice Profiles</h3>';
+    h += '<span class="text-xs ' + tSub + '">' + profiles.length + ' profiles</span>';
+    h += '</div>';
+    h += '<div class="grid grid-cols-2 md:grid-cols-4 gap-2">';
+    for (var pi = 0; pi < profiles.length; pi++) {
+      var p = profiles[pi];
+      h += '<div class="voice-card p-3 flex flex-col items-center gap-2">';
+      h += '<div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-gradient-to-br from-brand-400 to-brand-600 text-white font-bold">' + p.name.charAt(0).toUpperCase() + '</div>';
+      h += '<div class="text-xs font-medium ' + tSub + ' text-center">' + p.name + '</div>';
+      h += '<div class="text-[10px] ' + tSub + '">' + (LANGUAGES[p.language] || p.language) + '</div>';
+      h += '<div class="flex gap-1 mt-1">';
+      h += '<button onclick="selectProfileGen(\'' + p.id + '\')" class="text-[10px] px-2 py-0.5 rounded bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">Use</button>';
+      h += '<button onclick="deleteProfile(\'' + p.id + '\')" class="text-[10px] px-2 py-0.5 rounded bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400">Del</button>';
+      h += '</div>';
+      h += '</div>';
+    }
+    h += '</div></div>';
+  }
+
+  // Create Profile
+  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-3 ' + tText + '">Create Voice Profile</h3>';
+  h += '<div class="flex gap-3">';
+  h += '<input id="np-name" placeholder="Profile name" class="flex-1 ' + tInput + ' border rounded-xl px-4 py-2.5 text-sm">';
+  h += '<select id="np-lang" class="' + tInput + ' border rounded-xl px-4 py-2.5 text-sm">';
+  for (var lk in LANGUAGES) {
+    h += '<option value="' + lk + '">' + LANGUAGES[lk] + '</option>';
+  }
+  h += '</select>';
+  h += '<button onclick="createProfile()" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Create</button>';
+  h += '</div></div>';
+
+  h += '</div>';
+  return h;
+}
+
+function selectProfileGen(pid) {
+  genProfileId = pid;
+  currentTab = 'generate';
+  currentCharacter = null;
+  render();
+}
+
+function renderTranscribe() {
+  var tBg = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
+  var tBdr = isDark ? 'border-[#333]' : 'border-surface-200';
+  var tText = isDark ? 'text-white' : 'text-surface-900';
+  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
+
+  return '<div class="max-w-2xl mx-auto text-center slide-up">'
+    + '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-10 card-shadow-sm">'
+    + '<div class="text-4xl mb-3">📝</div>'
+    + '<h3 class="text-lg font-bold mb-2 ' + tText + '">Speech-to-Text</h3>'
+    + '<p class="text-sm ' + tSub + ' mb-6">Upload audio for instant transcription</p>'
+    + '<input type="file" id="tf" accept=".wav,.mp3,.m4a,.ogg,.flac,.aac,.webm" class="hidden" onchange="if(this.files[0])doTranscribe(this.files[0])">'
+    + '<label for="tf" class="block border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl p-10 cursor-pointer hover:border-brand-300 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition">'
+    + '<div class="' + tSub + '">'
+    + '<div class="text-3xl mb-2">📁</div>'
+    + '<p class="text-sm">Click to upload audio</p>'
+    + '<p class="text-xs text-surface-300 mt-1">WAV, MP3, M4A, OGG, FLAC, AAC, WebM</p>'
+    + '</div></label></div></div>';
+}
+
+function doTranscribe(file) {
+  isGenerating = true;
+  render();
+  var fd = new FormData();
+  fd.append('file', file);
+  fetch(API + '/transcribe', { method: 'POST', body: fd }).then(function(r) {
+    if (!r.ok) throw new Error('Failed');
+    return r.json();
+  }).then(function(d) {
+    genText = d.text || '';
+    currentTab = 'generate';
+    isGenerating = false;
+    render();
+  }).catch(function(e) {
+    alert('Transcription failed: ' + e.message);
+    isGenerating = false;
+    render();
+  });
+}
+
+function renderHistory() {
+  var tBg = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
+  var tBdr = isDark ? 'border-[#333]' : 'border-surface-200';
+  var tText = isDark ? 'text-white' : 'text-surface-900';
+  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
+
+  var h = '<div class="max-w-3xl mx-auto space-y-3 slide-up">';
+  h += '<div class="flex items-center justify-between mb-2">';
+  h += '<h3 class="font-bold ' + tText + '">History</h3>';
+  h += '<button onclick="loadHistory()" class="text-sm text-brand-600 hover:underline">Refresh</button>';
+  h += '</div>';
+
+  if (history.length === 0) {
+    h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-10 text-center card-shadow-sm">';
+    h += '<div class="text-4xl mb-3">🕐</div>';
+    h += '<p class="' + tSub + ' text-sm">No generations yet</p>';
+    h += '</div>';
   } else {
-    for(var j=0;j<profiles.length;j++){
-      var p=profiles[j];var pav=getAvatar(p);
-      h+='<div class="flex items-center justify-between p-3 rounded-xl hover:bg-surface-50 transition">';
-      h+='<div class="flex items-center gap-3">';
-      h+='<div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:linear-gradient(135deg,'+pav.bg[0]+','+pav.bg[1]+')">'+pav.emoji+'</div>';
-      h+='<div><div class="text-sm font-semibold">'+p.name+'</div>';
-      h+='<div class="text-xs text-surface-400">'+(LANGUAGES[p.language]||p.language)+'</div></div>';
-      h+='</div>';
-      h+='<div class="flex gap-2">';
-      h+='<button onclick="selectVoice(\''+p.id+'\')" class="btn-secondary text-xs px-3 py-1.5 rounded-lg">Use</button>';
-      h+='<button onclick="if(confirm(\'Delete?\'))deleteProf(\''+p.id+'\')" class="text-xs text-red-400 px-2 py-1.5">✕</button>';
-      h+='</div></div>';
+    for (var i = 0; i < history.length; i++) {
+      var g = history[i];
+      var statusClass = g.status === 'completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400';
+      var statusIcon = g.status === 'completed' ? '✓' : '✗';
+      h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-xl p-4 flex items-center gap-4 card-shadow-sm">';
+      h += '<div class="w-10 h-10 rounded-xl flex items-center justify-center text-sm ' + statusClass + '">' + statusIcon + '</div>';
+      h += '<div class="flex-1 min-w-0">';
+      h += '<div class="text-sm font-medium truncate ' + tText + '">' + (g.text || '').substring(0, 80) + '</div>';
+      h += '<div class="text-xs ' + tSub + ' mt-0.5">' + (g.engine || '') + ' · ' + (g.language || 'en') + (g.duration ? ' · ' + g.duration.toFixed(1) + 's' : '') + '</div>';
+      h += '</div>';
+      if (g.status === 'completed') {
+        h += '<audio controls preload="none" src="' + API + '/audio/' + g.id + '" class="w-48 h-8"></audio>';
+      }
+      h += '</div>';
     }
   }
-  h+='</div>';
-
-  h+='</div>';
+  h += '</div>';
   return h;
 }
 
-function renderEdgeTTSForm(){
-  var h='';
-  h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 block">Edge TTS Voice</label>';
-  h+='<div class="flex items-center gap-3 mb-3">';
-  h+='<span class="text-xs text-surface-400">400+ free Microsoft voices • No API key</span>';
-  h+='</div>';
-  h+='<select class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm mb-4" onchange="edgeVoice=this.value">';
-  for(var lang in edgeTTSVoices){
-    var voices=edgeTTSVoices[lang];
-    for(var i=0;i<voices.length;i++){
-      var v=voices[i];
-      h+='<option value="'+v.id+'"'+(edgeVoice===v.id?' selected':'')+'>'+(lang.toUpperCase())+' • '+v.name+' ('+v.gender+') — '+v.label+'</option>';
-    }
+function renderSettings() {
+  var tBg = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
+  var tBdr = isDark ? 'border-[#333]' : 'border-surface-200';
+  var tText = isDark ? 'text-white' : 'text-surface-900';
+  var tSub = isDark ? 'text-surface-400' : 'text-surface-500';
+  var tInput = isDark ? 'bg-[#262626] border-[#404040]' : 'bg-surface-50 border-surface-200';
+
+  var statusDot = health ? 'bg-emerald-500' : 'bg-red-500';
+  var statusText = health ? 'Connected' : 'Disconnected';
+
+  var h = '<div class="max-w-xl mx-auto space-y-4 slide-up">';
+
+  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-3 ' + tText + '">Voicebox Backend <span class="text-xs font-normal text-surface-400">(Optional)</span></h3>';
+  h += '<input id="api-url" value="' + API + '" class="w-full ' + tInput + ' border rounded-xl px-4 py-3 text-sm font-mono mb-3" placeholder="http://localhost:8000">';
+  h += '<button onclick="API=document.getElementById(\'api-url\').value;localStorage.setItem(\'iknbite_api_url\',API);checkHealth();loadProfiles()" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Save & Reconnect</button>';
+  h += '</div>';
+
+  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-3 ' + tText + '">Edge TTS <span class="text-xs font-normal text-emerald-600 dark:text-emerald-400">FREE — Recommended</span></h3>';
+  h += '<input id="edge-url" value="' + EDGE_TTS_API + '" class="w-full ' + tInput + ' border rounded-xl px-4 py-3 text-sm font-mono mb-3" placeholder="http://localhost:5050">';
+  h += '<button onclick="EDGE_TTS_API=document.getElementById(\'edge-url\').value;localStorage.setItem(\'iknbite_edge_tts_url\',EDGE_TTS_API);loadEdgeVoices()" class="btn-secondary px-5 py-2.5 rounded-xl text-sm">Reconnect Edge TTS</button>';
+  h += '</div>';
+
+  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-3 ' + tText + '">Status</h3>';
+  h += '<div class="space-y-2">';
+  h += '<div class="flex justify-between text-sm"><span class="' + tSub + '">Backend</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ' + statusDot + '"></span>' + statusText + '</span></div>';
+  if (health) {
+    h += '<div class="flex justify-between text-sm"><span class="' + tSub + '">GPU</span><span>' + (health.gpu_type || 'None') + '</span></div>';
+    h += '<div class="flex justify-between text-sm"><span class="' + tSub + '">Model</span><span>' + (health.model_loaded ? 'Loaded' : 'Not loaded') + '</span></div>';
   }
-  if(Object.keys(edgeTTSVoices).length===0)h+='<option>Loading voices...</option>';
-  h+='</select>';
-  h+='<label class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 block">Text</label>';
-  h+='<textarea id="edge-text" rows="4" placeholder="Type your text here..." class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm resize-none leading-relaxed mb-4"></textarea>';
-  h+='<button onclick="generateEdgeTTS(document.getElementById(\'edge-text\').value,edgeVoice)" class="btn-primary px-8 py-3 rounded-xl flex items-center gap-2">⚡ Generate with Edge TTS</button>';
+  h += '</div></div>';
+
+  h += '<div class="' + tBg + ' border ' + tBdr + ' rounded-2xl p-6 card-shadow-sm">';
+  h += '<h3 class="font-bold mb-3 ' + tText + '">About</h3>';
+  h += '<p class="text-sm ' + tSub + '">iknbite is a free, open-source AI Voice Studio. All speech generation uses free engines — no API keys or subscriptions required.</p>';
+  h += '<p class="text-xs ' + tSub + ' mt-2"><a href="https://github.com/gsops00/iknbite.github.io" target="_blank" class="text-brand-600 hover:underline">View on GitHub →</a></p>';
+  h += '</div>';
+
+  h += '</div>';
   return h;
 }
-
-function renderTranscribe(){
-  return '<div class="max-w-2xl mx-auto text-center slide-up"><div class="bg-white border border-surface-200 rounded-2xl p-10 card-shadow-sm"><div class="text-4xl mb-3">📝</div><h3 class="text-lg font-bold mb-2">Speech-to-Text</h3><p class="text-sm text-surface-500 mb-6">Upload audio for instant transcription</p><input type="file" id="tf" accept=".wav,.mp3,.m4a,.ogg,.flac,.aac,.webm" class="hidden" onchange="if(this.files[0])transcribe(this.files[0])"><label for="tf" class="block border-2 border-dashed border-surface-200 rounded-2xl p-10 cursor-pointer hover:border-brand-300 hover:bg-brand-50/50 transition"><div class="text-surface-400"><div class="text-3xl mb-2">📁</div><p class="text-sm">Click to upload</p><p class="text-xs text-surface-300 mt-1">WAV, MP3, M4A, OGG, FLAC, AAC, WebM</p></div></label></div></div>';
-}
-
-function renderHistory(){
-  var h='<div class="max-w-3xl mx-auto space-y-3 slide-up"><div class="flex items-center justify-between mb-2"><h3 class="font-bold">History</h3><button onclick="loadHistory()" class="text-sm text-brand-600 hover:underline">Refresh</button></div>';
-  if(history.length===0){h+='<div class="bg-white border border-surface-200 rounded-2xl p-10 text-center card-shadow-sm"><div class="text-4xl mb-3">🕐</div><p class="text-surface-500 text-sm">No generations yet</p></div>';}
-  else{for(var i=0;i<history.length;i++){var g=history[i];h+='<div class="bg-white border border-surface-200 rounded-xl p-4 flex items-center gap-4 card-shadow-sm"><div class="w-10 h-10 rounded-xl flex items-center justify-center text-sm '+(g.status==='completed'?'bg-emerald-50 text-emerald-600':'bg-red-50 text-red-500')+'">'+(g.status==='completed'?'✓':'✗')+'</div><div class="flex-1 min-w-0"><div class="text-sm font-medium truncate">'+(g.text||'').substring(0,80)+'</div><div class="text-xs text-surface-400 mt-0.5">'+(g.engine||'')+' · '+(g.language||'en')+' · '+(g.duration?g.duration.toFixed(1)+'s':'—')+'</div></div>'+(g.status==='completed'?'<audio controls preload="none" src="'+API+'/audio/'+g.id+'" class="w-48 h-8"></a>':'')+'</div>';}}
-  h+='</div>';return h;
-}
-
-function renderSettings(){
-  return '<div class="max-w-xl mx-auto space-y-4 slide-up"><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Voicebox Backend</h3><input id="api-url" value="'+API+'" class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm font-mono mb-3" placeholder="http://localhost:8000"><button onclick="API=document.getElementById(\'api-url\').value;localStorage.setItem(\'iknbite_api_url\',API);checkHealth();loadProfiles();loadPresets()" class="btn-primary px-5 py-2.5 rounded-xl text-sm">Save & Reconnect</button></div><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Edge TTS <span class="text-xs font-normal text-emerald-600">FREE</span></h3><input id="edge-url" value="'+EDGE_TTS_API+'" class="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm font-mono mb-3" placeholder="http://localhost:5050"><button onclick="EDGE_TTS_API=edgeUrl=document.getElementById(\'edge-url\').value;localStorage.setItem(\'iknbite_edge_tts_url\',EDGE_TTS_API);loadEdgeVoices()" class="btn-secondary px-5 py-2.5 rounded-xl text-sm">Reconnect Edge TTS</button></div><div class="bg-white border border-surface-200 rounded-2xl p-6 card-shadow-sm"><h3 class="font-bold mb-3">Status</h3><div class="space-y-2"><div class="flex justify-between text-sm"><span class="text-surface-500">Connection</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full '+(sseConnected?'bg-emerald-500':'bg-red-500')+'"></span>'+(sseConnected?'Connected':'Disconnected')+'</span></div>'+(health?'<div class="flex justify-between text-sm"><span class="text-surface-500">GPU</span><span>'+(health.gpu_type||'None')+'</span></div><div class="flex justify-between text-sm"><span class="text-surface-500">Model</span><span>'+(health.model_loaded?'Loaded':'Not loaded')+'</span></div>':'')+'</div></div></div>';
-}
-
-function selectVoice(id){var p=profiles.find(function(x){return x.id===id;});if(p){genProfileId=p.id;currentTab='generate';useEdgeTTS=false;render();}}
-function selectCharacter(cid){var c=CHARACTER_VOICES.find(function(x){return x.id===cid;});if(c){currentCharacter=c;edgeVoice=c.edge;useEdgeTTS=true;currentTab='generate';render();}}
-function clearCharacter(){currentCharacter=null;render();}
-
-async function createProfile(name,lang){if(!name)return;try{await apiFetch('/profiles',{method:'POST',body:JSON.stringify({name:name,language:lang||'en'})});await loadProfiles();}catch(e){alert(e.message);}}
-
-async function deleteProf(id){try{await apiFetch('/profiles/'+id,{method:'DELETE'});await loadProfiles();}catch(e){alert(e.message);}}
 
 // Init
+applyTheme();
 render();
-checkHealth().then(function(){loadProfiles();loadPresets();loadEdgeVoices();});
+checkHealth().then(function() {
+  loadProfiles();
+  loadEdgeVoices();
+});
 </script>
 </body>
 </html>
