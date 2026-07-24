@@ -170,7 +170,6 @@ function renderApp(){
     {id:'transcribe',label:'Transcribe',icon:'📝'},{id:'history',label:'History',icon:'🕐'},
     {id:'settings',label:'Settings',icon:'⚙️'}
   ];
-  if(profiles.length===0)loadProfiles();
   return '<div class="min-h-screen bg-[#fafafa]">'+nav()+'<div class="pt-20 px-6 max-w-6xl mx-auto pb-12"><div class="flex items-center gap-2 mb-6 border-b border-surface-200 pb-0">'+tabs.map(t=>'<button class="tab-pill '+(currentTab===t.id?'active':'')+'" onclick="currentTab=\''+t.id+'\';render()">'+t.icon+' '+t.label+'</button>').join('')+'</div><div class="pt-6">'+(currentTab==='generate'?renderGenerate():currentTab==='voices'?renderVoices():currentTab==='transcribe'?renderTranscribe():currentTab==='history'?renderHistory():renderSettings())+'</div></div>'+footer()+'</div>';
 }
 
