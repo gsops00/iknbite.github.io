@@ -369,9 +369,6 @@ async function loadProfiles() {
     if (profiles.length > 0 && !genProfileId) {
       genProfileId = profiles[0].id;
     }
-    // Update the select element if it exists
-    const sel = document.getElementById('profile-select');
-    if (sel && genProfileId) sel.value = genProfileId;
   } catch { profiles = []; }
   render();
 }
@@ -677,6 +674,7 @@ function renderLanding() {
 }
 
 function renderApp() {
+  if (profiles.length === 0) loadProfiles();
   const currentEngine = ENGINES.find(e => e.id === genEngine) || ENGINES[0];
   const engineLangs = currentEngine.langs;
 
@@ -1185,8 +1183,8 @@ function saveSettings() {
 function attachEventListeners() {
   // Auto-refresh on tab switch
   if (currentView === 'app') {
+    if (profiles.length === 0) loadProfiles();
     if (currentTab === 'history' && history.length === 0) loadHistory();
-    if (currentTab === 'voices' && profiles.length === 0) loadProfiles();
     if (currentTab === 'effects' && effectsPresets.length === 0) loadEffects();
   }
 }
@@ -1194,10 +1192,8 @@ function attachEventListeners() {
 // ─── Init ─────────────────────────────────────────────────────────
 render();
 checkHealth().then(() => {
-  if (currentView === 'app') {
-    loadProfiles();
-    loadPresets();
-  }
+  loadProfiles();
+  loadPresets();
 });
 </script>
 </body>
