@@ -274,3 +274,29 @@ body.dark .char-count { background: var(--surface-800); color: var(--surface-400
   background: linear-gradient(135deg, var(--surface-200), var(--surface-300));
   overflow: hidden;
 }
+
+/* ---- Success Button (Download) ---- */
+.btn-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+  font-family: var(--font);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+.btn-success:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+.btn-success:active {
+  transform: translateY(0);
+}
+.btn-success:disabled {
+  background: var(--surface-300);
+  color: var(--surface-500);
+  cursor: not-allowed;
+  box-shadow: none;
+}

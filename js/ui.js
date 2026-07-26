@@ -238,10 +238,15 @@ const UI = {
           <span style="font-size:12px;color:var(--surface-400);min-width:40px;text-align:center;">${this.pitch.toFixed(1)}</span>
           <button class="btn btn-ghost btn-icon" onclick="UI._changePitch(0.1)" title="Higher pitch">🔊</button>
         </div>
-        <div style="display:flex;justify-content:center;gap:10px;margin-top:16px;">
+        <div style="display:flex;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap;">
           <button class="btn btn-primary" id="generate-btn" onclick="UI._generate()" ${this.isGenerating ? 'disabled' : ''} style="padding:14px 36px;font-size:15px;border-radius:14px;">
             ${this.isGenerating ? '⏳ Generating...' : '▶ Generate Speech'}
           </button>
+          ${tts.canDownload() ? `
+          <button class="btn btn-success" id="download-btn" onclick="UI._downloadAudio()" style="padding:14px 24px;font-size:15px;border-radius:14px;display:inline-flex;align-items:center;gap:8px;">
+            📥 Download Audio
+          </button>
+          ` : ''}
         </div>
       </div>
 
@@ -466,6 +471,16 @@ const UI = {
       this.isGenerating = false;
       this.isPlaying = false;
       this.render();
+    }
+  },
+
+  _downloadAudio() {
+    try {
+      const filename = tts.downloadAudio();
+      this.toast('✅ Downloaded: ' + filename, 'success');
+    } catch (e) {
+      console.error('Download error:', e);
+      this.toast('❌ Download failed: ' + (e.message || 'Unknown error'), 'error');
     }
   },
 };
