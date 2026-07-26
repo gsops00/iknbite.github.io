@@ -22,7 +22,9 @@ const UI = {
     const px = size || 56;
     const cls = active ? 'voice-avatar active' : 'voice-avatar';
     const shadow = active ? 'box-shadow:0 0 0 3px var(--brand-600),var(--shadow-lg);' : '';
-    return `<img class="${cls}" src="${v.avatar}" alt="${v.name}" width="${px}" height="${px}" style="width:${px}px;height:${px}px;border-radius:${Math.round(px*0.32)}px;background:linear-gradient(135deg,${v.colors[0]},${v.colors[1]});${shadow}" />`;
+    const borderRadius = Math.round(px * 0.32);
+    const fallbackBg = `linear-gradient(135deg,${v.colors[0]},${v.colors[1]})`;
+    return `<img class="${cls}" src="${v.avatar}" alt="${v.name}" width="${px}" height="${px}" style="width:${px}px;height:${px}px;border-radius:${borderRadius}px;background:${fallbackBg};${shadow}" onerror="this.style.background='${fallbackBg}';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>${v.emoji}</text></svg>'" />`;
   },
 
   // ---- Theme ----
