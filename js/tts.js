@@ -21,6 +21,45 @@ class TTSEngine {
     this._init();
   }
 
+  isMobile() {
+    return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+
+  canShareAudio() {
+    return this.lastAudioBlob !== null || this.lastAudioUrl !== null;
+  }
+
+  async shareAudio() {
+    const blob = this.lastAudioBlob;
+    const url = this.lastAudioUrl;
+    if (!blob && !url) {
+      throw new Error('No audio available to share');
+    }
+    const audioUrl = blob ? URL.createObjectURL(blob) : url;
+    const fileName = this._getFilename();
+    try {
+      if (blob && navigator.share && navigator.canShare) {
+        const file = new File([blob], fileName, { type: 'audio/mpeg' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: fileName });
+          return 'shared';
+        }
+      }
+      // Fallback: open in new tab for manual save
+      window.open(audioUrl, '_blank');
+      return 'opened';
+    } finally {
+      if (blob) setTimeout(() => URL.revokeObjectURL(audioUrl), 5000);
+    }
+  }
+
+  _getFilename() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    return `voice-${ts}.mp3`;
+  }
+
   _init() {
     const load = () => {
       this._voicesLoaded = true;
@@ -319,32 +358,39 @@ class TTSEngine {
   }
 
   canDownload() {
-    return this.lastAudioBlob !== null;
+    return this.lastAudioBlob !== null || this.lastAudioUrl !== null;
   }
 
   downloadAudio() {
-    if (!this.lastAudioBlob) {
+    if (!this.lastAudioBlob && !this.lastAudioUrl) {
       throw new Error('No audio available for download');
     }
 
-    const now = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-    const filename = `voice-${ts}.mp3`;
+    const filename = this._getFilename();
 
-    const url = URL.createObjectURL(this.lastAudioBlob);
+    if (this.lastAudioBlob) {
+      const url = URL.createObjectURL(this.lastAudioBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      return filename;
+    }
+
+    // URL-based download (Edge TTS)
     const a = document.createElement('a');
-    a.href = url;
+    a.href = this.lastAudioUrl;
     a.download = filename;
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
-
+    setTimeout(() => document.body.removeChild(a), 100);
     return filename;
   }
 }

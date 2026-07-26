@@ -243,8 +243,9 @@ const UI = {
             ${this.isGenerating ? '⏳ Generating...' : '▶ Generate Speech'}
           </button>
           <button class="btn btn-success" id="download-btn" onclick="UI._downloadAudio()" style="padding:14px 24px;font-size:15px;border-radius:14px;display:inline-flex;align-items:center;gap:8px;">
-            📥 Download Audio
+            📥 Download
           </button>
+          ${tts.isMobile() ? '<button class="btn btn-secondary" onclick="UI._shareAudio()" style="padding:14px 24px;font-size:15px;border-radius:14px;display:inline-flex;align-items:center;gap:8px;">📤 Share</button>' : ''}
         </div>
       </div>
 
@@ -478,12 +479,44 @@ const UI = {
       return;
     }
     try {
-      const filename = tts.downloadAudio();
-      this.toast('✅ Downloaded: ' + filename, 'success');
+      if (tts.isMobile() && navigator.share && navigator.canShare) {
+        // Try Web Share API on mobile
+        tts.shareAudio().then(result => {
+          if (result === 'shared') {
+            this.toast('✅ Audio shared!', 'success');
+          } else {
+            this.toast('🔊 Audio opened in new tab — tap the menu to save.', 'success');
+          }
+        }).catch(e => {
+          // Fallback to direct download
+          const filename = tts.downloadAudio();
+          this.toast('✅ Downloaded: ' + filename, 'success');
+        });
+      } else {
+        const filename = tts.downloadAudio();
+        this.toast('✅ Downloaded: ' + filename, 'success');
+      }
     } catch (e) {
       console.error('Download error:', e);
       this.toast('❌ Download failed: ' + (e.message || 'Unknown error'), 'error');
     }
+  },
+
+  _shareAudio() {
+    if (!tts.canShareAudio()) {
+      this.toast('⚠️ Generate speech first, then share.', 'error');
+      return;
+    }
+    tts.shareAudio().then(result => {
+      if (result === 'shared') {
+        this.toast('✅ Audio shared!', 'success');
+      } else {
+        this.toast('🔊 Audio opened — tap the menu to save/share.', 'success');
+      }
+    }).catch(e => {
+      console.error('Share error:', e);
+      this.toast('❌ Share failed: ' + (e.message || 'Unknown error'), 'error');
+    });
   },
 };
 
