@@ -324,10 +324,13 @@ class TTSEngine {
   }
 
   _speakWebSpeech(text, voiceDef, options) {
-    if (!this.synth) throw new Error('Speech synthesis not supported');
+    if (!this.synth) throw new Error('Speech synthesis not supported in this browser. Connect an Edge TTS backend in Settings for AI voices.');
 
     const speechVoice = this.findSpeechVoice(voiceDef);
-    if (!speechVoice) throw new Error('No suitable voice found for ' + voiceDef.lang);
+    if (!speechVoice) {
+      const msg = 'No voice found for ' + (voiceDef.lang || 'this language') + '. Connect an Edge TTS backend in Settings for 300+ AI voices.';
+      throw new Error(msg);
+    }
 
     return new Promise((resolve, reject) => {
       const utterance = new SpeechSynthesisUtterance(text);
@@ -457,7 +460,7 @@ class TTSEngine {
   }
 
   isSupported() {
-    return !!(this.edgeTTSApiUrl || (typeof speechSynthesis !== 'undefined'));
+    return !!(this.edgeTTSApiUrl || this.easyVoiceKey || (typeof speechSynthesis !== 'undefined'));
   }
 
   canDownload() {
@@ -467,19 +470,62 @@ class TTSEngine {
   downloadAudio() {
     if (!this.lastAudioBlob && !this.lastAudioUrl) throw new Error('No audio available');
     const filename = this._getFilename();
+
+    // Try fetch-based download first (works on mobile Chrome)
     if (this.lastAudioBlob) {
-      const url = URL.createObjectURL(this.lastAudioBlob);
+      try {
+        const url = URL.createObjectURL(this.lastAudioBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+        document.body.appendChild(a);
+        a.click();
+        // Cleanup
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 200);
+        return filename;
+      } catch (e) {
+        console.warn('Blob download failed, trying fetch:', e);
+      }
+      // Fallback: fetch the blob and trigger download via data URL
+      return this._downloadViaFetch(this.lastAudioBlob, filename);
+    }
+    // If only URL available
+    if (this.lastAudioUrl) {
       const a = document.createElement('a');
-      a.href = url; a.download = filename; a.style.display = 'none';
-      document.body.appendChild(a); a.click();
-      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+      a.href = this.lastAudioUrl;
+      a.download = filename;
+      a.target = '_blank';
+      a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => document.body.removeChild(a), 200);
       return filename;
     }
-    const a = document.createElement('a');
-    a.href = this.lastAudioUrl; a.download = filename; a.style.display = 'none';
-    document.body.appendChild(a); a.click();
-    setTimeout(() => document.body.removeChild(a), 100);
-    return filename;
+    throw new Error('No audio available');
+  }
+
+  async _downloadViaFetch(blob, filename) {
+    try {
+      const url = URL.createObjectURL(blob);
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const dataUrl = 'data:audio/mpeg;base64,' + base64;
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = filename;
+      a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+      return filename;
+    } catch (e) {
+      throw new Error('Download failed: ' + e.message);
+    }
   }
 }
 

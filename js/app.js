@@ -10,8 +10,8 @@
   const EV_KEY = localStorage.getItem('iknbite_ev_key') || '';
   const EV_URL = localStorage.getItem('iknbite_ev_url') || 'https://easyvoice.ae';
   const config = {};
-  if (TTS_API_URL) config.apiUrl = TTS_API_URL;
-  if (EV_KEY) { config.easyVoiceKey = EV_KEY; config.easyVoiceUrl = EV_URL; }
+  if (TTS_API_URL && TTS_API_URL.trim()) config.apiUrl = TTS_API_URL.trim();
+  if (EV_KEY && EV_KEY.trim()) { config.easyVoiceKey = EV_KEY.trim(); config.easyVoiceUrl = (EV_URL || 'https://easyvoice.ae').trim(); }
   if (Object.keys(config).length) tts.configure(config);
 
   // ---- Build Nav ----

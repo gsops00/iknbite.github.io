@@ -369,22 +369,24 @@ const UI = {
         <div class="card" style="padding:20px;">
           <div style="font-weight:600;font-size:14px;margin-bottom:8px;">TTS Engine</div>
           <div style="font-size:12px;color:var(--surface-400);margin-bottom:12px;">
-            For best quality, connect an Edge TTS backend. Free, no API key needed.
+            For real AI voices (male + female, 300+ voices), connect an Edge TTS backend.
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Status</span><span style="color:${(tts.easyVoiceKey||tts.edgeTTSApiUrl)?'#10b981':'#f59e0b'}">${tts.easyVoiceKey ? '✅ EasyVoice Connected' : tts.edgeTTSApiUrl ? '✅ Edge TTS Connected' : '⚠️ Using Web Speech API'}</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Voices loaded</span><span>${tts.getVoices().length}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Status</span><span style="color:${(tts.easyVoiceKey||tts.edgeTTSApiUrl)?'#10b981':'#f59e0b'}">${tts.easyVoiceKey ? '✅ EasyVoice Connected' : tts.edgeTTSApiUrl ? '✅ Edge TTS Connected' : '⚠️ Using Web Speech API (limited)'}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Voices available</span><span>${tts.edgeTTSApiUrl ? '300+ (Edge TTS)' : tts.getVoices().length + ' (browser)'}</span></div>
             <div style="margin-top:8px;">
               <label style="font-size:12px;color:var(--surface-400);display:block;margin-bottom:4px;">Edge TTS API URL</label>
               <div style="display:flex;gap:6px;">
-                <input id="tts-api-input" type="url" placeholder="https://your-server:5050"
+                <input id="tts-api-input" type="url" placeholder="https://your-worker.workers.dev"
                   value="${localStorage.getItem('iknbite_tts_api') || ''}"
                   style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:13px;font-family:var(--font);"
                 />
                 <button class="btn btn-primary" onclick="UI._saveTTSApi()" style="padding:8px 16px;font-size:13px;border-radius:8px;">Save</button>
               </div>
-              <div style="font-size:11px;color:var(--surface-400);margin-top:4px;">
-                Deploy free: <code style="background:var(--surface-100);padding:1px 4px;border-radius:4px;">docker run -d -p 5050:5050 travisvn/openai-edge-tts:latest</code>
+              <div style="font-size:11px;color:var(--surface-400);margin-top:6px;line-height:1.5;">
+                <strong>Free deploy options:</strong><br>
+                1. Cloudflare Worker: deploy <code style="background:var(--surface-100);padding:1px 4px;border-radius:4px;">edge-tts-worker.js</code> — free tier, no server needed<br>
+                2. Docker: <code style="background:var(--surface-100);padding:1px 4px;border-radius:4px;">docker run -d -p 5050:5050 travisvn/openai-edge-tts:latest</code>
               </div>
             </div>
           </div>

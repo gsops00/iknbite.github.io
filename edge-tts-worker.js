@@ -118,13 +118,26 @@ function handleHealth() {
 
 // TTS generation via Edge TTS WebSocket
 async function handleTTS(request) {
-  const { text, voice, rate, volume, pitch } = await request.json();
+  const body = await request.json();
+  const text = body.input || body.text;
+  const voice = body.voice;
+  const speed = body.speed || 1.0;
+  const rate = body.rate || '+0%';
+  const volume = body.volume || '+0%';
+  const pitch = body.pitch || '+0Hz';
+
   if (!text || !voice) {
-    return jsonResponse({ error: 'text and voice are required' }, 400);
+    return jsonResponse({ error: 'text/input and voice are required' }, 400);
+  }
+
+  let edgeRate = rate;
+  if (body.speed && typeof body.speed === 'number' && !body.rate) {
+    const pct = Math.round((speed - 1.0) * 100);
+    edgeRate = (pct >= 0 ? '+' : '') + pct + '%';
   }
 
   try {
-    const audioBuffer = await edgeTTSGenerate(text, voice, rate || '+0%', volume || '+0%', pitch || '+0Hz');
+    const audioBuffer = await edgeTTSGenerate(text, voice, edgeRate, volume, pitch);
     return new Response(audioBuffer, {
       headers: {
         'Content-Type': 'audio/mpeg',
@@ -269,7 +282,7 @@ export default {
       return handleVoices();
     }
 
-    if (url.pathname === '/tts' && request.method === 'POST') {
+    if ((url.pathname === '/tts' || url.pathname === '/v1/audio/speech') && request.method === 'POST') {
       return handleTTS(request);
     }
 
