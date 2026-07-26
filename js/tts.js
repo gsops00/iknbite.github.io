@@ -3,6 +3,31 @@
    Supports Edge TTS server (MP3) + Web Speech API fallback
    ============================================ */
 
+// Voice pitch/rate offsets for Web Speech API differentiation
+const VOICE_OFFSETS = {
+  andrew: {pitch:0.70, rate:0.90}, brian: {pitch:0.75, rate:1.00}, guy: {pitch:0.80, rate:0.95},
+  davis: {pitch:0.65, rate:0.85}, ryan: {pitch:0.72, rate:0.92}, tony: {pitch:0.78, rate:1.05},
+  jason: {pitch:0.68, rate:0.88},
+  ava: {pitch:1.15, rate:1.00}, emma: {pitch:1.20, rate:1.05}, jenny: {pitch:1.10, rate:0.98},
+  aria: {pitch:1.25, rate:1.02}, sonia: {pitch:1.08, rate:0.95}, natasha: {pitch:1.12, rate:1.00},
+  neerja: {pitch:1.18, rate:1.02}, michelle: {pitch:1.14, rate:0.97}, sara: {pitch:1.22, rate:1.03},
+  nanami: {pitch:1.15, rate:1.00}, keita: {pitch:0.75, rate:0.95}, mayu: {pitch:1.20, rate:1.02},
+  xiaoxiao: {pitch:1.18, rate:1.00}, yunxi: {pitch:0.78, rate:0.95}, xiaohan: {pitch:1.12, rate:1.02},
+  sunhi: {pitch:1.15, rate:1.00}, injoon: {pitch:0.72, rate:0.92}, hyejin: {pitch:1.20, rate:1.03},
+  denise: {pitch:1.12, rate:0.98}, henri: {pitch:0.70, rate:0.90},
+  elvira: {pitch:1.15, rate:1.00}, alvaro: {pitch:0.75, rate:0.95}, dalia: {pitch:1.18, rate:1.02},
+  katja: {pitch:1.10, rate:0.97}, conrad: {pitch:0.72, rate:0.88},
+  francisca: {pitch:1.12, rate:1.00}, antonio: {pitch:0.78, rate:0.92},
+  elsa: {pitch:1.15, rate:1.00}, diego: {pitch:0.70, rate:0.90},
+  svetlana: {pitch:1.10, rate:0.95}, dmitry: {pitch:0.68, rate:0.88},
+  zariyah: {pitch:1.15, rate:1.00}, hamed: {pitch:0.72, rate:0.92},
+  emel: {pitch:1.12, rate:1.00}, ahmet: {pitch:0.75, rate:0.90},
+  premw: {pitch:1.18, rate:1.02}, hoai: {pitch:1.15, rate:1.00},
+  agnieszka: {pitch:1.10, rate:0.97}, marek: {pitch:0.70, rate:0.88},
+  colette: {pitch:1.12, rate:0.98}, sofie: {pitch:1.15, rate:1.00},
+  athina: {pitch:1.10, rate:0.97}, gadis: {pitch:1.18, rate:1.02}, eliska: {pitch:1.12, rate:1.00}
+};
+
 class TTSEngine {
   constructor() {
     this.synth = window.speechSynthesis;
@@ -21,9 +46,6 @@ class TTSEngine {
     this._init();
   }
 
-
-// Voice pitch/rate offsets for Web Speech API differentiation
-const VOICE_OFFSETS = {"andrew": {"pitch": 0.7, "rate": 0.9}, "brian": {"pitch": 0.75, "rate": 1.0}, "guy": {"pitch": 0.8, "rate": 0.95}, "davis": {"pitch": 0.65, "rate": 0.85}, "ryan": {"pitch": 0.72, "rate": 0.92}, "tony": {"pitch": 0.78, "rate": 1.05}, "jason": {"pitch": 0.68, "rate": 0.88}, "ava": {"pitch": 1.15, "rate": 1.0}, "emma": {"pitch": 1.2, "rate": 1.05}, "jenny": {"pitch": 1.1, "rate": 0.98}, "aria": {"pitch": 1.25, "rate": 1.02}, "sonia": {"pitch": 1.08, "rate": 0.95}, "natasha": {"pitch": 1.12, "rate": 1.0}, "neerja": {"pitch": 1.18, "rate": 1.02}, "michelle": {"pitch": 1.14, "rate": 0.97}, "sara": {"pitch": 1.22, "rate": 1.03}, "nanami": {"pitch": 1.15, "rate": 1.0}, "keita": {"pitch": 0.75, "rate": 0.95}, "mayu": {"pitch": 1.2, "rate": 1.02}, "xiaoxiao": {"pitch": 1.18, "rate": 1.0}, "yunxi": {"pitch": 0.78, "rate": 0.95}, "xiaohan": {"pitch": 1.12, "rate": 1.02}, "sunhi": {"pitch": 1.15, "rate": 1.0}, "injoon": {"pitch": 0.72, "rate": 0.92}, "hyejin": {"pitch": 1.2, "rate": 1.03}, "denise": {"pitch": 1.12, "rate": 0.98}, "henri": {"pitch": 0.7, "rate": 0.9}, "elvira": {"pitch": 1.15, "rate": 1.0}, "alvaro": {"pitch": 0.75, "rate": 0.95}, "dalia": {"pitch": 1.18, "rate": 1.02}, "katja": {"pitch": 1.1, "rate": 0.97}, "conrad": {"pitch": 0.72, "rate": 0.88}, "francisca": {"pitch": 1.12, "rate": 1.0}, "antonio": {"pitch": 0.78, "rate": 0.92}, "elsa": {"pitch": 1.15, "rate": 1.0}, "diego": {"pitch": 0.7, "rate": 0.9}, "svetlana": {"pitch": 1.1, "rate": 0.95}, "dmitry": {"pitch": 0.68, "rate": 0.88}, "zariyah": {"pitch": 1.15, "rate": 1.0}, "hamed": {"pitch": 0.72, "rate": 0.92}, "emel": {"pitch": 1.12, "rate": 1.0}, "ahmet": {"pitch": 0.75, "rate": 0.9}, "premw": {"pitch": 1.18, "rate": 1.02}, "hoai": {"pitch": 1.15, "rate": 1.0}, "agnieszka": {"pitch": 1.1, "rate": 0.97}, "marek": {"pitch": 0.7, "rate": 0.88}, "colette": {"pitch": 1.12, "rate": 0.98}, "sofie": {"pitch": 1.15, "rate": 1.0}, "athina": {"pitch": 1.1, "rate": 0.97}, "gadis": {"pitch": 1.18, "rate": 1.02}, "eliska": {"pitch": 1.12, "rate": 1.0}};
 
   isMobile() {
     return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
