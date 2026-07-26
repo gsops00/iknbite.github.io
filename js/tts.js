@@ -54,11 +54,27 @@ const EDGE_VOICE_MAP = {
   // Czech
   'eliska':   'cs-CZ-VlastaNeural',
   // Thai
-  'premw':    'th-TH-PremwadeeNeural',
+  'premw':    'th-TH-PremwadeeNeural', 'somsak':  'th-TH-NiwatNeural',
   // Vietnamese
-  'hoai':     'vi-VN-HoaiMyNeural',
+  'hoai':     'vi-VN-HoaiMyNeural',   'tuan':    'vi-VN-NamMinhNeural',
   // Hindi
   'swara':    'hi-IN-SwaraNeural',     'madhur':   'hi-IN-MadhurNeural',
+  // Finnish
+  'mikko':    'fi-FI-HarriNeural',     'aino':    'fi-FI-SelmaNeural',
+  // Norwegian
+  'erling':   'nb-NO-FinnNeural',      'inger':   'nb-NO-PernilleNeural',
+  // Danish
+  'lars':     'da-DK-JeppeNeural',     'freja':   'da-DK-ChristelNeural',
+  // Hungarian
+  'zoltan':   'hu-HU-TamasNeural',     'eva':     'hu-HU-NoemiNeural',
+  // Romanian
+  'radu':     'ro-RO-EmilNeural',      'alina':   'ro-RO-AlinaNeural',
+  // Ukrainian
+  'taras':    'uk-UA-BorysNeural',     'polina':  'uk-UA-PolinaNeural',
+  // Malay
+  'yusof':    'ms-MY-OsmanNeural',     'nurul':   'ms-MY-YasminNeural',
+  // Filipino
+  'rafael':   'tl-PH-BlessicaNeural',  'maria':   'tl-PH-AngeloNeural',
   // Finnish
   'fenna':    'fi-FI-SelmaNeural',
   // Norwegian
@@ -97,6 +113,14 @@ const EASYVOICE_MAP = {
   'agnieszka': 'af_heart', 'marek': 'am_echo',
   'colette': 'af_nova', 'sofie': 'af_sky',
   'athina': 'af_aoede', 'gadis': 'af_bella', 'eliska': 'af_heart',
+  'somsak': 'am_adam', 'tuan': 'am_echo', 'daan': 'am_eric',
+  'erik_sv': 'am_michael', 'nikos': 'am_adam', 'budi': 'am_echo',
+  'ondrej': 'am_eric', 'mikko': 'am_adam', 'aino': 'af_bella',
+  'erling': 'am_echo', 'inger': 'af_heart', 'lars': 'am_eric',
+  'freja': 'af_nova', 'zoltan': 'am_michael', 'eva': 'af_sky',
+  'radu': 'am_adam', 'alina': 'af_bella', 'taras': 'am_echo',
+  'polina': 'af_heart', 'yusof': 'am_eric', 'nurul': 'af_nova',
+  'rafael': 'am_adam', 'maria': 'af_bella',
 };
 
 // WEB_SPEECH_MAP is defined in voices.js (loaded first)
@@ -120,6 +144,18 @@ const VOICE_OFFSETS = {
   svetlana: {pitch:1.10,rate:0.95}, dmitry: {pitch:0.68,rate:0.88},
   zariyah: {pitch:1.15,rate:1.00}, hamed: {pitch:0.72,rate:0.92},
   emel: {pitch:1.12,rate:1.00}, ahmet: {pitch:0.75,rate:0.90},
+  somsak: {pitch:0.72,rate:0.92}, tuan: {pitch:0.75,rate:0.95},
+  daan: {pitch:0.70,rate:0.90}, erik_sv: {pitch:0.72,rate:0.88},
+  nikos: {pitch:0.68,rate:0.92}, budi: {pitch:0.75,rate:0.95},
+  ondrej: {pitch:0.70,rate:0.90}, mikko: {pitch:0.72,rate:0.88},
+  aino: {pitch:1.15,rate:1.00}, erling: {pitch:0.70,rate:0.90},
+  inger: {pitch:1.12,rate:1.00}, lars: {pitch:0.72,rate:0.88},
+  freja: {pitch:1.18,rate:1.02}, zoltan: {pitch:0.68,rate:0.92},
+  eva: {pitch:1.15,rate:1.00}, radu: {pitch:0.75,rate:0.90},
+  alina: {pitch:1.12,rate:1.00}, taras: {pitch:0.70,rate:0.92},
+  polina: {pitch:1.18,rate:1.02}, yusof: {pitch:0.72,rate:0.88},
+  nurul: {pitch:1.15,rate:1.00}, rafael: {pitch:0.75,rate:0.95},
+  maria: {pitch:1.12,rate:1.00},
 };
 
 class TTSEngine {

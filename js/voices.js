@@ -107,6 +107,62 @@ const VOICES = [
 
   // Czech
   { id:'eliska',   name:'Eliska',   desc:'Czech female',            emoji:'🇨🇿',  colors:['#a78bfa','#7c3aed'], lang:'cs', gender:'f' },
+
+  // ---- NEW VOICES (22 additions) ----
+
+  // Thai (add male)
+  { id:'somsak',  name:'Somsak',  desc:'Warm Thai male',          emoji:'🇹🇭',  colors:['#f97316','#ea580c'], lang:'th', gender:'m' },
+
+  // Vietnamese (add male)
+  { id:'tuan',    name:'Tuan',    desc:'Gentle Vietnamese male',   emoji:'🇻🇳',  colors:['#3b82f6','#2563eb'], lang:'vi', gender:'m' },
+
+  // Dutch (add male)
+  { id:'daan',    name:'Daan',    desc:'Friendly Dutch male',      emoji:'🇳🇱',  colors:['#f97316','#ea580c'], lang:'nl', gender:'m' },
+
+  // Swedish (add male)
+  { id:'erik_sv', name:'Erik',    desc:'Calm Swedish male',        emoji:'🇸🇪',  colors:['#3b82f6','#2563eb'], lang:'sv', gender:'m' },
+
+  // Greek (add male)
+  { id:'nikos',   name:'Nikos',   desc:'Deep Greek male',          emoji:'🇬🇷',  colors:['#6366f1','#4f46e5'], lang:'el', gender:'m' },
+
+  // Indonesian (add male)
+  { id:'budi',    name:'Budi',    desc:'Friendly Indonesian male', emoji:'🇮🇩',  colors:['#10b981','#059669'], lang:'id', gender:'m' },
+
+  // Czech (add male)
+  { id:'ondrej',  name:'Ondrej',  desc:'Strong Czech male',        emoji:'🇨🇿',  colors:['#8b5cf6','#7c3aed'], lang:'cs', gender:'m' },
+
+  // Finnish (new)
+  { id:'mikko',   name:'Mikko',   desc:'Warm Finnish male',        emoji:'🇫🇮',  colors:['#3b82f6','#2563eb'], lang:'fi', gender:'m' },
+  { id:'aino',    name:'Aino',    desc:'Soft Finnish female',      emoji:'🇫🇮',  colors:['#f472b6','#ec4899'], lang:'fi', gender:'f' },
+
+  // Norwegian (new)
+  { id:'erling',  name:'Erling',  desc:'Deep Norwegian male',      emoji:'🇳🇴',  colors:['#6366f1','#4f46e5'], lang:'nb', gender:'m' },
+  { id:'inger',   name:'Inger',   desc:'Gentle Norwegian female',  emoji:'🇳🇴',  colors:['#f472b6','#ec4899'], lang:'nb', gender:'f' },
+
+  // Danish (new)
+  { id:'lars',    name:'Lars',    desc:'Friendly Danish male',     emoji:'🇩🇰',  colors:['#3b82f6','#2563eb'], lang:'da', gender:'m' },
+  { id:'freja',   name:'Freja',   desc:'Bright Danish female',     emoji:'🇩🇰',  colors:['#f472b6','#ec4899'], lang:'da', gender:'f' },
+
+  // Hungarian (new)
+  { id:'zoltan',  name:'Zoltan',  desc:'Strong Hungarian male',    emoji:'🇭🇺',  colors:['#6366f1','#4f46e5'], lang:'hu', gender:'m' },
+  { id:'eva',     name:'Eva',     desc:'Warm Hungarian female',    emoji:'🇭🇺',  colors:['#f472b6','#ec4899'], lang:'hu', gender:'f' },
+
+  // Romanian (new)
+  { id:'radu',    name:'Radu',    desc:'Friendly Romanian male',   emoji:'🇷🇴',  colors:['#3b82f6','#2563eb'], lang:'ro', gender:'m' },
+  { id:'alina',   name:'Alina',   desc:'Elegant Romanian female',  emoji:'🇷🇴',  colors:['#f472b6','#ec4899'], lang:'ro', gender:'f' },
+
+  // Ukrainian (new)
+  { id:'taras',   name:'Taras',   desc:'Deep Ukrainian male',      emoji:'🇺🇦',  colors:['#3b82f6','#2563eb'], lang:'uk', gender:'m' },
+  { id:'polina',  name:'Polina',  desc:'Sweet Ukrainian female',   emoji:'🇺🇦',  colors:['#f472b6','#ec4899'], lang:'uk', gender:'f' },
+
+  // Malay (new)
+  { id:'yusof',   name:'Yusof',   desc:'Calm Malay male',          emoji:'🇲🇾',  colors:['#10b981','#059669'], lang:'ms', gender:'m' },
+  { id:'nurul',   name:'Nurul',   desc:'Gentle Malay female',      emoji:'🇲🇾',  colors:['#f472b6','#ec4899'], lang:'ms', gender:'f' },
+
+  // Filipino (new)
+  { id:'rafael',  name:'Rafael',  desc:'Warm Filipino male',       emoji:'🇵🇭',  colors:['#f97316','#ea580c'], lang:'tl', gender:'m' },
+  { id:'maria',   name:'Maria',   desc:'Bright Filipino female',   emoji:'🇵🇭',  colors:['#f472b6','#ec4899'], lang:'tl', gender:'f' },
+
 ];
 
 // Pre-generate avatars for all voices
