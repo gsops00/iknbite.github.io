@@ -372,7 +372,7 @@ const UI = {
             For best quality, connect an Edge TTS backend. Free, no API key needed.
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Status</span><span style="color:${tts.edgeTTSApiUrl?'#10b981':'#f59e0b'}">${tts.edgeTTSApiUrl ? '✅ Edge TTS Connected' : '⚠️ Using Web Speech API'}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Status</span><span style="color:${(tts.easyVoiceKey||tts.edgeTTSApiUrl)?'#10b981':'#f59e0b'}">${tts.easyVoiceKey ? '✅ EasyVoice Connected' : tts.edgeTTSApiUrl ? '✅ Edge TTS Connected' : '⚠️ Using Web Speech API'}</span></div>
             <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Voices loaded</span><span>${tts.getVoices().length}</span></div>
             <div style="margin-top:8px;">
               <label style="font-size:12px;color:var(--surface-400);display:block;margin-bottom:4px;">Edge TTS API URL</label>
@@ -481,6 +481,25 @@ const UI = {
       this.isGenerating = false;
       this.isPlaying = false;
       this.render();
+    }
+  },
+
+  _saveEasyVoice() {
+    const keyInput = document.getElementById('ev-key-input');
+    const urlInput = document.getElementById('ev-url-input');
+    if (!keyInput) return;
+    const key = keyInput.value.trim();
+    const url = (urlInput.value.trim() || 'https://easyvoice.ae').replace(/\/$/, '');
+    if (key) {
+      localStorage.setItem('iknbite_ev_key', key);
+      localStorage.setItem('iknbite_ev_url', url);
+      tts.configure({ easyVoiceKey: key, easyVoiceUrl: url });
+      this.toast('✅ EasyVoice saved — real AI voices active!', 'success');
+    } else {
+      localStorage.removeItem('iknbite_ev_key');
+      localStorage.removeItem('iknbite_ev_url');
+      tts.configure({ easyVoiceKey: null, easyVoiceUrl: null });
+      this.toast('🔄 EasyVoice cleared', 'success');
     }
   },
 

@@ -6,11 +6,13 @@
   'use strict';
 
   // ---- Configure TTS Engine ----
-  // Set your openai-edge-tts backend URL here
-  // Deploy: docker run -d -p 5050:5050 travisvn/openai-edge-tts:latest
-  // Or use a hosted instance on Railway/Render/Fly.io
   const TTS_API_URL = localStorage.getItem('iknbite_tts_api') || '';
-  if (TTS_API_URL) tts.configure({ apiUrl: TTS_API_URL });
+  const EV_KEY = localStorage.getItem('iknbite_ev_key') || '';
+  const EV_URL = localStorage.getItem('iknbite_ev_url') || 'https://easyvoice.ae';
+  const config = {};
+  if (TTS_API_URL) config.apiUrl = TTS_API_URL;
+  if (EV_KEY) { config.easyVoiceKey = EV_KEY; config.easyVoiceUrl = EV_URL; }
+  if (Object.keys(config).length) tts.configure(config);
 
   // ---- Build Nav ----
   function buildNav() {

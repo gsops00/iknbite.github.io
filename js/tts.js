@@ -71,6 +71,34 @@ const EDGE_VOICE_MAP = {
   'edyta':    'ro-RO-AlinaNeural',
 };
 
+// EasyVoice (Kokoro) voice mapping — maps iknbite IDs to Kokoro voice IDs
+const EASYVOICE_MAP = {
+  // English Female
+  'ava': 'af_aoede', 'emma': 'af_bella', 'jenny': 'af_heart',
+  'aria': 'af_nova', 'sonia': 'af_sky', 'natasha': 'af_aoede',
+  'neerja': 'af_bella', 'michelle': 'af_heart', 'sara': 'af_nova',
+  // English Male
+  'andrew': 'am_adam', 'brian': 'am_echo', 'guy': 'am_eric',
+  'davis': 'am_michael', 'ryan': 'am_adam', 'tony': 'am_echo',
+  'jason': 'am_eric',
+  // Non-English (reuse English equivalents by gender)
+  'nanami': 'af_aoede', 'keita': 'am_adam', 'mayu': 'af_bella',
+  'xiaoxiao': 'af_heart', 'yunxi': 'am_echo', 'xiaohan': 'af_nova',
+  'sunhi': 'af_sky', 'injoon': 'am_eric', 'hyejin': 'af_aoede',
+  'denise': 'af_bella', 'henri': 'am_adam',
+  'elvira': 'af_heart', 'alvaro': 'am_echo', 'dalia': 'af_nova',
+  'katja': 'af_sky', 'conrad': 'am_eric',
+  'francisca': 'af_aoede', 'antonio': 'am_michael',
+  'elsa': 'af_bella', 'diego': 'am_adam',
+  'svetlana': 'af_heart', 'dmitry': 'am_echo',
+  'zariyah': 'af_nova', 'hamed': 'am_eric',
+  'emel': 'af_sky', 'ahmet': 'am_adam',
+  'premw': 'af_aoede', 'hoai': 'af_bella',
+  'agnieszka': 'af_heart', 'marek': 'am_echo',
+  'colette': 'af_nova', 'sofie': 'af_sky',
+  'athina': 'af_aoede', 'gadis': 'af_bella', 'eliska': 'af_heart',
+};
+
 // Web Speech API voice name fallbacks
 const WEB_SPEECH_MAP = {
   en: { f: ['Google UK English Female','Google US English','Microsoft Zira','Samantha','Karen'],
@@ -125,7 +153,9 @@ class TTSEngine {
     this._voicesLoaded = false;
     this.lastAudioBlob = null;
     this.lastAudioUrl = null;
-    this.edgeTTSApiUrl = null;  // Set via configure()
+    this.edgeTTSApiUrl = null;
+    this.easyVoiceKey = null;
+    this.easyVoiceUrl = null;
     this._currentAudio = null;
     this._init();
   }
@@ -133,6 +163,8 @@ class TTSEngine {
   // ---- Configuration ----
   configure(options) {
     if (options.apiUrl) this.edgeTTSApiUrl = options.apiUrl.replace(/\/$/, '');
+    if (options.easyVoiceKey) this.easyVoiceKey = options.easyVoiceKey;
+    if (options.easyVoiceUrl) this.easyVoiceUrl = options.easyVoiceUrl.replace(/\/$/, '');
   }
 
   isMobile() {
@@ -210,6 +242,34 @@ class TTSEngine {
     }
   }
 
+  // ---- EasyVoice API (Kokoro TTS) ----
+  async _fetchEasyVoice(text, voiceId, speed) {
+    if (!this.easyVoiceKey || !this.easyVoiceUrl) return null;
+    try {
+      const resp = await fetch(`${this.easyVoiceUrl}/v1/audio/speech`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.easyVoiceKey}`
+        },
+        body: JSON.stringify({
+          model: 'kokoro-82m',
+          input: text,
+          voice: voiceId,
+          speed: speed || 1.0,
+          response_format: 'mp3'
+        })
+      });
+      if (!resp.ok) throw new Error(`EasyVoice API error: ${resp.status}`);
+      const blob = await resp.blob();
+      if (blob.size < 100) throw new Error('Audio too small');
+      return blob;
+    } catch (e) {
+      console.warn('EasyVoice API failed:', e.message);
+      return null;
+    }
+  }
+
   // ---- Web Speech API (fallback) ----
   findSpeechVoice(voiceDef) {
     if (!this.synth) return null;
@@ -276,7 +336,21 @@ class TTSEngine {
 
     this.isGenerating = true;
 
-    // 1. Try Edge TTS API first (real neural voices)
+    // 1. Try EasyVoice (Kokoro) first
+    const evVoiceId = EASYVOICE_MAP[voiceDef.id];
+    if (evVoiceId && this.easyVoiceKey) {
+      const rate = options.rate || 1.0;
+      const blob = await this._fetchEasyVoice(text, evVoiceId, rate);
+      if (blob) {
+        this.lastAudioBlob = blob;
+        this.lastAudioUrl = URL.createObjectURL(blob);
+        await this._playBlob(blob);
+        this.isGenerating = false;
+        return;
+      }
+    }
+
+    // 2. Try Edge TTS API (neural voices)
     const edgeVoiceId = EDGE_VOICE_MAP[voiceDef.id];
     if (edgeVoiceId) {
       const rate = options.rate || 1.0;
@@ -290,7 +364,7 @@ class TTSEngine {
       }
     }
 
-    // 2. Fallback: Web Speech API
+    // 3. Fallback: Web Speech API
     this.isGenerating = false;
     return this._speakWebSpeech(text, voiceDef, options);
   }
