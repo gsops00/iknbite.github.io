@@ -5,6 +5,13 @@
 (function() {
   'use strict';
 
+  // ---- Configure TTS Engine ----
+  // Set your openai-edge-tts backend URL here
+  // Deploy: docker run -d -p 5050:5050 travisvn/openai-edge-tts:latest
+  // Or use a hosted instance on Railway/Render/Fly.io
+  const TTS_API_URL = localStorage.getItem('iknbite_tts_api') || '';
+  if (TTS_API_URL) tts.configure({ apiUrl: TTS_API_URL });
+
   // ---- Build Nav ----
   function buildNav() {
     const items = [

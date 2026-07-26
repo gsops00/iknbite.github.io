@@ -1,36 +1,119 @@
 /* ============================================
    iknbite  |  TTS Engine
-   Supports Edge TTS server (MP3) + Web Speech API fallback
+   Uses openai-edge-tts backend (Edge TTS neural voices)
+   Falls back to Web Speech API if backend unavailable
    ============================================ */
 
-// Voice pitch/rate offsets for Web Speech API differentiation
+// Edge TTS voice ID mapping per voice definition
+const EDGE_VOICE_MAP = {
+  // English
+  'ava':      'en-US-AvaNeural',      'andrew':   'en-US-AndrewNeural',
+  'brian':    'en-US-BrianNeural',     'emma':     'en-US-EmmaNeural',
+  'jenny':    'en-US-JennyNeural',     'guy':      'en-US-GuyNeural',
+  'aria':     'en-US-AriaNeural',      'davis':    'en-US-DavisNeural',
+  'sonia':    'en-GB-SoniaNeural',     'ryan':     'en-GB-RyanNeural',
+  'natasha':  'en-AU-NatashaNeural',   'neerja':   'en-IN-NeerjaNeural',
+  'tony':     'en-US-TonyNeural',      'michelle': 'en-US-MichelleNeural',
+  'jason':    'en-US-JasonNeural',     'sara':     'en-US-SaraNeural',
+  // Japanese
+  'nanami':   'ja-JP-NanamiNeural',    'keita':    'ja-JP-KeitaNeural',
+  'mayu':     'ja-JP-MayuNeural',
+  // Chinese
+  'xiaoxiao': 'zh-CN-XiaoxiaoNeural',  'yunxi':    'zh-CN-YunxiNeural',
+  'xiaohan':  'zh-CN-XiaohanNeural',
+  // Korean
+  'sunhi':    'ko-KR-SunHiNeural',     'injoon':   'ko-KR-InJoonNeural',
+  'hyejin':   'ko-KR-HyeJinNeural',
+  // French
+  'denise':   'fr-FR-DeniseNeural',    'henri':    'fr-FR-HenriNeural',
+  // Spanish
+  'elvira':   'es-ES-ElviraNeural',    'alvaro':   'es-ES-AlvaroNeural',
+  'dalia':    'es-ES-DaliaNeural',
+  // German
+  'katja':    'de-DE-KatjaNeural',     'conrad':   'de-DE-ConradNeural',
+  // Portuguese
+  'francisca':'pt-BR-FranciscaNeural', 'antonio':  'pt-BR-AntonioNeural',
+  // Italian
+  'elsa':     'it-IT-ElsaNeural',      'diego':    'it-IT-DiegoNeural',
+  // Russian
+  'svetlana': 'ru-RU-SvetlanaNeural',  'dmitry':   'ru-RU-DmitryNeural',
+  // Arabic
+  'zariyah':  'ar-SA-ZariyahNeural',   'hamed':    'ar-SA-HamedNeural',
+  // Turkish
+  'emel':     'tr-TR-EmelNeural',      'ahmet':    'tr-TR-AhmetNeural',
+  // Polish
+  'agnieszka':'pl-PL-AgnieszkaNeural', 'marek':    'pl-PL-MarekNeural',
+  // Dutch
+  'colette':  'nl-NL-ColetteNeural',
+  // Swedish
+  'sofie':    'sv-SE-SofieNeural',
+  // Greek
+  'athina':   'el-GR-AthinaNeural',
+  // Indonesian
+  'gadis':    'id-ID-GadisNeural',
+  // Czech
+  'eliska':   'cs-CZ-VlastaNeural',
+  // Thai
+  'premw':    'th-TH-PremwadeeNeural',
+  // Vietnamese
+  'hoai':     'vi-VN-HoaiMyNeural',
+  // Hindi
+  'swara':    'hi-IN-SwaraNeural',     'madhur':   'hi-IN-MadhurNeural',
+  // Finnish
+  'fenna':    'fi-FI-SelmaNeural',
+  // Norwegian
+  'noemi':    'nb-NO-PernilleNeural',  'finn':     'nb-NO-FinnNeural',
+  // Danish
+  'helena':   'da-DK-ChristelNeural',  'jeppe':    'da-DK-JeppeNeural',
+  // Hungarian
+  'gudje':    'hu-HU-NoemiNeural',
+  // Romanian
+  'edyta':    'ro-RO-AlinaNeural',
+};
+
+// Web Speech API voice name fallbacks
+const WEB_SPEECH_MAP = {
+  en: { f: ['Google UK English Female','Google US English','Microsoft Zira','Samantha','Karen'],
+        m: ['Google UK English Male','Google US English','Microsoft David','Daniel','Alex'] },
+  es: { f: ['Google español','Microsoft Helena'], m: ['Google español','Microsoft Pablo'] },
+  fr: { f: ['Google français','Microsoft Hortense'], m: ['Google français','Microsoft Paul'] },
+  de: { f: ['Google Deutsch','Microsoft Hedda'], m: ['Google Deutsch','Microsoft Stefan'] },
+  ja: { f: ['Google 日本語','Microsoft Haruka'], m: ['Google 日本語','Microsoft Ichiro'] },
+  zh: { f: ['Google 普通话','Microsoft Lili','Ting-Ting'], m: ['Google 普通话','Kangkang'] },
+  ko: { f: ['Google 한국의','Microsoft Heami'], m: ['Google 한국의','Microsoft SunHi'] },
+  hi: { f: ['Google हिन्दी','Microsoft Heera'], m: ['Google हिन्दी','Microsoft Ravi'] },
+  pt: { f: ['Google português','Microsoft Maria'], m: ['Google português','Microsoft Antonio'] },
+  it: { f: ['Google italiano','Microsoft Cosimo'], m: ['Google italiano','Microsoft Cosimo'] },
+  ru: { f: ['Google русский','Microsoft Irina'], m: ['Google русский','Microsoft Dmitri'] },
+  ar: { f: ['Google العربية','Microsoft Hoda'], m: ['Google العربية','Microsoft Naief'] },
+  tr: { f: ['Google Türkçe'], m: ['Google Türkçe'] },
+  pl: { f: ['Google Polski','Microsoft Paulina'], m: ['Google Polski'] },
+};
+
+// Voice pitch/rate offsets for Web Speech API fallback differentiation
 const VOICE_OFFSETS = {
-  andrew: {pitch:0.70, rate:0.90}, brian: {pitch:0.75, rate:1.00}, guy: {pitch:0.80, rate:0.95},
-  davis: {pitch:0.65, rate:0.85}, ryan: {pitch:0.72, rate:0.92}, tony: {pitch:0.78, rate:1.05},
-  jason: {pitch:0.68, rate:0.88},
-  ava: {pitch:1.15, rate:1.00}, emma: {pitch:1.20, rate:1.05}, jenny: {pitch:1.10, rate:0.98},
-  aria: {pitch:1.25, rate:1.02}, sonia: {pitch:1.08, rate:0.95}, natasha: {pitch:1.12, rate:1.00},
-  neerja: {pitch:1.18, rate:1.02}, michelle: {pitch:1.14, rate:0.97}, sara: {pitch:1.22, rate:1.03},
-  nanami: {pitch:1.15, rate:1.00}, keita: {pitch:0.75, rate:0.95}, mayu: {pitch:1.20, rate:1.02},
-  xiaoxiao: {pitch:1.18, rate:1.00}, yunxi: {pitch:0.78, rate:0.95}, xiaohan: {pitch:1.12, rate:1.02},
-  sunhi: {pitch:1.15, rate:1.00}, injoon: {pitch:0.72, rate:0.92}, hyejin: {pitch:1.20, rate:1.03},
-  denise: {pitch:1.12, rate:0.98}, henri: {pitch:0.70, rate:0.90},
-  elvira: {pitch:1.15, rate:1.00}, alvaro: {pitch:0.75, rate:0.95}, dalia: {pitch:1.18, rate:1.02},
-  katja: {pitch:1.10, rate:0.97}, conrad: {pitch:0.72, rate:0.88},
-  francisca: {pitch:1.12, rate:1.00}, antonio: {pitch:0.78, rate:0.92},
-  elsa: {pitch:1.15, rate:1.00}, diego: {pitch:0.70, rate:0.90},
-  svetlana: {pitch:1.10, rate:0.95}, dmitry: {pitch:0.68, rate:0.88},
-  zariyah: {pitch:1.15, rate:1.00}, hamed: {pitch:0.72, rate:0.92},
-  emel: {pitch:1.12, rate:1.00}, ahmet: {pitch:0.75, rate:0.90},
-  premw: {pitch:1.18, rate:1.02}, hoai: {pitch:1.15, rate:1.00},
-  agnieszka: {pitch:1.10, rate:0.97}, marek: {pitch:0.70, rate:0.88},
-  colette: {pitch:1.12, rate:0.98}, sofie: {pitch:1.15, rate:1.00},
-  athina: {pitch:1.10, rate:0.97}, gadis: {pitch:1.18, rate:1.02}, eliska: {pitch:1.12, rate:1.00}
+  andrew: {pitch:0.70,rate:0.90}, brian: {pitch:0.75,rate:1.00}, guy: {pitch:0.80,rate:0.95},
+  davis: {pitch:0.65,rate:0.85}, ryan: {pitch:0.72,rate:0.92}, tony: {pitch:0.78,rate:1.05},
+  jason: {pitch:0.68,rate:0.88},
+  ava: {pitch:1.15,rate:1.00}, emma: {pitch:1.20,rate:1.05}, jenny: {pitch:1.10,rate:0.98},
+  aria: {pitch:1.25,rate:1.02}, sonia: {pitch:1.08,rate:0.95}, natasha: {pitch:1.12,rate:1.00},
+  neerja: {pitch:1.18,rate:1.02}, michelle: {pitch:1.14,rate:0.97}, sara: {pitch:1.22,rate:1.03},
+  nanami: {pitch:1.15,rate:1.00}, keita: {pitch:0.75,rate:0.95}, mayu: {pitch:1.20,rate:1.02},
+  xiaoxiao: {pitch:1.18,rate:1.00}, yunxi: {pitch:0.78,rate:0.95}, xiaohan: {pitch:1.12,rate:1.02},
+  sunhi: {pitch:1.15,rate:1.00}, injoon: {pitch:0.72,rate:0.92}, hyejin: {pitch:1.20,rate:1.03},
+  denise: {pitch:1.12,rate:0.98}, henri: {pitch:0.70,rate:0.90},
+  elvira: {pitch:1.15,rate:1.00}, alvaro: {pitch:0.75,rate:0.95}, dalia: {pitch:1.18,rate:1.02},
+  katja: {pitch:1.10,rate:0.97}, conrad: {pitch:0.72,rate:0.88},
+  francisca: {pitch:1.12,rate:1.00}, antonio: {pitch:0.78,rate:0.92},
+  elsa: {pitch:1.15,rate:1.00}, diego: {pitch:0.70,rate:0.90},
+  svetlana: {pitch:1.10,rate:0.95}, dmitry: {pitch:0.68,rate:0.88},
+  zariyah: {pitch:1.15,rate:1.00}, hamed: {pitch:0.72,rate:0.92},
+  emel: {pitch:1.12,rate:1.00}, ahmet: {pitch:0.75,rate:0.90},
 };
 
 class TTSEngine {
   constructor() {
-    this.synth = window.speechSynthesis;
+    this.synth = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
     this.currentUtterance = null;
     this.currentVoice = null;
     this.isSpeaking = false;
@@ -42,10 +125,15 @@ class TTSEngine {
     this._voicesLoaded = false;
     this.lastAudioBlob = null;
     this.lastAudioUrl = null;
-    this.edgeTTSAvailable = null;
+    this.edgeTTSApiUrl = null;  // Set via configure()
+    this._currentAudio = null;
     this._init();
   }
 
+  // ---- Configuration ----
+  configure(options) {
+    if (options.apiUrl) this.edgeTTSApiUrl = options.apiUrl.replace(/\/$/, '');
+  }
 
   isMobile() {
     return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -58,9 +146,7 @@ class TTSEngine {
   async shareAudio() {
     const blob = this.lastAudioBlob;
     const url = this.lastAudioUrl;
-    if (!blob && !url) {
-      throw new Error('No audio available to share');
-    }
+    if (!blob && !url) throw new Error('No audio available to share');
     const audioUrl = blob ? URL.createObjectURL(blob) : url;
     const fileName = this._getFilename();
     try {
@@ -71,7 +157,6 @@ class TTSEngine {
           return 'shared';
         }
       }
-      // Fallback: open in new tab for manual save
       window.open(audioUrl, '_blank');
       return 'opened';
     } finally {
@@ -87,34 +172,54 @@ class TTSEngine {
   }
 
   _init() {
-    const load = () => {
-      this._voicesLoaded = true;
-      this._voices = this.synth.getVoices();
-    };
+    if (!this.synth) return;
+    const load = () => { this._voicesLoaded = true; this._voices = this.synth.getVoices(); };
     load();
-    if (this.synth.onvoiceschanged !== undefined) {
-      this.synth.onvoiceschanged = load;
-    }
+    if (this.synth.onvoiceschanged !== undefined) this.synth.onvoiceschanged = load;
     setTimeout(load, 500);
     setTimeout(load, 1500);
   }
 
   getVoices() {
-    if (!this._voicesLoaded) {
-      this._voices = this.synth.getVoices();
-    }
+    if (!this._voicesLoaded && this.synth) this._voices = this.synth.getVoices();
     return this._voices || [];
   }
 
+  // ---- Edge TTS API (primary) ----
+  async _fetchEdgeTTS(text, voiceId, speed) {
+    if (!this.edgeTTSApiUrl) return null;
+    try {
+      const resp = await fetch(`${this.edgeTTSApiUrl}/v1/audio/speech`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: text,
+          voice: voiceId,
+          model: 'tts-1',
+          speed: speed || 1.0,
+          response_format: 'mp3'
+        })
+      });
+      if (!resp.ok) throw new Error(`Edge TTS API error: ${resp.status}`);
+      const blob = await resp.blob();
+      if (blob.size < 100) throw new Error('Audio too small, likely error');
+      return blob;
+    } catch (e) {
+      console.warn('Edge TTS API failed:', e.message);
+      return null;
+    }
+  }
+
+  // ---- Web Speech API (fallback) ----
   findSpeechVoice(voiceDef) {
+    if (!this.synth) return null;
     const allVoices = this.getVoices();
     if (allVoices.length === 0) return null;
 
     const gender = voiceDef.gender || 'f';
     const lang = voiceDef.lang || 'en';
-    const voiceId = voiceDef.id || '';
 
-    // Try exact name match from WEB_SPEECH_MAP
+    // Try WEB_SPEECH_MAP
     const map = WEB_SPEECH_MAP[lang];
     if (map && map[gender]) {
       for (const name of map[gender]) {
@@ -123,217 +228,95 @@ class TTSEngine {
       }
     }
 
-    // For male voices: try to find ANY male-sounding voice in the language
+    // For male voices, search harder
     if (gender === 'm') {
-      const maleNames = ['Male', 'David', 'Daniel', 'Paul', 'Stefan', 'Pablo', 'Hamed',
-                         'Ravi', 'Dmitri', 'Naief', 'Antonio', 'Cosimo'];
-      for (const name of maleNames) {
-        const found = allVoices.find(v =>
-          (v.lang.startsWith(lang)) && (v.name.includes(name) || v.name.toLowerCase().includes('male'))
-        );
+      const maleWords = ['Male','David','Daniel','Paul','Stefan'];
+      for (const w of maleWords) {
+        const found = allVoices.find(v => v.lang.startsWith(lang) && v.name.includes(w));
         if (found) return found;
       }
-      // Try any male voice in the language
-      const maleVoices = allVoices.filter(v => v.lang.startsWith(lang) && v.name.toLowerCase().includes('male'));
-      if (maleVoices.length > 0) return maleVoices[0];
     }
 
-    // Fallback: any voice in the language
+    // Any voice in the language
     const candidates = allVoices.filter(v => v.lang.startsWith(lang));
-    if (candidates.length > 0) {
-      const local = candidates.filter(v => v.localService);
-      return local[0] || candidates[0];
-    }
+    if (candidates.length > 0) return candidates.filter(v => v.localService)[0] || candidates[0];
 
-    // Final fallback: first English voice
     return allVoices.find(v => v.lang.startsWith('en')) || allVoices[0];
   }
 
-  // Map voice def to Edge TTS voice ID
-  _getEdgeVoiceId(voiceDef) {
-    const EDGE_MAP = {
-      'en': { 'f': 'en-US-AvaNeural', 'm': 'en-US-AndrewNeural' },
-      'ja': { 'f': 'ja-JP-NanamiNeural', 'm': 'ja-JP-KeitaNeural' },
-      'zh': { 'f': 'zh-CN-XiaoxiaoNeural', 'm': 'zh-CN-YunxiNeural' },
-      'ko': { 'f': 'ko-KR-SunHiNeural', 'm': 'ko-KR-InJoonNeural' },
-      'hi': { 'f': 'hi-IN-SwaraNeural', 'm': 'hi-IN-MadhurNeural' },
-      'fr': { 'f': 'fr-FR-DeniseNeural', 'm': 'fr-FR-HenriNeural' },
-      'es': { 'f': 'es-ES-ElviraNeural', 'm': 'es-ES-AlvaroNeural' },
-      'de': { 'f': 'de-DE-KatjaNeural', 'm': 'de-DE-ConradNeural' },
-      'pt': { 'f': 'pt-BR-FranciscaNeural', 'm': 'pt-BR-AntonioNeural' },
-      'it': { 'f': 'it-IT-ElsaNeural', 'm': 'it-IT-DiegoNeural' },
-      'ru': { 'f': 'ru-RU-SvetlanaNeural', 'm': 'ru-RU-DmitryNeural' },
-      'ar': { 'f': 'ar-SA-ZariyahNeural', 'm': 'ar-SA-HamedNeural' },
-      'tr': { 'f': 'tr-TR-EmelNeural', 'm': 'tr-TR-AhmetNeural' },
-      'pl': { 'f': 'pl-PL-AgnieszkaNeural', 'm': 'pl-PL-MarekNeural' },
-      'nl': { 'f': 'nl-NL-ColetteNeural', 'm': 'nl-NL-MaartenNeural' },
-      'sv': { 'f': 'sv-SE-SofieNeural', 'm': 'sv-SE-MattiasNeural' },
-      'da': { 'f': 'da-DK-ChristelNeural', 'm': 'da-DK-JeppeNeural' },
-      'fi': { 'f': 'fi-FI-SelmaNeural', 'm': 'fi-FI-HarriNeural' },
-      'nb': { 'f': 'nb-NO-PernilleNeural', 'm': 'nb-NO-FinnNeural' },
-      'cs': { 'f': 'cs-CZ-VlastaNeural', 'm': 'cs-CZ-AntoninNeural' },
-      'el': { 'f': 'el-GR-AthinaNeural', 'm': 'el-GR-NestorNeural' },
-      'hu': { 'f': 'hu-HU-NoemiNeural', 'm': 'hu-HU-TamasNeural' },
-      'ro': { 'f': 'ro-RO-AlinaNeural', 'm': 'ro-RO-EmilNeural' },
-      'th': { 'f': 'th-TH-PremwadeeNeural', 'm': 'th-TH-NiwatNeural' },
-      'vi': { 'f': 'vi-VN-HoaiMyNeural', 'm': 'vi-VN-NamMinhNeural' },
-      'id': { 'f': 'id-ID-GadisNeural', 'm': 'id-ID-ArdiNeural' },
-      'ms': { 'f': 'ms-MY-YasminNeural', 'm': 'ms-MY-OsmanNeural' },
-      'uk': { 'f': 'uk-UA-PolinaNeural', 'm': 'uk-UA-BorysNeural' },
-    };
-    const lang = voiceDef.lang || 'en';
-    const gender = voiceDef.gender || 'f';
-    const map = EDGE_MAP[lang];
-    if (map && map[gender]) return map[gender];
-    return 'en-US-AvaNeural';
-  }
-
-  async _checkEdgeTTS() {
-    if (this.edgeTTSAvailable !== null) return this.edgeTTSAvailable;
-    // Try multiple backend URLs
-    const urls = [
-      window.location.origin + '/health',
-      'https://iknbite-tts.pages.dev/health',
-    ];
-    for (const url of urls) {
-      try {
-        const resp = await fetch(url, { signal: AbortSignal.timeout(3000) });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.engine === 'edge-tts') {
-            this.edgeTTSAvailable = true;
-            this._edgeTTSBase = url.replace('/health', '');
-            return true;
-          }
-        }
-      } catch {}
-    }
-    this.edgeTTSAvailable = false;
-    return false;
-  }
-
-  async _generateEdgeTTS(text, voiceDef, rate) {
-    const voiceId = this._getEdgeVoiceId(voiceDef);
-    const rateStr = rate !== 1.0 ? `${Math.round((rate - 1) * 100)}%` : '+0%';
-
-    const resp = await fetch(window.location.origin + '/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voice: voiceId, rate: rateStr, volume: '+0%' }),
-    });
-
-    if (!resp.ok) throw new Error('Edge TTS generation failed');
-
-    const blob = await resp.blob();
-    return blob;
-  }
-
-  async _playBlob(blob) {
-    const url = URL.createObjectURL(blob);
-    this.lastAudioBlob = blob;
-    this.lastAudioUrl = url;
-
-    return new Promise((resolve, reject) => {
-      const audio = new Audio(url);
-      this._currentAudio = audio;
-
-      audio.onplay = () => {
-        this.isSpeaking = true;
-        if (this.onStart) this.onStart();
-      };
-
-      audio.onended = () => {
-        this.isSpeaking = false;
-        if (this.onEnd) this.onEnd();
-        URL.revokeObjectURL(url);
-        this.lastAudioUrl = null;
-        resolve();
-      };
-
-      audio.onerror = (e) => {
-        this.isSpeaking = false;
-        URL.revokeObjectURL(url);
-        this.lastAudioUrl = null;
-        reject(new Error('Audio playback failed'));
-      };
-
-      audio.play().catch(reject);
-    });
-  }
-
-  async speak(text, voiceDef, options = {}) {
-    this.stop();
-    this.lastAudioBlob = null;
-    this.lastAudioUrl = null;
-
-    if (!text || !text.trim()) {
-      throw new Error('No text provided');
-    }
-
-    // Try Edge TTS first (produces downloadable MP3)
-    const useEdge = await this._checkEdgeTTS();
-    if (useEdge) {
-      try {
-        const blob = await this._generateEdgeTTS(text, voiceDef, options.rate || 1.0);
-        await this._playBlob(blob);
-        return;
-      } catch (e) {
-        console.warn('Edge TTS failed, falling back to Web Speech API:', e);
-      }
-    }
-
-    // Fallback: Web Speech API
-    if (!this.synth) {
-      throw new Error('Speech synthesis not supported');
-    }
+  _speakWebSpeech(text, voiceDef, options) {
+    if (!this.synth) throw new Error('Speech synthesis not supported');
 
     const speechVoice = this.findSpeechVoice(voiceDef);
-    if (!speechVoice) {
-      throw new Error('No suitable voice found for ' + voiceDef.lang);
-    }
+    if (!speechVoice) throw new Error('No suitable voice found for ' + voiceDef.lang);
 
     return new Promise((resolve, reject) => {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.voice = speechVoice;
-      // Apply voice-specific offsets for differentiation (Web Speech API only)
       const offsets = VOICE_OFFSETS[voiceDef.id] || {};
       utterance.rate = (options.rate || 1.0) * (offsets.rate || 1.0);
       utterance.pitch = (options.pitch || 1.0) * (offsets.pitch || 1.0);
       utterance.volume = options.volume || 1.0;
 
-      utterance.onstart = () => {
-        this.isSpeaking = true;
-        this.isPaused = false;
-        if (this.onStart) this.onStart();
-      };
-
-      utterance.onend = () => {
-        this.isSpeaking = false;
-        this.isPaused = false;
-        this.currentUtterance = null;
-        if (this.onEnd) this.onEnd();
-        resolve();
-      };
-
-      utterance.onerror = (e) => {
-        this.isSpeaking = false;
-        this.isPaused = false;
-        this.currentUtterance = null;
-        if (this.onError) this.onError(e);
-        if (e.error !== 'canceled') {
-          reject(e);
-        } else {
-          resolve();
-        }
-      };
-
-      utterance.onboundary = (e) => {
-        if (this.onBoundary) this.onBoundary(e);
-      };
+      utterance.onstart = () => { this.isSpeaking = true; this.isPaused = false; if (this.onStart) this.onStart(); };
+      utterance.onend = () => { this.isSpeaking = false; this.isPaused = false; this.currentUtterance = null; if (this.onEnd) this.onEnd(); resolve(); };
+      utterance.onerror = (e) => { this.isSpeaking = false; this.isPaused = false; this.currentUtterance = null; if (this.onError) this.onError(e); if (e.error !== 'canceled') reject(e); else resolve(); };
+      utterance.onboundary = (e) => { if (this.onBoundary) this.onBoundary(e); };
 
       this.currentUtterance = utterance;
       this.currentVoice = voiceDef;
       this.synth.speak(utterance);
+    });
+  }
+
+  // ---- Main speak method ----
+  async speak(text, voiceDef, options = {}) {
+    if (!text || !text.trim()) throw new Error('No text to speak');
+    if (this.isSpeaking) this.stop();
+
+    this.isGenerating = true;
+
+    // 1. Try Edge TTS API first (real neural voices)
+    const edgeVoiceId = EDGE_VOICE_MAP[voiceDef.id];
+    if (edgeVoiceId) {
+      const rate = options.rate || 1.0;
+      const blob = await this._fetchEdgeTTS(text, edgeVoiceId, rate);
+      if (blob) {
+        this.lastAudioBlob = blob;
+        this.lastAudioUrl = URL.createObjectURL(blob);
+        await this._playBlob(blob);
+        this.isGenerating = false;
+        return;
+      }
+    }
+
+    // 2. Fallback: Web Speech API
+    this.isGenerating = false;
+    return this._speakWebSpeech(text, voiceDef, options);
+  }
+
+  async _playBlob(blob) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      this._currentAudio = audio;
+      this.isSpeaking = true;
+
+      audio.onended = () => {
+        this.isSpeaking = false;
+        this._currentAudio = null;
+        URL.revokeObjectURL(url);
+        if (this.onEnd) this.onEnd();
+        resolve();
+      };
+      audio.onerror = (e) => {
+        this.isSpeaking = false;
+        this._currentAudio = null;
+        URL.revokeObjectURL(url);
+        if (this.onError) this.onError(e);
+        reject(e);
+      };
+      audio.play().catch(reject);
     });
   }
 
@@ -353,62 +336,35 @@ class TTSEngine {
       ar: "مرحبا! أنا صوتك الجديد. دعني أقرأ لك شيئاً.",
       tr: "Merhaba! Ben senin yeni sesin. Sana bir şey okuyayım.",
       pl: "Cześć! Jestem twoim nowym głosem. Pozwól, że przeczytam ci coś.",
-      nl: "Hallo! Ik ben je nieuwe stem. Laat me iets voor je voorlezen.",
-      sv: "Hej! Jag är din nya röst. Låt mig läsa något för dig.",
-      da: "Hej! Jeg er din nye stemme. Lad mig læse noget for dig.",
-      fi: "Hei! Olen uusi äänesi. Anna minun lukea sinulle jotain.",
-      nb: "Hei! Jeg er den nye stemmen din. La meg lese noe for deg.",
-      cs: "Ahoj! Jsem tvůj nový hlas. Dovol mi přečíst něco.",
-      el: "Γεια σας! Είμαι η νέα σας φωνή. Αφήστε με να σας διαβάσω κάτι.",
-      hu: "Szia! Az új hangod vagyok. Hadd olvassak fel neked valamit.",
-      ro: "Bună! Sunt vocea ta nouă. Lasă-mă să îți citesc ceva.",
-      th: "สวัสดี! ฉันเป็นเสียงใหม่ของคุณ ให้ฉันอ่านอะไรสักอย่างให้คุณฟัง",
-      vi: "Xin chào! Tôi là giọng nói mới của bạn. Để tôi đọc cho bạn nghe.",
-      id: "Halo! Aku suara barumu. Biar aku bacakan sesuatu untukmu.",
-      ms: "Halo! Aku suara baru kamu. Biar aku baca sesuatu untuk kamu.",
-      uk: "Привіт! Я твій новий голос. Дозволь мені тобі щось прочитати.",
     };
     const text = sampleTexts[voiceDef.lang] || sampleTexts.en;
     return this.speak(text, voiceDef, { rate: 1.0, pitch: 1.0, volume: 1.0 });
   }
 
   pause() {
-    if (this._currentAudio) {
-      this._currentAudio.pause();
-      this.isPaused = true;
-    } else if (this.isSpeaking && !this.isPaused) {
-      this.synth.pause();
-      this.isPaused = true;
-    }
+    if (this._currentAudio) { this._currentAudio.pause(); this.isPaused = true; }
+    else if (this.isSpeaking && !this.isPaused && this.synth) { this.synth.pause(); this.isPaused = true; }
   }
 
   resume() {
-    if (this._currentAudio && this.isPaused) {
-      this._currentAudio.play();
-      this.isPaused = false;
-    } else if (this.isPaused) {
-      this.synth.resume();
-      this.isPaused = false;
-    }
+    if (this._currentAudio && this.isPaused) { this._currentAudio.play(); this.isPaused = false; }
+    else if (this.isPaused && this.synth) { this.synth.resume(); this.isPaused = false; }
   }
 
   stop() {
     if (this._currentAudio) {
       this._currentAudio.pause();
       this._currentAudio.currentTime = 0;
-      if (this.lastAudioUrl) {
-        URL.revokeObjectURL(this.lastAudioUrl);
-      }
       this._currentAudio = null;
     }
-    this.synth.cancel();
+    if (this.synth) this.synth.cancel();
     this.isSpeaking = false;
     this.isPaused = false;
     this.currentUtterance = null;
   }
 
   isSupported() {
-    return 'speechSynthesis' in window;
+    return !!(this.edgeTTSApiUrl || (typeof speechSynthesis !== 'undefined'));
   }
 
   canDownload() {
@@ -416,34 +372,19 @@ class TTSEngine {
   }
 
   downloadAudio() {
-    if (!this.lastAudioBlob && !this.lastAudioUrl) {
-      throw new Error('No audio available for download');
-    }
-
+    if (!this.lastAudioBlob && !this.lastAudioUrl) throw new Error('No audio available');
     const filename = this._getFilename();
-
     if (this.lastAudioBlob) {
       const url = URL.createObjectURL(this.lastAudioBlob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
+      a.href = url; a.download = filename; a.style.display = 'none';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
       return filename;
     }
-
-    // URL-based download (Edge TTS)
     const a = document.createElement('a');
-    a.href = this.lastAudioUrl;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
+    a.href = this.lastAudioUrl; a.download = filename; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
     setTimeout(() => document.body.removeChild(a), 100);
     return filename;
   }
