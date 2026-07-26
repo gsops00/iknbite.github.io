@@ -99,24 +99,7 @@ const EASYVOICE_MAP = {
   'athina': 'af_aoede', 'gadis': 'af_bella', 'eliska': 'af_heart',
 };
 
-// Web Speech API voice name fallbacks
-const WEB_SPEECH_MAP = {
-  en: { f: ['Google UK English Female','Google US English','Microsoft Zira','Samantha','Karen'],
-        m: ['Google UK English Male','Google US English','Microsoft David','Daniel','Alex'] },
-  es: { f: ['Google español','Microsoft Helena'], m: ['Google español','Microsoft Pablo'] },
-  fr: { f: ['Google français','Microsoft Hortense'], m: ['Google français','Microsoft Paul'] },
-  de: { f: ['Google Deutsch','Microsoft Hedda'], m: ['Google Deutsch','Microsoft Stefan'] },
-  ja: { f: ['Google 日本語','Microsoft Haruka'], m: ['Google 日本語','Microsoft Ichiro'] },
-  zh: { f: ['Google 普通话','Microsoft Lili','Ting-Ting'], m: ['Google 普通话','Kangkang'] },
-  ko: { f: ['Google 한국의','Microsoft Heami'], m: ['Google 한국의','Microsoft SunHi'] },
-  hi: { f: ['Google हिन्दी','Microsoft Heera'], m: ['Google हिन्दी','Microsoft Ravi'] },
-  pt: { f: ['Google português','Microsoft Maria'], m: ['Google português','Microsoft Antonio'] },
-  it: { f: ['Google italiano','Microsoft Cosimo'], m: ['Google italiano','Microsoft Cosimo'] },
-  ru: { f: ['Google русский','Microsoft Irina'], m: ['Google русский','Microsoft Dmitri'] },
-  ar: { f: ['Google العربية','Microsoft Hoda'], m: ['Google العربية','Microsoft Naief'] },
-  tr: { f: ['Google Türkçe'], m: ['Google Türkçe'] },
-  pl: { f: ['Google Polski','Microsoft Paulina'], m: ['Google Polski'] },
-};
+// WEB_SPEECH_MAP is defined in voices.js (loaded first)
 
 // Voice pitch/rate offsets for Web Speech API fallback differentiation
 const VOICE_OFFSETS = {
