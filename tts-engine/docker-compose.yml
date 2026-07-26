@@ -1,0 +1,25 @@
+services:
+  tts:
+    build: .
+    ports:
+      - "5050:5050"
+    environment:
+      - TTS_HOST=0.0.0.0
+      - TTS_PORT=5050
+      - TTS_API_KEY=${TTS_API_KEY:-}
+      - TTS_DEVICE=${TTS_DEVICE:-}
+      - TTS_TARGET_LUFS=-16.0
+      - TTS_SAMPLE_RATE=24000
+    volumes:
+      - tts-models:/root/.cache
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  tts-models:
