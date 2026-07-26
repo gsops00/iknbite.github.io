@@ -21,6 +21,10 @@ class TTSEngine {
     this._init();
   }
 
+
+// Voice pitch/rate offsets for Web Speech API differentiation
+const VOICE_OFFSETS = {"andrew": {"pitch": 0.7, "rate": 0.9}, "brian": {"pitch": 0.75, "rate": 1.0}, "guy": {"pitch": 0.8, "rate": 0.95}, "davis": {"pitch": 0.65, "rate": 0.85}, "ryan": {"pitch": 0.72, "rate": 0.92}, "tony": {"pitch": 0.78, "rate": 1.05}, "jason": {"pitch": 0.68, "rate": 0.88}, "ava": {"pitch": 1.15, "rate": 1.0}, "emma": {"pitch": 1.2, "rate": 1.05}, "jenny": {"pitch": 1.1, "rate": 0.98}, "aria": {"pitch": 1.25, "rate": 1.02}, "sonia": {"pitch": 1.08, "rate": 0.95}, "natasha": {"pitch": 1.12, "rate": 1.0}, "neerja": {"pitch": 1.18, "rate": 1.02}, "michelle": {"pitch": 1.14, "rate": 0.97}, "sara": {"pitch": 1.22, "rate": 1.03}, "nanami": {"pitch": 1.15, "rate": 1.0}, "keita": {"pitch": 0.75, "rate": 0.95}, "mayu": {"pitch": 1.2, "rate": 1.02}, "xiaoxiao": {"pitch": 1.18, "rate": 1.0}, "yunxi": {"pitch": 0.78, "rate": 0.95}, "xiaohan": {"pitch": 1.12, "rate": 1.02}, "sunhi": {"pitch": 1.15, "rate": 1.0}, "injoon": {"pitch": 0.72, "rate": 0.92}, "hyejin": {"pitch": 1.2, "rate": 1.03}, "denise": {"pitch": 1.12, "rate": 0.98}, "henri": {"pitch": 0.7, "rate": 0.9}, "elvira": {"pitch": 1.15, "rate": 1.0}, "alvaro": {"pitch": 0.75, "rate": 0.95}, "dalia": {"pitch": 1.18, "rate": 1.02}, "katja": {"pitch": 1.1, "rate": 0.97}, "conrad": {"pitch": 0.72, "rate": 0.88}, "francisca": {"pitch": 1.12, "rate": 1.0}, "antonio": {"pitch": 0.78, "rate": 0.92}, "elsa": {"pitch": 1.15, "rate": 1.0}, "diego": {"pitch": 0.7, "rate": 0.9}, "svetlana": {"pitch": 1.1, "rate": 0.95}, "dmitry": {"pitch": 0.68, "rate": 0.88}, "zariyah": {"pitch": 1.15, "rate": 1.0}, "hamed": {"pitch": 0.72, "rate": 0.92}, "emel": {"pitch": 1.12, "rate": 1.0}, "ahmet": {"pitch": 0.75, "rate": 0.9}, "premw": {"pitch": 1.18, "rate": 1.02}, "hoai": {"pitch": 1.15, "rate": 1.0}, "agnieszka": {"pitch": 1.1, "rate": 0.97}, "marek": {"pitch": 0.7, "rate": 0.88}, "colette": {"pitch": 1.12, "rate": 0.98}, "sofie": {"pitch": 1.15, "rate": 1.0}, "athina": {"pitch": 1.1, "rate": 0.97}, "gadis": {"pitch": 1.18, "rate": 1.02}, "eliska": {"pitch": 1.12, "rate": 1.0}};
+
   isMobile() {
     return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
@@ -86,7 +90,9 @@ class TTSEngine {
 
     const gender = voiceDef.gender || 'f';
     const lang = voiceDef.lang || 'en';
+    const voiceId = voiceDef.id || '';
 
+    // Try exact name match from WEB_SPEECH_MAP
     const map = WEB_SPEECH_MAP[lang];
     if (map && map[gender]) {
       for (const name of map[gender]) {
@@ -95,12 +101,29 @@ class TTSEngine {
       }
     }
 
+    // For male voices: try to find ANY male-sounding voice in the language
+    if (gender === 'm') {
+      const maleNames = ['Male', 'David', 'Daniel', 'Paul', 'Stefan', 'Pablo', 'Hamed',
+                         'Ravi', 'Dmitri', 'Naief', 'Antonio', 'Cosimo'];
+      for (const name of maleNames) {
+        const found = allVoices.find(v =>
+          (v.lang.startsWith(lang)) && (v.name.includes(name) || v.name.toLowerCase().includes('male'))
+        );
+        if (found) return found;
+      }
+      // Try any male voice in the language
+      const maleVoices = allVoices.filter(v => v.lang.startsWith(lang) && v.name.toLowerCase().includes('male'));
+      if (maleVoices.length > 0) return maleVoices[0];
+    }
+
+    // Fallback: any voice in the language
     const candidates = allVoices.filter(v => v.lang.startsWith(lang));
     if (candidates.length > 0) {
       const local = candidates.filter(v => v.localService);
       return local[0] || candidates[0];
     }
 
+    // Final fallback: first English voice
     return allVoices.find(v => v.lang.startsWith('en')) || allVoices[0];
   }
 
@@ -145,19 +168,26 @@ class TTSEngine {
 
   async _checkEdgeTTS() {
     if (this.edgeTTSAvailable !== null) return this.edgeTTSAvailable;
-    try {
-      const origin = window.location.origin;
-      const resp = await fetch(origin + '/health', { signal: AbortSignal.timeout(2000) });
-      if (resp.ok) {
-        const data = await resp.json();
-        this.edgeTTSAvailable = data.engine === 'edge-tts';
-      } else {
-        this.edgeTTSAvailable = false;
-      }
-    } catch {
-      this.edgeTTSAvailable = false;
+    // Try multiple backend URLs
+    const urls = [
+      window.location.origin + '/health',
+      'https://iknbite-tts.pages.dev/health',
+    ];
+    for (const url of urls) {
+      try {
+        const resp = await fetch(url, { signal: AbortSignal.timeout(3000) });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.engine === 'edge-tts') {
+            this.edgeTTSAvailable = true;
+            this._edgeTTSBase = url.replace('/health', '');
+            return true;
+          }
+        }
+      } catch {}
     }
-    return this.edgeTTSAvailable;
+    this.edgeTTSAvailable = false;
+    return false;
   }
 
   async _generateEdgeTTS(text, voiceDef, rate) {
@@ -243,8 +273,10 @@ class TTSEngine {
     return new Promise((resolve, reject) => {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.voice = speechVoice;
-      utterance.rate = options.rate || 1.0;
-      utterance.pitch = options.pitch || 1.0;
+      // Apply voice-specific offsets for differentiation (Web Speech API only)
+      const offsets = VOICE_OFFSETS[voiceDef.id] || {};
+      utterance.rate = (options.rate || 1.0) * (offsets.rate || 1.0);
+      utterance.pitch = (options.pitch || 1.0) * (offsets.pitch || 1.0);
       utterance.volume = options.volume || 1.0;
 
       utterance.onstart = () => {
