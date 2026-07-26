@@ -242,8 +242,8 @@ const UI = {
           <button class="btn btn-primary" id="generate-btn" onclick="UI._generate()" ${this.isGenerating ? 'disabled' : ''} style="padding:14px 36px;font-size:15px;border-radius:14px;">
             ${this.isGenerating ? '⏳ Generating...' : '▶ Generate Speech'}
           </button>
-          <button class="btn btn-success" id="download-btn" onclick="UI._downloadAudio()" ${!tts.canDownload() ? 'disabled' : ''} style="padding:14px 24px;font-size:15px;border-radius:14px;display:inline-flex;align-items:center;gap:8px;${!tts.canDownload() ? 'opacity:0.5;cursor:not-allowed;' : ''}">
-            📥 ${tts.canDownload() ? 'Download Audio' : 'No Audio Yet'}
+          <button class="btn btn-success" id="download-btn" onclick="UI._downloadAudio()" style="padding:14px 24px;font-size:15px;border-radius:14px;display:inline-flex;align-items:center;gap:8px;">
+            📥 Download Audio
           </button>
         </div>
       </div>
@@ -473,6 +473,10 @@ const UI = {
   },
 
   _downloadAudio() {
+    if (!tts.canDownload()) {
+      this.toast('⚠️ Generate speech first, then download.', 'error');
+      return;
+    }
     try {
       const filename = tts.downloadAudio();
       this.toast('✅ Downloaded: ' + filename, 'success');
