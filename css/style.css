@@ -229,6 +229,7 @@ body.light .voice-card.active { background: rgba(94,106,210,0.05); }
 .waveform {
   display: flex; align-items: flex-end; justify-content: center;
   gap: 3px; height: 40px; padding: 8px 0;
+  max-width: 100%; overflow: hidden;
 }
 .waveform .bar {
   width: 3px; border-radius: 2px; background: var(--brand-500);

@@ -26,7 +26,6 @@
       { id:'settings',icon:'⚙️', label:'Settings' },
       { id:'training',icon:'🎓', label:'Training' },
       { id:'features',icon:'⚡', label:'Features' },
-      { id:'video',icon:'🎬', label:'Video' },
     ];
     return items.map(it => `
       <button data-nav="${it.id}" class="nav-item ${UI.view === it.id ? 'active' : ''}" onclick="UI.nav('${it.id}')">
