@@ -14,6 +14,7 @@ from engine import TTSEngine
 from dsp.evaluation import AudioEvaluator
 from data.common_voice import CommonVoiceLoader
 from data.libritts import LibriTTSLoader
+from data.vctk import VCTKLoader
 
 app = Flask(__name__)
 CORS(app)
@@ -262,6 +263,90 @@ def ltts_search():
                 'text': s.normalized_text,
                 'speaker_id': s.speaker_id,
                 'gender': s.gender,
+                'duration_seconds': s.duration_seconds,
+            }
+            for s in samples
+        ]
+    })
+
+# ---- VCTK Corpus ----
+vctk_loader = VCTKLoader(data_dir=os.path.join(os.path.dirname(__file__), 'data', 'vctk'))
+
+
+@app.route('/v1/datasets/vctk/info', methods=['GET'])
+def vctk_info():
+    """Get VCTK dataset info."""
+    return jsonify({
+        'name': 'VCTK Corpus',
+        'description': 'Multi-speaker English speech corpus with 110 speakers',
+        'speakers': 110,
+        'hours': 44,
+        'license': 'ODC-BY',
+        'url': 'https://datashare.ed.ac.uk/handle/10283/3443',
+        'downloaded': vctk_loader.is_downloaded(),
+    })
+
+
+@app.route('/v1/datasets/vctk/download', methods=['POST'])
+@require_api_key
+def vctk_download():
+    """Download VCTK corpus."""
+    try:
+        data = request.json or {}
+        force = data.get('force', False)
+
+        success = vctk_loader.download(force=force)
+        if success:
+            stats = vctk_loader.get_statistics()
+            return jsonify({'status': 'downloaded', 'statistics': stats})
+        else:
+            return jsonify({'error': 'Failed to download VCTK'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/v1/datasets/vctk/stats', methods=['GET'])
+def vctk_stats():
+    """Get VCTK statistics."""
+    stats = vctk_loader.get_statistics()
+    return jsonify(stats)
+
+
+@app.route('/v1/datasets/vctk/speakers', methods=['GET'])
+def vctk_speakers():
+    """List all VCTK speakers."""
+    speakers = vctk_loader.get_speakers()
+    return jsonify({
+        'speakers': [
+            {
+                'speaker_id': s.speaker_id,
+                'gender': s.gender,
+                'accent': s.accent,
+            }
+            for s in speakers
+        ]
+    })
+
+
+@app.route('/v1/datasets/vctk/search', methods=['GET'])
+def vctk_search():
+    """Search VCTK samples by text."""
+    query = request.args.get('q', '')
+    max_results = int(request.args.get('limit', 10))
+
+    if not query:
+        return jsonify({'error': 'Missing query parameter q'}), 400
+
+    samples = vctk_loader.search_samples(query, max_results)
+    return jsonify({
+        'query': query,
+        'results': [
+            {
+                'audio_path': s.audio_path,
+                'text': s.text,
+                'speaker_id': s.speaker_id,
+                'gender': s.gender,
+                'accent': s.accent,
                 'duration_seconds': s.duration_seconds,
             }
             for s in samples

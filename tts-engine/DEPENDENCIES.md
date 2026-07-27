@@ -68,6 +68,8 @@ This document lists every external dependency, its version, license, download UR
 | LibriTTS | CC-BY-4.0 | https://www.openslr.org/60/ | 585 hours | English |
 | LibriTTS-R | CC-BY-4.0 | https://www.openslr.org/141/ | 585 hours (cleaned) | English |
 | LibriTTS API | CC-BY-4.0 | Integrated in TTS engine | On-demand | English |
+| VCTK Corpus | ODC-BY | https://datashare.ed.ac.uk/handle/10283/3443 | 44 hours | English |
+| VCTK API | ODC-BY | Integrated in TTS engine | On-demand | English |
 | LibriTTS | MIT | https://www.openslr.org/60/ | 585 hours | English |
 | LibriTTS-R | MIT | https://www.openslr.org/141/ | 585 hours | English (cleaned) |
 | LJSpeech | Public Domain | https://keithito.com/LJ-Speech-Dataset/ | 24 hours | English |

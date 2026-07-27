@@ -226,6 +226,51 @@ speaker_samples = loader.get_speaker_samples('train-clean-100', '19')
 results = loader.search_samples('train-clean-100', 'once upon a time')
 ```
 
+## VCTK Corpus Integration
+
+iknbite includes built-in support for the VCTK Corpus (English only).
+
+### About VCTK
+
+- **110 speakers** (56 female, 54 male)
+- **~44 hours** of speech
+- Various English accents
+- High-quality 48kHz audio
+- **License:** ODC-BY
+
+### API Endpoints
+
+```bash
+# Get dataset info
+curl http://localhost:5050/v1/datasets/vctk/info
+
+# Download corpus
+curl -X POST http://localhost:5050/v1/datasets/vctk/download \
+  -H "Content-Type: application/json"
+
+# Get statistics
+curl http://localhost:5050/v1/datasets/vctk/stats
+
+# List speakers
+curl http://localhost:5050/v1/datasets/vctk/speakers
+
+# Search samples
+curl "http://localhost:5050/v1/datasets/vctk/search?q=hello+world"
+```
+
+### Usage in Python
+
+```python
+from data.vctk import VCTKLoader
+
+loader = VCTKLoader(data_dir='./data/vctk')
+loader.download()
+
+# Load samples with filters
+for sample in loader.load(min_duration=2.0, max_duration=10.0, gender_filter='F'):
+    print(f"[{sample.accent}] {sample.text[:50]}... ({sample.duration_seconds:.1f}s)")
+```
+
 ## Resources
 
 See [DEPENDENCIES.md](DEPENDENCIES.md) for complete list of all dependencies, licenses, and sources.
