@@ -447,7 +447,7 @@ const UI = {
       <div class="vl-search-wrap">
         <span class="vl-search-icon">🔍</span>
         <input class="vl-search" type="text" placeholder="Search voices by name, language, or style..." value="${this.voiceSearch}" oninput="UI.voiceSearch=this.value;UI._rerenderGrid()" aria-label="Search voices" />
-        ${this.voiceSearch ? '<button class="vl-search-clear" onclick="UI.voiceSearch='';UI._rerenderGrid()">✕</button>' : ''}
+        ${this.voiceSearch ? '<button class="vl-search-clear" onclick="UI.voiceSearch=\'\';UI._rerenderGrid()">✕</button>' : ''}
       </div>
 
       <!-- Sort + Stats Row -->
@@ -499,7 +499,7 @@ const UI = {
         ${filtered.map(v => this._renderVoiceCard(v)).join('')}
       </div>
 
-      ${filtered.length === 0 ? '<div class="vl-empty"><div style="font-size:48px;margin-bottom:12px;">🔇</div><p>No voices match your filters.</p><button class="btn btn-secondary" onclick="UI.voiceSearch='';UI.langFilter='all';UI.genderFilter='all';UI.categoryFilter='all';UI.voiceSort='popular';UI._rerenderGrid()">Clear All Filters</button></div>' : ''}
+      ${filtered.length === 0 ? '<div class="vl-empty"><div style="font-size:48px;margin-bottom:12px;">🔇</div><p>No voices match your filters.</p><button class="btn btn-secondary" onclick="UI.voiceSearch=&apos;&apos;;UI.langFilter=&apos;all&apos;;UI.genderFilter=&apos;all&apos;;UI.categoryFilter=&apos;all&apos;;UI.voiceSort=&apos;popular&apos;;UI._rerenderGrid()">Clear All Filters</button></div>' : ''}
     </div>`;
   },
 
