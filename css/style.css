@@ -161,12 +161,12 @@ body.light .btn-ghost:hover { background: rgba(0,0,0,0.06); }
 
 /* ---- Voice Card ---- */
 .voice-card {
-  cursor: pointer; padding: 14px; border-radius: var(--radius-lg);
+  cursor: pointer; padding: 14px 10px; border-radius: var(--radius-lg);
   border: 1.5px solid var(--surface-200);
-  background: rgba(22,22,42,0.4);
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  background: rgba(22,22,42,0.5);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
   transition: all var(--transition-fast); text-align: center;
-  position: relative;
+  position: relative; min-height: 110px;
 }
 .voice-card:hover {
   border-color: var(--brand-400);
@@ -181,15 +181,21 @@ body.light .btn-ghost:hover { background: rgba(0,0,0,0.06); }
 body.light .voice-card { background: rgba(255,255,255,0.8); }
 body.light .voice-card:hover { border-color: var(--brand-400); }
 body.light .voice-card.active { background: rgba(94,106,210,0.05); }
+body.light .voice-card .name { color: #1a1a2e; text-shadow: none; }
+body.light .voice-card .desc { color: rgba(26,26,46,0.6); text-shadow: none; }
 
 /* ---- Voice Card Text ---- */
 .voice-card .name {
-  font-size: 13px; font-weight: 600; color: var(--surface-800);
+  font-size: 14px; font-weight: 700; color: #ffffff;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.5);
+  letter-spacing: 0.3px;
+  line-height: 1.3;
 }
 .voice-card .desc {
-  font-size: 11px; color: var(--surface-400);
+  font-size: 11px; color: rgba(255,255,255,0.65);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
 }
 
 /* ---- Preview Button ---- */
