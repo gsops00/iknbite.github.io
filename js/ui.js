@@ -24,6 +24,10 @@ const UI = {
   multiSpeakerMode: false,
   translationFrom: "en",
   translationTo: "ar",
+  // Voice Library state
+  voiceSearch: '',
+  voiceSort: 'popular',
+  categoryFilter: 'all',
 
   // ---- Avatar HTML helper ----
   avatarHTML(v, size, active) {
@@ -346,47 +350,181 @@ const UI = {
     </div>`;
   },
 
-  _renderVoiceGrid() {
-    let filtered = VOICES;
+  _getFilteredVoices() {
+    let filtered = [...VOICES];
+
+    // Search filter
+    if (this.voiceSearch) {
+      const q = this.voiceSearch.toLowerCase();
+      filtered = filtered.filter(v =>
+        v.name.toLowerCase().includes(q) ||
+        v.desc.toLowerCase().includes(q) ||
+        (LANGUAGES[v.lang] || '').toLowerCase().includes(q) ||
+        (v.style || '').toLowerCase().includes(q)
+      );
+    }
+
+    // Language filter
     if (this.langFilter !== 'all') filtered = filtered.filter(v => v.lang === this.langFilter);
+
+    // Gender filter
     if (this.genderFilter !== 'all') filtered = filtered.filter(v => v.gender === this.genderFilter);
 
+    // Category filter
+    if (this.categoryFilter !== 'all') filtered = filtered.filter(v => (v.style || '') === this.categoryFilter);
+
+    // Favorites filter
+    if (this.voiceSort === 'favorites') filtered = filtered.filter(v => this.isFav(v.id));
+
+    // Sort
+    switch (this.voiceSort) {
+      case 'popular': filtered.sort((a,b) => (b.popular?1:0) - (a.popular?1:0) || b.uses.localeCompare(a.uses)); break;
+      case 'newest': filtered.sort((a,b) => (b.isNew?1:0) - (a.isNew?1:0)); break;
+      case 'az': filtered.sort((a,b) => a.name.localeCompare(b.name)); break;
+      case 'quality': filtered.sort((a,b) => ({Studio:3,HD:2,Expressive:1}[b.quality]||0) - ({Studio:3,HD:2,Expressive:1}[a.quality]||0)); break;
+      case 'recent': {
+        const recent = JSON.parse(localStorage.getItem('iknbite_recent_voices') || '[]');
+        filtered.sort((a,b) => (recent.indexOf(b.id) === -1 ? 999 : recent.indexOf(b.id)) - (recent.indexOf(a.id) === -1 ? 999 : recent.indexOf(a.id)));
+        break;
+      }
+      case 'favorites': filtered.sort((a,b) => (b.popular?1:0) - (a.popular?1:0)); break;
+    }
+
+    return filtered;
+  },
+
+  _renderVoiceCard(v) {
+    const isActive = this.selectedVoice && this.selectedVoice.id === v.id;
+    const isFav = this.isFav(v.id);
+    const genderIcon = v.gender === 'f' ? '♀' : '♂';
+    const langLabel = LANGUAGES[v.lang] || v.lang;
+    const badges = [];
+    if (v.premium) badges.push('<span class="vbadge premium">⭐ Premium</span>');
+    if (v.isNew) badges.push('<span class="vbadge new">🆕 New</span>');
+    if (v.popular) badges.push('<span class="vbadge popular">🔥 Popular</span>');
+    if (!v.premium) badges.push('<span class="vbadge free">🆓 Free</span>');
+
+    return `
+      <div class="vcard ${isActive ? 'active' : ''} ${isFav ? 'fav' : ''}" onclick="UI.selectVoice('${v.id}')" tabindex="0" role="button" aria-label="Select ${v.name} voice">
+        <div class="vcard-header">
+          ${this.avatarHTML(v, 52, isActive)}
+          <button class="vcard-fav ${isFav ? 'active' : ''}" onclick="event.stopPropagation();UI.toggleFav('${v.id}')" aria-label="Toggle favorite" title="Favorite">
+            ${isFav ? '♥' : '♡'}
+          </button>
+          ${isActive ? '<div class="vcard-check">✓</div>' : ''}
+        </div>
+        <div class="vcard-body">
+          <div class="vcard-name">${v.name}</div>
+          <div class="vcard-meta">${genderIcon} ${langLabel} ${v.accent ? '• ' + v.accent : ''}</div>
+          <div class="vcard-style">${v.style || ''} ${v.age ? '• ' + v.age : ''}</div>
+          <div class="vcard-badges">${badges.join('')}</div>
+        </div>
+        <div class="vcard-footer">
+          <span class="vcard-uses">${v.uses || ''} uses</span>
+          <button class="vcard-preview" onclick="event.stopPropagation();tts.preview(UI.findVoice('${v.id}')).catch(()=>UI.toast('Preview not available','error'))" title="Preview 10s" aria-label="Preview ${v.name}">
+            ▶ 10s
+          </button>
+        </div>
+      </div>`;
+  },
+
+  _renderVoiceGrid() {
+    const filtered = this._getFilteredVoices();
     const langs = [...new Set(VOICES.map(v => v.lang))].sort();
+    const cats = [...new Set(VOICES.map(v => v.style).filter(Boolean))].sort();
+    const sortOptions = [
+      ['popular','🔥 Most Popular'],['newest','🆕 Newest'],['az','🔤 A-Z'],
+      ['quality','✨ Highest Quality'],['recent','🕐 Recently Used'],['favorites','♥ Favorites']
+    ];
+
+    // Recently used voices
+    const recentIds = JSON.parse(localStorage.getItem('iknbite_recent_voices') || '[]').slice(0,6);
+    const recentVoices = recentIds.map(id => VOICES.find(v => v.id === id)).filter(Boolean);
 
     return `
     <div class="card" style="padding:20px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-        <h3 style="font-size:16px;font-weight:700;">🎭 Voice Library</h3>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="tag ${this.genderFilter === 'all' ? 'active' : ''}" onclick="UI.genderFilter='all';UI.render()">All</button>
-          <button class="tag ${this.genderFilter === 'f' ? 'active' : ''}" onclick="UI.genderFilter='f';UI.render()">♀ Female</button>
-          <button class="tag ${this.genderFilter === 'm' ? 'active' : ''}" onclick="UI.genderFilter='m';UI.render()">♂ Male</button>
+      <!-- Search Bar -->
+      <div class="vl-search-wrap">
+        <span class="vl-search-icon">🔍</span>
+        <input class="vl-search" type="text" placeholder="Search voices by name, language, or style..." value="${this.voiceSearch}" oninput="UI.voiceSearch=this.value;UI._rerenderGrid()" aria-label="Search voices" />
+        ${this.voiceSearch ? '<button class="vl-search-clear" onclick="UI.voiceSearch='';UI._rerenderGrid()">✕</button>' : ''}
+      </div>
+
+      <!-- Sort + Stats Row -->
+      <div class="vl-controls-row">
+        <div class="vl-stats">${filtered.length} voice${filtered.length!==1?'s':''}</div>
+        <div class="vl-sort">
+          <span class="vl-sort-label">Sort:</span>
+          <select class="vl-sort-select" onchange="UI.voiceSort=this.value;UI._rerenderGrid()" aria-label="Sort voices">
+            ${sortOptions.map(([k,l]) => `<option value="${k}" ${this.voiceSort===k?'selected':''}>${l}</option>`).join('')}
+          </select>
         </div>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
-        <button class="tag ${this.langFilter === 'all' ? 'active' : ''}" onclick="UI.langFilter='all';UI.render()">All</button>
-        ${langs.map(l => `<button class="tag ${this.langFilter === l ? 'active' : ''}" onclick="UI.langFilter='${l}';UI.render()">${l.toUpperCase()} <span style="opacity:.5">${VOICES.filter(v=>v.lang===l).length}</span></button>`).join('')}
+
+      <!-- Filter Chips: Gender -->
+      <div class="vl-chip-row">
+        <button class="vl-chip ${this.genderFilter==='all'?'active':''}" onclick="UI.genderFilter='all';UI._rerenderGrid()">All</button>
+        <button class="vl-chip ${this.genderFilter==='f'?'active':''}" onclick="UI.genderFilter='f';UI._rerenderGrid()">♀ Female</button>
+        <button class="vl-chip ${this.genderFilter==='m'?'active':''}" onclick="UI.genderFilter='m';UI._rerenderGrid()">♂ Male</button>
       </div>
-      <div class="anim-stagger" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;">
-        ${filtered.map(v => `
-          <div class="voice-card ${this.selectedVoice && this.selectedVoice.id === v.id ? 'active' : ''}" onclick="UI.selectVoice('${v.id}')">
-            <button class="preview-btn" onclick="event.stopPropagation();tts.preview(UI.findVoice('${v.id}')).catch(()=>UI.toast('Preview not available','error'))" title="Preview">▶</button>
-            <button class="fav-star ${this.isFav(v.id) ? 'active' : ''}" onclick="event.stopPropagation();UI.toggleFav('${v.id}')" title="Toggle favorite" style="position:absolute;top:8px;left:8px;background:none;border:none;font-size:14px;">${this.isFav(v.id) ? '★' : '☆'}</button>
-            ${this.avatarHTML(v, 48, this.selectedVoice && this.selectedVoice.id === v.id)}
-            <div class="name">${v.name}</div>
-            <div class="desc">${v.desc}</div>
-          </div>
-        `).join('')}
+
+      <!-- Filter Chips: Languages -->
+      <div class="vl-chip-row scrollable">
+        <button class="vl-chip lang ${this.langFilter==='all'?'active':''}" onclick="UI.langFilter='all';UI._rerenderGrid()">All Languages</button>
+        ${langs.map(l => `<button class="vl-chip lang ${this.langFilter===l?'active':''}" onclick="UI.langFilter='${l}';UI._rerenderGrid()">${LANGUAGES[l]} <span class="vl-chip-count">${VOICES.filter(v=>v.lang===l).length}</span></button>`).join('')}
       </div>
-      ${filtered.length === 0 ? '<p style="text-align:center;color:var(--surface-400);padding:32px;">No voices match the current filter.</p>' : ''}
+
+      <!-- Filter Chips: Categories -->
+      <div class="vl-chip-row scrollable">
+        <button class="vl-chip cat ${this.categoryFilter==='all'?'active':''}" onclick="UI.categoryFilter='all';UI._rerenderGrid()">All Styles</button>
+        ${cats.map(c => `<button class="vl-chip cat ${this.categoryFilter===c?'active':''}" onclick="UI.categoryFilter='${c}';UI._rerenderGrid()">${c}</button>`).join('')}
+      </div>
+
+      <!-- Recently Used -->
+      ${recentVoices.length > 0 && this.voiceSort !== 'favorites' && this.langFilter === 'all' && this.genderFilter === 'all' && this.categoryFilter === 'all' && !this.voiceSearch ? `
+      <div class="vl-section">
+        <h3 class="vl-section-title">🕐 Recently Used</h3>
+        <div class="vl-recent-row">
+          ${recentVoices.map(v => `
+            <div class="vl-recent-chip" onclick="UI.selectVoice('${v.id}');UI.nav('studio')">
+              ${this.avatarHTML(v, 32, false)}
+              <span>${v.name}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Voice Grid -->
+      <div class="vl-grid">
+        ${filtered.map(v => this._renderVoiceCard(v)).join('')}
+      </div>
+
+      ${filtered.length === 0 ? '<div class="vl-empty"><div style="font-size:48px;margin-bottom:12px;">🔇</div><p>No voices match your filters.</p><button class="btn btn-secondary" onclick="UI.voiceSearch='';UI.langFilter='all';UI.genderFilter='all';UI.categoryFilter='all';UI.voiceSort='popular';UI._rerenderGrid()">Clear All Filters</button></div>' : ''}
     </div>`;
+  },
+
+  _rerenderGrid() {
+    const gridContainer = document.querySelector('.vl-grid');
+    const searchWrap = document.querySelector('.vl-search-wrap');
+    if (gridContainer) {
+      // Re-render just the grid section
+      const temp = document.createElement('div');
+      temp.innerHTML = this._renderVoiceGrid();
+      const newCard = temp.querySelector('.card');
+      if (newCard) {
+        const oldCard = document.querySelector('.card');
+        if (oldCard) oldCard.outerHTML = newCard.outerHTML;
+      }
+    } else {
+      this.render();
+    }
   },
 
   // ---- Voices Page ----
   renderVoices() {
     return `
     <div class="hero-bg"></div>
-    <div style="max-width:1080px;margin:0 auto;padding:24px 20px 80px;">
+    <div style="max-width:1200px;margin:0 auto;padding:24px 20px 80px;">
       <div class="anim-fade-in-up" style="margin-bottom:24px;">
         <h1 style="font-size:28px;font-weight:800;margin-bottom:4px;">🎭 Voice Library</h1>
         <p style="font-size:14px;color:var(--surface-400);">${VOICES.length} voices across ${Object.keys(LANGUAGES).length} languages — click any voice to start creating</p>
