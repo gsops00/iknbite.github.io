@@ -16,6 +16,14 @@ const UI = {
   isGenerating: false,
   rate: 1.0,
   pitch: 1.0,
+  // Feature state
+  selectedEmotion: "",
+  selectedPreset: "",
+  selectedFormat: "mp3",
+  ssmlMode: false,
+  multiSpeakerMode: false,
+  translationFrom: "en",
+  translationTo: "ar",
 
   // ---- Avatar HTML helper ----
   avatarHTML(v, size, active) {
@@ -188,6 +196,20 @@ const UI = {
     const charCount = this.text.length;
     const wordCount = this.text.trim() ? this.text.trim().split(/\s+/).length : 0;
 
+    const emotionOptions = Object.entries(EMOTIONS).map(([k,e]) =>
+      `<option value="${k}" ${this.selectedEmotion===k?'selected':''}>${e.emoji} ${e.label}</option>`
+    ).join('');
+    const presetOptions = Object.entries(PRESETS).map(([k,p]) =>
+      `<option value="${k}" ${this.selectedPreset===k?'selected':''}>${p.emoji} ${p.label}</option>`
+    ).join('');
+    const formatOptions = Object.entries(FormatHelper.formats).map(([k,f]) =>
+      `<option value="${k}" ${this.selectedFormat===k?'selected':''}>${f.label}</option>`
+    ).join('');
+
+    const transLangs = Object.entries(LANGUAGES).map(([k,v2]) =>
+      `<option value="${k}">${v2}</option>`
+    ).join('');
+
     return `
     <div class="hero-bg"></div>
     <div style="max-width:1080px;margin:0 auto;padding:24px 20px 80px;">
@@ -210,8 +232,58 @@ const UI = {
             <button class="btn btn-ghost btn-icon" onclick="UI.nav('voices')" title="Change voice" style="width:32px;height:32px;font-size:16px;margin-left:auto;">🎭</button>
           </div>
 
-          <!-- Text Input -->
+          <!-- Feature Controls Row -->
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:12px;color:var(--surface-400);">Preset:</span>
+              <select onchange="UI._applyPreset(this.value)" style="padding:4px 8px;border-radius:6px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:12px;font-family:var(--font);">
+                <option value="">None</option>
+                ${presetOptions}
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:12px;color:var(--surface-400);">Emotion:</span>
+              <select onchange="UI.selectedEmotion=this.value" style="padding:4px 8px;border-radius:6px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:12px;font-family:var(--font);">
+                <option value="">None</option>
+                ${emotionOptions}
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:12px;color:var(--surface-400);">Format:</span>
+              <select onchange="UI.selectedFormat=this.value" style="padding:4px 8px;border-radius:6px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:12px;font-family:var(--font);">
+                ${formatOptions}
+              </select>
+            </div>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--surface-400);">
+              <input type="checkbox" onchange="UI.ssmlMode=this.checked" ${this.ssmlMode?'checked':''} /> SSML
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--surface-400);">
+              <input type="checkbox" onchange="UI.multiSpeakerMode=this.checked;UI.render()" ${this.multiSpeakerMode?'checked':''} /> Multi-Speaker
+            </label>
+          </div>
+
+          <!-- AI Quick Actions Row -->
+          <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+            <button class="btn btn-ghost" onclick="UI._smartRecommend()" title="AI analyzes text and auto-fills voice/emotion/speed" style="font-size:12px;padding:6px 10px;border-radius:8px;">🧠 Smart Recommend</button>
+            <button class="btn btn-ghost" onclick="UI._improveWriting()" title="Fix grammar, improve punctuation and flow" style="font-size:12px;padding:6px 10px;border-radius:8px;">✨ AI Writing</button>
+            <button class="btn btn-ghost" onclick="UI._translateText()" title="Translate text before generation" style="font-size:12px;padding:6px 10px;border-radius:8px;">🌐 Translate</button>
+            <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
+              <select id="trans-from" style="padding:4px 6px;border-radius:6px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:11px;font-family:var(--font);">
+                ${Object.entries(LANGUAGES).map(([k,l2]) => `<option value="${k}" ${this.translationFrom===k?'selected':''}>${l2}</option>`).join('')}
+              </select>
+              <span style="font-size:11px;color:var(--surface-400);">→</span>
+              <select id="trans-to" style="padding:4px 6px;border-radius:6px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:11px;font-family:var(--font);">
+                ${Object.entries(LANGUAGES).map(([k,l2]) => `<option value="${k}" ${this.translationTo===k?'selected':''}>${l2}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <!-- Multi-Speaker Input or Normal Input -->
+          ${this.multiSpeakerMode ? `
+          <textarea class="editor-textarea" placeholder="Multi-speaker format:\n\nJohn: Hello there!\nSarah: Hi John, how are you?" oninput="UI.text=this.value;UI._updateCharCount()" id="editor-textarea" style="min-height:180px;">${this.text}</textarea>
+          ` : `
           <textarea class="editor-textarea" placeholder="Type or paste your text here..." oninput="UI.text=this.value;UI._updateCharCount()" id="editor-textarea">${this.text}</textarea>
+          `}
 
           <!-- Stats & Controls -->
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:8px;">
@@ -427,6 +499,7 @@ const UI = {
       case 'history': html = this.renderHistory(); break;
       case 'settings': html = this.renderSettings(); break;
       case 'training': html = this.renderTraining(); break;
+      case 'features': html = this.renderFeatures(); break;
       default: html = this.renderLanding();
     }
     content.innerHTML = html;
@@ -460,6 +533,80 @@ const UI = {
     this.render();
   },
 
+  _applyPreset(key) {
+    this.selectedPreset = key;
+    if (!key || !PRESETS[key]) return;
+    const p = PRESETS[key];
+    this.rate = p.speed;
+    this.pitch = p.pitch;
+    if (p.emotion && EMOTIONS[p.emotion]) {
+      this.selectedEmotion = p.emotion;
+    }
+    this.toast(`✅ Preset "${p.label}" applied`, 'success');
+    this.render();
+  },
+
+  _smartRecommend() {
+    if (!this.text.trim()) { this.toast('Enter some text first to get recommendations', 'error'); return; }
+    const rec = SmartRecommender.analyze(this.text);
+    if (rec.bestVoice) {
+      const v = VOICES.find(voice => voice.id === rec.bestVoice);
+      if (v) { this.selectedVoice = v; localStorage.setItem('iknbite_selected', v.id); }
+    }
+    if (rec.emotion) this.selectedEmotion = rec.emotion;
+    if (rec.speed) this.rate = rec.speed;
+    this.toast(`🧠 Smart: emotion=${rec.emotion}, speed=${rec.speed}x, confidence=${Math.round(rec.confidence*100)}%`, 'success');
+    this.render();
+  },
+
+  _improveWriting() {
+    if (!this.text.trim()) { this.toast('Enter some text first', 'error'); return; }
+    const improved = WritingAssistant.improve(this.text);
+    this.text = improved;
+    const ta = document.getElementById('editor-textarea');
+    if (ta) ta.value = improved;
+    this._updateCharCount();
+    this.toast('✨ Text improved — grammar and punctuation fixed', 'success');
+  },
+
+  async _translateText() {
+    if (!this.text.trim()) { this.toast('Enter some text first', 'error'); return; }
+    const fromEl = document.getElementById('trans-from');
+    const toEl = document.getElementById('trans-to');
+    const from = fromEl ? fromEl.value : this.translationFrom;
+    const to = toEl ? toEl.value : this.translationTo;
+    if (from === to) { this.toast('Source and target languages must differ', 'error'); return; }
+    this.toast('🌐 Translating...', '');
+    try {
+      const translated = await Translator.translate(this.text, from, to);
+      if (translated && translated !== this.text) {
+        this.text = translated;
+        const ta = document.getElementById('editor-textarea');
+        if (ta) ta.value = translated;
+        this._updateCharCount();
+        this.toast(`✅ Translated: ${LANGUAGES[from]} → ${LANGUAGES[to]}`, 'success');
+      } else {
+        this.toast('⚠️ Translation returned same text', 'error');
+      }
+    } catch (e) {
+      this.toast('❌ Translation failed: ' + (e.message || 'Unknown error'), 'error');
+    }
+  },
+
+  _parseMultiSpeaker(text) {
+    const speakers = [];
+    const lines = text.split('\n').filter(l => l.trim());
+    for (const line of lines) {
+      const match = line.match(/^([A-Za-z\u0600-\u06FF\u4e00-\u9fff]+):\s*(.+)/);
+      if (match) {
+        speakers.push({ name: match[1].trim(), text: match[2].trim() });
+      } else if (speakers.length > 0) {
+        speakers[speakers.length - 1].text += ' ' + line.trim();
+      }
+    }
+    return speakers;
+  },
+
   async _generate() {
     if (!this.text.trim()) { this.toast('Please enter some text first', 'error'); return; }
     if (!this.selectedVoice) { this.toast('Please select a voice first', 'error'); return; }
@@ -470,13 +617,42 @@ const UI = {
     this.render();
 
     try {
-      this.addHistory(this.selectedVoice, this.text);
-      await tts.speak(this.text, this.selectedVoice, {
-        rate: this.rate,
-        pitch: this.pitch,
-        volume: 1.0,
-      });
-      this.toast('✅ Speech generated!', 'success');
+      let textToSpeak = this.text;
+      let speakOpts = { rate: this.rate, pitch: this.pitch, volume: 1.0 };
+
+      // Apply emotion modifiers
+      if (this.selectedEmotion && typeof EMOTIONS !== 'undefined' && EMOTIONS[this.selectedEmotion]) {
+        const em = EMOTIONS[this.selectedEmotion];
+        speakOpts.rate = Math.max(0.5, Math.min(2.0, this.rate + (em.rateMod || 0)));
+        speakOpts.pitch = Math.max(0.5, Math.min(2.0, this.pitch + (em.pitchMod || 0)));
+      }
+
+      // SSML mode
+      if (this.ssmlMode && typeof SSMLBuilder !== 'undefined') {
+        textToSpeak = SSMLBuilder.wrap(textToSpeak, {
+          rate: speakOpts.rate.toFixed(1),
+          pitch: speakOpts.pitch.toFixed(1),
+          volume: '100',
+        });
+      }
+
+      // Multi-speaker mode
+      if (this.multiSpeakerMode && typeof MultiSpeakerParser !== 'undefined') {
+        const segments = this._parseMultiSpeaker(textToSpeak);
+        if (segments.length > 0) {
+          for (const seg of segments) {
+            this.addHistory(this.selectedVoice, seg.text);
+            await tts.speak(seg.text, this.selectedVoice, speakOpts);
+          }
+          this.toast(`✅ Generated ${segments.length} segments!`, 'success');
+        } else {
+          this.toast('⚠️ No speaker segments found. Use format: Name: text', 'error');
+        }
+      } else {
+        this.addHistory(this.selectedVoice, textToSpeak);
+        await tts.speak(textToSpeak, this.selectedVoice, speakOpts);
+        this.toast('✅ Speech generated!', 'success');
+      }
     } catch (e) {
       console.error('TTS error:', e);
       this.toast('Failed to generate speech: ' + (e.message || 'Unknown error'), 'error');
@@ -679,6 +855,175 @@ curl -X POST http://localhost:5050/v1/training/export \
           <a href="https://github.com/gsops00/iknbite.github.io/tree/main/tts-engine/training" target="_blank" style="font-size:13px;color:var(--brand-600);text-decoration:none;font-weight:500;">
             View training source on GitHub →
           </a>
+        </div>
+
+      </div>
+    </div>`;
+  },
+
+  // ---- Features Page ----
+  renderFeatures() {
+    return `
+    <div class="hero-bg"></div>
+    <div style="max-width:900px;margin:0 auto;padding:24px 20px 80px;">
+      <div class="anim-fade-in-up" style="text-align:center;margin-bottom:32px;">
+        <h1 style="font-size:clamp(24px,4vw,36px);font-weight:900;">✨ All Features</h1>
+        <p style="font-size:14px;color:var(--surface-400);margin-top:4px;">Professional AI Voice Studio — everything you need</p>
+      </div>
+
+      <div class="anim-stagger" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+
+        <!-- Emotions -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">🎭</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">AI Emotions</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            ${Object.values(EMOTIONS).map(e => `<span title="${e.label}">${e.emoji}</span>`).join(' ')}<br>
+            Happy, Sad, Angry, Calm, Excited, Dramatic, Whisper, and more
+          </div>
+        </div>
+
+        <!-- Presets -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">⚡</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Smart Presets</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            ${Object.values(PRESETS).slice(0, 6).map(p => `<span title="${p.label}">${p.emoji}</span>`).join(' ')}<br>
+            YouTube, TikTok, Podcast, Audiobook, Education, Commercial
+          </div>
+        </div>
+
+        <!-- SSML -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">📝</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">SSML Support</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            Pause, emphasis, pitch, rate, volume control.<br>
+            Professional speech markup language.
+          </div>
+        </div>
+
+        <!-- Multi-Speaker -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">👥</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Multi-Speaker</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            John: Hello!<br>Sarah: Hi John!<br>
+            Automatic conversation generation.
+          </div>
+        </div>
+
+        <!-- Pronunciation -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">🗣️</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Pronunciation Dict</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            Custom phonemes for any word.<br>
+            OpenAI, GitHub, NVIDIA — your rules.
+          </div>
+        </div>
+
+        <!-- Translation -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">🌍</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Translation</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            Arabic → English → Voice<br>
+            Translate text before speaking. 100+ languages.
+          </div>
+        </div>
+
+        <!-- AI Writing -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">✍️</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">AI Writing</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            Fix grammar, improve punctuation,<br>natural sentence flow, podcast optimization.
+          </div>
+        </div>
+
+        <!-- Audio Formats -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">🎵</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Export Formats</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            MP3, WAV, OGG, FLAC<br>
+            Multiple quality options for every use case.
+          </div>
+        </div>
+
+        <!-- Audio Enhancement -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">🔊</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Audio Enhancement</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            Auto-normalize, remove silence,<br>improve clarity, reduce artifacts.
+          </div>
+        </div>
+
+        <!-- Smart Recommend -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">🧠</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Smart Recommend</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            AI analyzes your text and recommends<br>the best voice, emotion, and speed.
+          </div>
+        </div>
+
+        <!-- Voice Controls -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">🎚️</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Voice Controls</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            Speed, pitch, volume, stability,<br>style — full control over your voice.
+          </div>
+        </div>
+
+        <!-- API -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">🔑</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">REST API</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            OpenAI-compatible API.<br>
+            Authentication, rate limiting, SDKs.
+          </div>
+        </div>
+
+        <!-- Training -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">🎓</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Voice Training</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            Train custom voices with Kokoro,<br>Piper, MeloTTS, Chatterbox.
+          </div>
+        </div>
+
+        <!-- Datasets -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">📦</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Datasets</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            Common Voice (30K+ hrs), LibriTTS (585 hrs),<br>VCTK (44 hrs). All free, open-source.
+          </div>
+        </div>
+
+        <!-- History -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">📜</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">History & Favorites</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            Saved generations, favorite voices,<br>quick re-generation.
+          </div>
+        </div>
+
+        <!-- Dark Mode -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:24px;margin-bottom:6px;">${UI.dark ? '☀️' : '🌙'}</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Dark Mode</div>
+          <div style="font-size:12px;color:var(--surface-400);line-height:1.5;">
+            Beautiful light and dark themes.<br>
+            Automatic persistence.
+          </div>
         </div>
 
       </div>

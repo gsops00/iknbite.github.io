@@ -23,6 +23,7 @@
       { id:'history', icon:'📜', label:'History' },
       { id:'settings',icon:'⚙️', label:'Settings' },
       { id:'training',icon:'🎓', label:'Training' },
+      { id:'features',icon:'⚡', label:'Features' },
     ];
     return items.map(it => `
       <button data-nav="${it.id}" class="nav-item ${UI.view === it.id ? 'active' : ''}" onclick="UI.nav('${it.id}')">
