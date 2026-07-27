@@ -300,3 +300,54 @@ body.dark .char-count { background: var(--surface-800); color: var(--surface-400
   cursor: not-allowed;
   box-shadow: none;
 }
+
+/* ---- Feature Lab Tool Styles ---- */
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-200);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--brand-600);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(76,110,245,.3);
+  transition: transform var(--transition-fast);
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--brand-600);
+  cursor: pointer;
+  border: none;
+}
+select {
+  -webkit-appearance: auto;
+  appearance: auto;
+}
+body.dark select {
+  background: var(--surface-800);
+  color: var(--surface-200);
+  border-color: var(--surface-700);
+}
+body.dark input[type="text"],
+body.dark input[type="url"],
+body.dark textarea {
+  background: var(--surface-800) !important;
+  color: var(--surface-200) !important;
+  border-color: var(--surface-700) !important;
+}
+body.dark input[type="text"]::placeholder,
+body.dark input[type="url"]::placeholder,
+body.dark textarea::placeholder {
+  color: var(--surface-500) !important;
+}
