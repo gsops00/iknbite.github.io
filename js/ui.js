@@ -426,6 +426,7 @@ const UI = {
       case 'voices': html = this.renderVoices(); break;
       case 'history': html = this.renderHistory(); break;
       case 'settings': html = this.renderSettings(); break;
+      case 'training': html = this.renderTraining(); break;
       default: html = this.renderLanding();
     }
     content.innerHTML = html;
@@ -547,6 +548,141 @@ const UI = {
       console.error('Download error:', e);
       this.toast('❌ Download failed: ' + (e.message || 'Unknown error'), 'error');
     }
+  },
+
+  // ---- Training Page ----
+  renderTraining() {
+    return `
+    <div class="hero-bg"></div>
+    <div style="max-width:800px;margin:0 auto;padding:24px 20px 80px;">
+      <div class="anim-fade-in-up" style="margin-bottom:24px;">
+        <h1 style="font-size:28px;font-weight:800;">🎓 Voice Training</h1>
+        <p style="font-size:14px;color:var(--surface-400);margin-top:4px;">Train custom TTS voices using open-source models</p>
+      </div>
+
+      <div class="anim-stagger" style="display:flex;flex-direction:column;gap:12px;">
+
+        <!-- Pipeline Steps -->
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:12px;">Training Pipeline</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:var(--surface-50);">
+              <span style="width:28px;height:28px;border-radius:8px;background:var(--brand-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">1</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Data Preparation</div>
+                <div style="font-size:11px;color:var(--surface-400);">Scan datasets, validate audio, normalize, split</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:var(--surface-50);">
+              <span style="width:28px;height:28px;border-radius:8px;background:var(--brand-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">2</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Model Selection</div>
+                <div style="font-size:11px;color:var(--surface-400);">AI picks the best model for your hardware and data</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:var(--surface-50);">
+              <span style="width:28px;height:28px;border-radius:8px;background:var(--brand-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">3</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Training</div>
+                <div style="font-size:11px;color:var(--surface-400);">Mixed precision, checkpointing, early stopping</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:var(--surface-50);">
+              <span style="width:28px;height:28px;border-radius:8px;background:var(--brand-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">4</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Evaluation</div>
+                <div style="font-size:11px;color:var(--surface-400);">Naturalness, pronunciation, stability, speed</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:var(--surface-50);">
+              <span style="width:28px;height:28px;border-radius:8px;background:var(--brand-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">5</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Export & Deploy</div>
+                <div style="font-size:11px;color:var(--surface-400);">ONNX, Piper, Kokoro — ready for production</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Supported Models -->
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:12px;">Supported Models</div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;font-size:12px;border-collapse:collapse;">
+              <thead>
+                <tr style="border-bottom:1px solid var(--surface-200);">
+                  <th style="text-align:left;padding:6px 8px;font-weight:600;">Model</th>
+                  <th style="text-align:left;padding:6px 8px;font-weight:600;">Quality</th>
+                  <th style="text-align:left;padding:6px 8px;font-weight:600;">Languages</th>
+                  <th style="text-align:left;padding:6px 8px;font-weight:600;">Clone</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid var(--surface-100);"><td style="padding:6px 8px;">Kokoro</td><td style="padding:6px 8px;">⭐⭐⭐⭐⭐</td><td style="padding:6px 8px;">English</td><td style="padding:6px 8px;">—</td></tr>
+                <tr style="border-bottom:1px solid var(--surface-100);"><td style="padding:6px 8px;">Piper</td><td style="padding:6px 8px;">⭐⭐⭐⭐</td><td style="padding:6px 8px;">30+</td><td style="padding:6px 8px;">—</td></tr>
+                <tr style="border-bottom:1px solid var(--surface-100);"><td style="padding:6px 8px;">MeloTTS</td><td style="padding:6px 8px;">⭐⭐⭐⭐</td><td style="padding:6px 8px;">14+</td><td style="padding:6px 8px;">—</td></tr>
+                <tr style="border-bottom:1px solid var(--surface-100);"><td style="padding:6px 8px;">Chatterbox</td><td style="padding:6px 8px;">⭐⭐⭐⭐½</td><td style="padding:6px 8px;">English</td><td style="padding:6px 8px;">✅</td></tr>
+                <tr style="border-bottom:1px solid var(--surface-100);"><td style="padding:6px 8px;">Coqui XTTS</td><td style="padding:6px 8px;">⭐⭐⭐⭐</td><td style="padding:6px 8px;">16+</td><td style="padding:6px 8px;">✅</td></tr>
+                <tr><td style="padding:6px 8px;">StyleTTS 2</td><td style="padding:6px 8px;">⭐⭐⭐⭐⭐</td><td style="padding:6px 8px;">English</td><td style="padding:6px 8px;">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Datasets -->
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:12px;">Available Datasets</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="padding:10px;border-radius:10px;background:var(--surface-50);font-size:12px;">
+              <div style="font-weight:600;">Common Voice</div>
+              <div style="color:var(--surface-400);">30K+ hours, 28+ langs, CC-0</div>
+            </div>
+            <div style="padding:10px;border-radius:10px;background:var(--surface-50);font-size:12px;">
+              <div style="font-weight:600;">LibriTTS</div>
+              <div style="color:var(--surface-400);">585 hours, English, CC-BY-4.0</div>
+            </div>
+            <div style="padding:10px;border-radius:10px;background:var(--surface-50);font-size:12px;">
+              <div style="font-weight:600;">VCTK Corpus</div>
+              <div style="color:var(--surface-400);">44 hours, 110 speakers, ODC-BY</div>
+            </div>
+            <div style="padding:10px;border-radius:10px;background:var(--surface-50);font-size:12px;">
+              <div style="font-weight:600;">LJSpeech</div>
+              <div style="color:var(--surface-400);">24 hours, English, Public Domain</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Start -->
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:12px;">Quick Start</div>
+          <div style="font-size:12px;font-family:monospace;background:var(--surface-900);color:var(--surface-100);padding:12px;border-radius:8px;overflow-x:auto;white-space:pre;line-height:1.6;"># 1. Prepare data
+curl -X POST http://localhost:5050/v1/training/prepare \
+  -H "Content-Type: application/json" \
+  -d '{"datasets":[["en","train-clean-100"]]}'
+
+# 2. Start training
+curl -X POST http://localhost:5050/v1/training/start \
+  -H "Content-Type: application/json" \
+  -d '{"model_name":"kokoro","voice_id":"my_voice","epochs":50}'
+
+# 3. Evaluate
+curl http://localhost:5050/v1/training/evaluate/my_voice
+
+# 4. Export
+curl -X POST http://localhost:5050/v1/training/export \
+  -H "Content-Type: application/json" \
+  -d '{"voice_id":"my_voice","format":"onnx"}'</div>
+        </div>
+
+        <!-- Link -->
+        <div style="text-align:center;padding:8px;">
+          <a href="https://github.com/gsops00/iknbite.github.io/tree/main/tts-engine/training" target="_blank" style="font-size:13px;color:var(--brand-600);text-decoration:none;font-weight:500;">
+            View training source on GitHub →
+          </a>
+        </div>
+
+      </div>
+    </div>`;
   },
 
   _shareAudio() {
