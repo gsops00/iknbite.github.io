@@ -13,6 +13,7 @@ from config import EngineConfig
 from engine import TTSEngine
 from dsp.evaluation import AudioEvaluator
 from data.common_voice import CommonVoiceLoader
+from data.libritts import LibriTTSLoader
 
 app = Flask(__name__)
 CORS(app)
@@ -181,6 +182,86 @@ def cv_search():
                 'audio_path': s.audio_path,
                 'text': s.text,
                 'speaker_id': s.speaker_id,
+                'duration_seconds': s.duration_seconds,
+            }
+            for s in samples
+        ]
+    })
+
+# ---- LibriTTS Dataset ----
+ltts_loader = LibriTTSLoader(data_dir=os.path.join(os.path.dirname(__file__), 'data', 'libritts'))
+
+
+@app.route('/v1/datasets/libritts/subsets', methods=['GET'])
+def ltts_subsets():
+    """List available LibriTTS subsets."""
+    return jsonify({'subsets': ltts_loader.list_subsets()})
+
+
+@app.route('/v1/datasets/libritts/download', methods=['POST'])
+@require_api_key
+def ltts_download():
+    """Download a LibriTTS subset."""
+    try:
+        data = request.json
+        subset = data.get('subset', 'train-clean-100')
+        force = data.get('force', False)
+
+        success = ltts_loader.download(subset, force=force)
+        if success:
+            stats = ltts_loader.get_statistics(subset)
+            return jsonify({'status': 'downloaded', 'subset': subset, 'statistics': stats})
+        else:
+            return jsonify({'error': f'Failed to download {subset}'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/v1/datasets/libritts/stats/<subset>', methods=['GET'])
+def ltts_stats(subset):
+    """Get statistics for a LibriTTS subset."""
+    stats = ltts_loader.get_statistics(subset)
+    return jsonify(stats)
+
+
+@app.route('/v1/datasets/libritts/speakers/<subset>', methods=['GET'])
+def ltts_speakers(subset):
+    """Get all speakers in a LibriTTS subset."""
+    speakers = ltts_loader.get_speakers(subset)
+    return jsonify({
+        'subset': subset,
+        'speakers': [
+            {
+                'speaker_id': s.speaker_id,
+                'name': s.name,
+                'gender': s.gender,
+                'subset': s.subset,
+            }
+            for s in speakers
+        ]
+    })
+
+
+@app.route('/v1/datasets/libritts/search', methods=['GET'])
+def ltts_search():
+    """Search LibriTTS samples by text."""
+    subset = request.args.get('subset', 'train-clean-100')
+    query = request.args.get('q', '')
+    max_results = int(request.args.get('limit', 10))
+
+    if not query:
+        return jsonify({'error': 'Missing query parameter q'}), 400
+
+    samples = ltts_loader.search_samples(subset, query, max_results)
+    return jsonify({
+        'subset': subset,
+        'query': query,
+        'results': [
+            {
+                'audio_path': s.audio_path,
+                'text': s.normalized_text,
+                'speaker_id': s.speaker_id,
+                'gender': s.gender,
                 'duration_seconds': s.duration_seconds,
             }
             for s in samples

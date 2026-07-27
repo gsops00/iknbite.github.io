@@ -65,6 +65,9 @@ This document lists every external dependency, its version, license, download UR
 |---------|---------|-----|------|-----------|
 | Mozilla Common Voice | CC-0 | https://commonvoice.mozilla.org/ | 30K+ hours | 100+ |
 | Common Voice API | CC-0 | Integrated in TTS engine | On-demand | 28+ |
+| LibriTTS | CC-BY-4.0 | https://www.openslr.org/60/ | 585 hours | English |
+| LibriTTS-R | CC-BY-4.0 | https://www.openslr.org/141/ | 585 hours (cleaned) | English |
+| LibriTTS API | CC-BY-4.0 | Integrated in TTS engine | On-demand | English |
 | LibriTTS | MIT | https://www.openslr.org/60/ | 585 hours | English |
 | LibriTTS-R | MIT | https://www.openslr.org/141/ | 585 hours | English (cleaned) |
 | LJSpeech | Public Domain | https://keithito.com/LJ-Speech-Dataset/ | 24 hours | English |
