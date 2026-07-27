@@ -100,6 +100,66 @@ Environment variables:
 - `TTS_TARGET_LUFS` — Target loudness (default: -16.0)
 - `TTS_SAMPLE_RATE` — Output sample rate (default: 24000)
 
+## Common Voice Integration
+
+iknbite includes built-in support for Mozilla Common Voice datasets.
+
+### API Endpoints
+
+```bash
+# List available languages
+curl http://localhost:5050/v1/datasets/common-voice/languages
+
+# Download a language dataset
+curl -X POST http://localhost:5050/v1/datasets/common-voice/download \
+  -H "Content-Type: application/json" \
+  -d '{"language": "en", "version": "15.0"}'
+
+# Get dataset statistics
+curl http://localhost:5050/v1/datasets/common-voice/stats/en
+
+# Search samples by text
+curl "http://localhost:5050/v1/datasets/common-voice/search?language=en&q=hello+world"
+```
+
+### Supported Languages
+
+| Code | Language | Est. Hours | Status |
+|------|----------|------------|--------|
+| en | English | 2,600 | ✅ |
+| ar | Arabic | 400 | ✅ |
+| zh | Chinese | 900 | ✅ |
+| fr | French | 300 | ✅ |
+| de | German | 300 | ✅ |
+| es | Spanish | 300 | ✅ |
+| ja | Japanese | 100 | ✅ |
+| ko | Korean | 100 | ✅ |
+| pt | Portuguese | 300 | ✅ |
+| ru | Russian | 200 | ✅ |
+| hi | Hindi | 200 | ✅ |
+| + 17 more languages | | | ✅ |
+
+### Usage in Python
+
+```python
+from data.common_voice import CommonVoiceLoader
+
+loader = CommonVoiceLoader(data_dir='./data/common_voice')
+
+# Download English dataset
+loader.download('en')
+
+# Load samples
+for sample in loader.load('en', split='train', max_samples=100):
+    print(f"{sample.text} ({sample.duration_seconds:.1f}s)")
+
+# Search for specific text
+results = loader.search_samples('en', 'hello world')
+
+# Get speaker samples
+speaker_samples = loader.get_speaker_samples('en', 'speaker_id_here')
+```
+
 ## Resources
 
 See [DEPENDENCIES.md](DEPENDENCIES.md) for complete list of all dependencies, licenses, and sources.

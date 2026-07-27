@@ -12,6 +12,7 @@ from flask_cors import CORS
 from config import EngineConfig
 from engine import TTSEngine
 from dsp.evaluation import AudioEvaluator
+from data.common_voice import CommonVoiceLoader
 
 app = Flask(__name__)
 CORS(app)
@@ -123,6 +124,68 @@ def evaluate_audio():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ---- Common Voice Dataset ----
+cv_loader = CommonVoiceLoader(data_dir=os.path.join(os.path.dirname(__file__), 'data', 'common_voice'))
+
+
+@app.route('/v1/datasets/common-voice/languages', methods=['GET'])
+def cv_languages():
+    """List available Common Voice languages."""
+    return jsonify({'languages': cv_loader.list_languages()})
+
+
+@app.route('/v1/datasets/common-voice/download', methods=['POST'])
+@require_api_key
+def cv_download():
+    """Download Common Voice dataset for a language."""
+    try:
+        data = request.json
+        language = data.get('language', 'en')
+        version = data.get('version', '15.0')
+        force = data.get('force', False)
+
+        success = cv_loader.download(language, version=version, force=force)
+        if success:
+            stats = cv_loader.get_statistics(language)
+            return jsonify({'status': 'downloaded', 'language': language, 'statistics': stats})
+        else:
+            return jsonify({'error': f'Failed to download {language}'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/v1/datasets/common-voice/stats/<language>', methods=['GET'])
+def cv_stats(language):
+    """Get statistics for a Common Voice language."""
+    stats = cv_loader.get_statistics(language)
+    return jsonify(stats)
+
+
+@app.route('/v1/datasets/common-voice/search', methods=['GET'])
+def cv_search():
+    """Search Common Voice samples by text."""
+    language = request.args.get('language', 'en')
+    query = request.args.get('q', '')
+    max_results = int(request.args.get('limit', 10))
+
+    if not query:
+        return jsonify({'error': 'Missing query parameter q'}), 400
+
+    samples = cv_loader.search_samples(language, query, max_results)
+    return jsonify({
+        'language': language,
+        'query': query,
+        'results': [
+            {
+                'audio_path': s.audio_path,
+                'text': s.text,
+                'speaker_id': s.speaker_id,
+                'duration_seconds': s.duration_seconds,
+            }
+            for s in samples
+        ]
+    })
 
 def main():
     global engine
