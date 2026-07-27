@@ -12,8 +12,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Kokoro TTS (primary backend)
-RUN pip install --no-cache-dir kokoro || echo "Kokoro install failed, will use fallback"
+# Install TTS backends (optional — each adds ~200MB-1GB)
+RUN pip install --no-cache-dir kokoro || echo "Kokoro install failed"
+RUN pip install --no-cache-dir piper-tts || echo "Piper install failed"
+RUN pip install --no-cache-dir "git+https://github.com/myshell-ai/MeloTTS.git" || echo "MeloTTS install failed"
 
 # Copy engine code
 COPY . .

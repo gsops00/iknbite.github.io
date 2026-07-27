@@ -11,6 +11,7 @@ from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from config import EngineConfig
 from engine import TTSEngine
+from dsp.evaluation import AudioEvaluator
 
 app = Flask(__name__)
 CORS(app)
@@ -85,6 +86,43 @@ def status():
 def dsp_info():
     return jsonify(engine.dsp.get_pipeline_info())
 
+
+@app.route('/v1/audio/evaluate', methods=['POST'])
+@require_api_key
+def evaluate_audio():
+    """Evaluate audio quality of generated speech."""
+    try:
+        data = request.json
+        if not data or 'input' not in data:
+            return jsonify({'error': "Missing 'input' in request body"}), 400
+
+        text = data['input']
+        voice = data.get('voice', 'af_aoede')
+        speed = float(data.get('speed', 1.0))
+
+        # Generate audio
+        audio_bytes, mime = engine.synthesize(text, voice, speed, 'wav')
+
+        # Load audio for evaluation
+        import io
+        from scipy.io import wavfile
+        audio_data = io.BytesIO(audio_bytes)
+        sr, audio_np = wavfile.read(audio_data)
+        if audio_np.ndim > 1:
+            audio_np = audio_np.mean(axis=1)
+        audio_float = audio_np.astype(np.float64) / 32768.0
+
+        # Evaluate
+        evaluator = AudioEvaluator(sample_rate=sr)
+        report = evaluator.evaluate(audio_float)
+
+        return jsonify({
+            'text': text,
+            'voice': voice,
+            'evaluation': report.to_dict()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 def main():
     global engine

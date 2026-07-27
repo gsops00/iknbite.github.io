@@ -12,6 +12,7 @@ services:
       - TTS_SAMPLE_RATE=24000
     volumes:
       - tts-models:/root/.cache
+      - tts-voices:/root/.local/share/piper
     restart: unless-stopped
     deploy:
       resources:
@@ -21,5 +22,17 @@ services:
               count: all
               capabilities: [gpu]
 
+  # Edge TTS Worker (free, 300+ voices, no GPU needed)
+  edge-tts:
+    image: ghcr.io/traefik/traefik:v3.0
+    profiles:
+      - edge
+    ports:
+      - "8080:80"
+    volumes:
+      - ./edge-tts-worker.js:/etc/traefik/dynamic/edge-tts.js:ro
+    restart: unless-stopped
+
 volumes:
   tts-models:
+  tts-voices:

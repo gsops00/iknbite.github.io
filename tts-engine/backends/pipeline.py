@@ -38,11 +38,25 @@ class ModelPipeline:
         except ImportError:
             pass
 
+        try:
+            from .melotts_backend import MeloTTsBackend
+            backend_classes['melotts'] = MeloTTsBackend
+        except ImportError:
+            pass
+
+        try:
+            from .chatterbox_backend import ChatterboxBackend
+            backend_classes['chatterbox'] = ChatterboxBackend
+        except ImportError:
+            pass
+
         if not backend_classes:
             print("[Pipeline] ⚠️  No TTS backends available!")
             print("[Pipeline] Install at least one:")
-            print("  pip install kokoro    # Best quality")
-            print("  pip install piper-tts # Lightweight")
+            print("  pip install kokoro                           # Best quality (82M params)")
+            print("  pip install piper-tts                        # Lightweight, fast")
+            print("  pip install git+https://github.com/myshell-ai/MeloTTS.git  # Multi-lingual")
+            print("  pip install chatterbox-tts                   # Expressive, voice cloning")
             return False
 
         # Try each backend in priority order

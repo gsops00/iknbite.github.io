@@ -32,11 +32,17 @@ pip install -r requirements.txt -q
 echo ""
 echo "Installing TTS backends..."
 
-echo -n "  Kokoro TTS... "
+echo -n "  Kokoro TTS (best quality)... "
 pip install kokoro -q 2>/dev/null && echo "✅" || echo "❌ (optional)"
 
-echo -n "  Piper TTS... "
+echo -n "  Piper TTS (lightweight)... "
 pip install piper-tts -q 2>/dev/null && echo "✅" || echo "❌ (optional)"
+
+echo -n "  MeloTTS (multi-lingual)... "
+pip install "git+https://github.com/myshell-ai/MeloTTS.git" -q 2>/dev/null && echo "✅" || echo "❌ (optional)"
+
+echo -n "  Chatterbox TTS (voice cloning)... "
+pip install chatterbox-tts -q 2>/dev/null && echo "✅" || echo "❌ (optional)"
 
 echo ""
 echo "======================================"
@@ -54,4 +60,9 @@ echo "    curl -X POST http://localhost:5050/v1/audio/speech \\"
 echo "      -H 'Content-Type: application/json' \\"
 echo "      -d '{\"input\":\"Hello world\",\"voice\":\"af_aoede\"}' \\"
 echo "      --output test.wav"
+echo ""
+echo "  Evaluate quality:"
+echo "    curl -X POST http://localhost:5050/v1/audio/evaluate \\"
+echo "      -H 'Content-Type: application/json' \\"
+echo "      -d '{\"input\":\"Hello world\",\"voice\":\"af_aoede\"}'"
 echo "======================================"

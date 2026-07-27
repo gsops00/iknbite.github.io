@@ -39,7 +39,7 @@ class ModelConfig:
     """TTS model backend settings."""
     # Auto-detection priority
     backend_priority: list = field(default_factory=lambda: [
-        'kokoro', 'piper', 'coqui_xtts', 'vits', 'styletts2', 'melotts'
+        'kokoro', 'piper', 'chatterbox', 'melotts', 'coqui_xtts', 'vits', 'styletts2'
     ])
     # Device selection
     device: Optional[str] = None  # None = auto-detect ('cuda' or 'cpu')
