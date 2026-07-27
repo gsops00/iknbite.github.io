@@ -9,9 +9,11 @@
   const TTS_API_URL = localStorage.getItem('iknbite_tts_api') || '';
   const EV_KEY = localStorage.getItem('iknbite_ev_key') || '';
   const EV_URL = localStorage.getItem('iknbite_ev_url') || 'https://easyvoice.ae';
+  const EL_KEY = localStorage.getItem('iknbite_el_key') || '';
   const config = {};
   if (TTS_API_URL && TTS_API_URL.trim()) config.apiUrl = TTS_API_URL.trim();
   if (EV_KEY && EV_KEY.trim()) { config.easyVoiceKey = EV_KEY.trim(); config.easyVoiceUrl = (EV_URL || 'https://easyvoice.ae').trim(); }
+  if (EL_KEY && EL_KEY.trim()) config.elevenLabsKey = EL_KEY.trim();
   if (Object.keys(config).length) tts.configure(config);
 
   // ---- Build Nav ----

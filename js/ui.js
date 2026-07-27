@@ -444,7 +444,7 @@ const UI = {
             For real AI voices (male + female, 300+ voices), connect an Edge TTS backend.
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Status</span><span style="color:${(tts.easyVoiceKey||tts.edgeTTSApiUrl)?'#10b981':'#f59e0b'}">${tts.easyVoiceKey ? '✅ EasyVoice Connected' : tts.edgeTTSApiUrl ? '✅ Edge TTS Connected' : '⚠️ Using Web Speech API (limited)'}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Status</span><span style="color:${(tts.elevenLabsKey||tts.easyVoiceKey||tts.edgeTTSApiUrl)?'#10b981':'#f59e0b'}">${tts.elevenLabsKey ? '✅ ElevenLabs Connected' : tts.easyVoiceKey ? '✅ EasyVoice Connected' : tts.edgeTTSApiUrl ? '✅ Edge TTS Connected' : '⚠️ Using Web Speech API (limited)'}</span></div>
             <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Voices available</span><span>${tts.edgeTTSApiUrl ? '300+ (Edge TTS)' : tts.getVoices().length + ' (browser)'}</span></div>
             <div style="margin-top:8px;">
               <label style="font-size:12px;color:var(--surface-400);display:block;margin-bottom:4px;">Edge TTS API URL</label>
@@ -694,6 +694,21 @@ const UI = {
       localStorage.removeItem('iknbite_tts_api');
       tts.configure({ apiUrl: '' });
       this.toast('🔄 TTS API cleared — using Web Speech API', 'success');
+    }
+  },
+
+  _saveElevenLabs() {
+    const input = document.getElementById('el-key-input');
+    if (!input) return;
+    const key = input.value.trim();
+    if (key) {
+      localStorage.setItem('iknbite_el_key', key);
+      tts.configure({ elevenLabsKey: key });
+      this.toast('✅ ElevenLabs saved — highest quality AI voices active!', 'success');
+    } else {
+      localStorage.removeItem('iknbite_el_key');
+      tts.configure({ elevenLabsKey: '' });
+      this.toast('🔄 ElevenLabs cleared', 'success');
     }
   },
 

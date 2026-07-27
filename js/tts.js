@@ -88,6 +88,111 @@ const EDGE_VOICE_MAP = {
 };
 
 // EasyVoice (Kokoro) voice mapping — maps iknbite IDs to Kokoro voice IDs
+
+// ElevenLabs voice mapping — maps iknbite IDs to ElevenLabs pre-made voice IDs
+const EL_VOICE_MAP = {
+  // English
+  'ava': '21m00Tcm4TlvDq8ikWAM',     // Rachel
+  'andrew': '29vD33N1CtxCmqQRPOHJ',  // Drew
+  'brian': 'nPczCjzI2devNBz1zQrb',   // Brian
+  'emma': 'g5CIjZEefAph4nQFvHAz',    // Emma
+  'jenny': 'EXAVITQu4vr4xnSDxMaL',   // Bella
+  'guy': 'CwhRBWXzGAHq8TQ4Fs17',     // Sam
+  'aria': '9BWtsMINqrJLrRacOk9x',    // Aria
+  'davis': 'CYw3kZ02Hs0563khs1Fj',   // Clyde
+  'sonia': 'FGY2WhTYpPnrIDTdsKH5',   // Charlotte (British)
+  'ryan': 'IKne3meq5aSn9XLyUdCD',    // Matilda
+  'natasha': 'z9fAnlkpzviPz146aGWa', // Glinda
+  'neerja': 'pFZP5JQG7iQjIQuC4Bku',  // Lily
+  'tony': 'ErXwobaYiN019PkySvjV',    // Antoni
+  'michelle': 'TXY1ij23mvauJGzg0IbG', // Lily
+  'jason': 'TxGEqnHWrfWFTfGW9XjX',   // Josh
+  'sara': 'EXAVITQu4vr4xnSDxMaL',    // Bella
+
+  // Japanese
+  'nanami': '2BJmEhMFGbEOh8F7dOLz',  // Chihiro
+  'keita': 'onwK4e9ZLuTAKqWW03F9',   // Daniel
+
+  // Chinese
+  'xiaoxiao': 'zrHiDhphv9ZnVXBqCLjz', // Chinese (Mandarin)
+  'yunxi': 'zrHiDhphv9ZnVXBqCLjz',
+  'xiaohan': 'zrHiDhphv9ZnVXBqCLjz',
+
+  // Korean
+  'sunhi': 'mFrX3fCHFBh2I1pP589n',   // Korean
+  'injoon': 'mFrX3fCHFBh2I1pP589n',
+  'hyejin': 'mFrX3fCHFBh2I1pP589n',
+
+  // French
+  'denise': 'TX3LPaxmHKxFdv7VOQHJ',  // Lily (French)
+  'henri': 'CwhRBWXzGAHq8TQ4Fs17',
+
+  // Spanish
+  'elvira': 'jsCqWAovK2LkecY7zXl4',  // Elli
+  'alvaro': 'ErXwobaYiN019PkySvjV',
+  'dalia': 'TX3LPaxmHKxFdv7VOQHJ',
+
+  // German
+  'katja': 'cjVigY5qzO86Huf0OWal',   // German
+  'conrad': 'nPczCjzI2devNBz1zQrb',
+
+  // Portuguese
+  'francisca': 'vBKpLl0mTxTXr8jBSJUj', // Portuguese
+  'antonio': 'ErXwobaYiN019PkySvjV',
+
+  // Italian
+  'elsa': 'MF3mGyEYCl7XYWbV9V6O',    // Elli
+  'diego': 'TxGEqnHWrfWFTfGW9XjX',
+
+  // Russian
+  'svetlana': 'cjVigY5qzO86Huf0OWal',
+  'dmitry': 'nPczCjzI2devNBz1zQrb',
+
+  // Arabic
+  'zariyah': 'pFZP5JQG7iQjIQuC4Bku',
+  'hamed': 'onwK4e9ZLuTAKqWW03F9',
+
+  // Turkish
+  'emel': '2BJmEhMFGbEOh8F7dOLz',
+  'ahmet': 'IKne3meq5aSn9XLyUdCD',
+
+  // Hindi
+  'swara': 'pFZP5JQG7iQjIQuC4Bku',
+  'madhur': 'IKne3meq5aSn9XLyUdCD',
+
+  // Polish
+  'agnieszka': '2BJmEhMFGbEOh8F7dOLz',
+  'marek': 'nPczCjzI2devNBz1zQrb',
+
+  // Dutch
+  'colette': 'TX3LPaxmHKxFdv7VOQHJ',
+
+  // Swedish
+  'sofie': 'TX3LPaxmHKxFdv7VOQHJ',
+
+  // Greek
+  'athina': 'TX3LPaxmHKxFdv7VOQHJ',
+
+  // Indonesian
+  'gadis': 'TX3LPaxmHKxFdv7VOQHJ',
+
+  // Vietnamese
+  'hoai': 'TX3LPaxmHKxFdv7VOQHJ',
+  'tuan': 'IKne3meq5aSn9XLyUdCD',
+
+  // Finnish
+  'mikko': 'TX3LPaxmHKxFdv7VOQHJ',
+  'aino': 'TX3LPaxmHKxFdv7VOQHJ',
+
+  // Norwegian
+  'erling': 'nPczCjzI2devNBz1zQrb',
+  'inger': 'TX3LPaxmHKxFdv7VOQHJ',
+
+  // Danish
+  'lars': 'nPczCjzI2devNBz1zQrb',
+  'freja': 'TX3LPaxmHKxFdv7VOQHJ',
+};
+
 const EASYVOICE_MAP = {
   // English Female
   'ava': 'af_aoede', 'emma': 'af_bella', 'jenny': 'af_heart',
@@ -175,6 +280,7 @@ class TTSEngine {
     this.edgeTTSApiUrl = null;
     this.easyVoiceKey = null;
     this.easyVoiceUrl = null;
+    this.elevenLabsKey = null;
     this._currentAudio = null;
     this._init();
   }
@@ -184,6 +290,7 @@ class TTSEngine {
     if (options.apiUrl) this.edgeTTSApiUrl = options.apiUrl.replace(/\/$/, '');
     if (options.easyVoiceKey) this.easyVoiceKey = options.easyVoiceKey;
     if (options.easyVoiceUrl) this.easyVoiceUrl = options.easyVoiceUrl.replace(/\/$/, '');
+    if (options.elevenLabsKey) this.elevenLabsKey = options.elevenLabsKey;
   }
 
   isMobile() {
@@ -237,6 +344,40 @@ class TTSEngine {
   }
 
   // ---- Edge TTS API (primary) ----
+
+  async _fetchElevenLabs(text, voiceId) {
+    if (!this.elevenLabsKey) return null;
+    try {
+      const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': this.elevenLabsKey,
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg',
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.5,
+            use_speaker_boost: true
+          }
+        })
+      });
+      if (!resp.ok) {
+        const err = await resp.text();
+        console.warn('ElevenLabs error:', resp.status, err);
+        return null;
+      }
+      return await resp.blob();
+    } catch (e) {
+      console.warn('ElevenLabs request failed:', e);
+      return null;
+    }
+  }
+
   async _fetchEdgeTTS(text, voiceId, speed) {
     if (!this.edgeTTSApiUrl) return null;
     try {
@@ -358,6 +499,19 @@ class TTSEngine {
 
     this.isGenerating = true;
 
+    // 0. Try ElevenLabs first (highest quality)
+    const elVoiceId = EL_VOICE_MAP[voiceDef.id];
+    if (elVoiceId && this.elevenLabsKey) {
+      const blob = await this._fetchElevenLabs(text, elVoiceId);
+      if (blob) {
+        this.lastAudioBlob = blob;
+        this.lastAudioUrl = URL.createObjectURL(blob);
+        await this._playBlob(blob);
+        this.isGenerating = false;
+        return;
+      }
+    }
+
     // 1. Try EasyVoice (Kokoro) first
     const evVoiceId = EASYVOICE_MAP[voiceDef.id];
     if (evVoiceId && this.easyVoiceKey) {
@@ -460,7 +614,7 @@ class TTSEngine {
   }
 
   isSupported() {
-    return !!(this.edgeTTSApiUrl || this.easyVoiceKey || (typeof speechSynthesis !== 'undefined'));
+    return !!(this.elevenLabsKey || this.edgeTTSApiUrl || this.easyVoiceKey || (typeof speechSynthesis !== 'undefined'));
   }
 
   canDownload() {
