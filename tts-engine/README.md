@@ -271,6 +271,110 @@ for sample in loader.load(min_duration=2.0, max_duration=10.0, gender_filter='F'
     print(f"[{sample.accent}] {sample.text[:50]}... ({sample.duration_seconds:.1f}s)")
 ```
 
+## Voice Training Pipeline
+
+iknbite includes a complete TTS voice training pipeline using free and open-source tools.
+
+### Features
+
+- **Data Preparation**: Automatic dataset scanning, validation, and preprocessing
+- **Model Selection**: AI-powered model recommendation based on requirements
+- **Training**: Full training pipeline with mixed precision, early stopping, checkpointing
+- **Evaluation**: Comprehensive quality metrics (naturalness, pronunciation, stability)
+- **Export**: Deploy models in ONNX, Piper, or Kokoro formats
+
+### Supported Models
+
+| Model | Quality | Speed | Memory | Languages | Voice Clone |
+|-------|---------|-------|--------|-----------|-------------|
+| Kokoro | ⭐⭐⭐⭐⭐ | Fast | 2GB | English | No |
+| Piper | ⭐⭐⭐⭐ | Very Fast | 1GB | 30+ | No |
+| MeloTTS | ⭐⭐⭐⭐ | Fast | 4GB | 14+ | No |
+| Chatterbox | ⭐⭐⭐⭐½ | Medium | 8GB | English | Yes |
+| Coqui XTTS | ⭐⭐⭐⭐ | Medium | 6GB | 16+ | Yes |
+| StyleTTS 2 | ⭐⭐⭐⭐⭐ | Slow | 8GB | English | No |
+
+### API Endpoints
+
+```bash
+# List available models
+curl http://localhost:5050/v1/training/models
+
+# Auto-select best model
+curl -X POST http://localhost:5050/v1/training/select \
+  -H "Content-Type: application/json" \
+  -d '{"language": "en", "dataset_hours": 100}'
+
+# Prepare datasets
+curl -X POST http://localhost:5050/v1/training/prepare \
+  -H "Content-Type: application/json" \
+  -d '{"datasets": [["en", "train-clean-100"]]}'
+
+# Start training
+curl -X POST http://localhost:5050/v1/training/start \
+  -H "Content-Type: application/json" \
+  -d '{"model_name": "kokoro", "voice_id": "my_voice", "epochs": 50}'
+
+# Evaluate voice
+curl http://localhost:5050/v1/training/evaluate/my_voice
+
+# Export model
+curl -X POST http://localhost:5050/v1/training/export \
+  -H "Content-Type: application/json" \
+  -d '{"voice_id": "my_voice", "format": "onnx"}'
+```
+
+### Training Workflow
+
+```
+1. Prepare Data
+   └── Scan datasets → Validate → Clean → Normalize → Split
+
+2. Select Model
+   └── Check hardware → Match requirements → Recommend best
+
+3. Train Voice
+   └── Initialize → Train → Validate → Checkpoint → Early stop
+
+4. Evaluate Quality
+   └── Naturalness → Pronunciation → Stability → Speed
+
+5. Export for Deployment
+   └── Convert format → Generate config → Create samples → Package
+```
+
+### Python Usage
+
+```python
+from training.model_selector import auto_select_model
+from training.data_prep import DataPreparator
+from training.trainer import TTSTrainer, TrainingConfig
+from training.evaluator import VoiceEvaluator
+from training.exporter import ModelExporter, ExportConfig
+
+# 1. Auto-select model
+recommendation = auto_select_model(language='en', dataset_hours=100)
+print(f"Best model: {recommendation['selected_model']}")
+
+# 2. Prepare data
+prep = DataPreparator()
+stats = prep.prepare([('en', 'train-clean-100')])
+
+# 3. Train
+config = TrainingConfig(model_name='kokoro', voice_id='my_voice')
+trainer = TTSTrainer(config)
+report = trainer.train()
+
+# 4. Evaluate
+evaluator = VoiceEvaluator()
+result = evaluator.evaluate('./data/models/my_voice')
+
+# 5. Export
+exporter = ModelExporter()
+export_config = ExportConfig(model_path='./data/models/my_voice', voice_id='my_voice')
+exporter.export(export_config)
+```
+
 ## Resources
 
 See [DEPENDENCIES.md](DEPENDENCIES.md) for complete list of all dependencies, licenses, and sources.

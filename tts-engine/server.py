@@ -15,6 +15,11 @@ from dsp.evaluation import AudioEvaluator
 from data.common_voice import CommonVoiceLoader
 from data.libritts import LibriTTSLoader
 from data.vctk import VCTKLoader
+from training.model_selector import ModelSelector, AVAILABLE_MODELS, auto_select_model
+from training.data_prep import DataPreparator
+from training.trainer import TTSTrainer, TrainingConfig
+from training.evaluator import VoiceEvaluator
+from training.exporter import ModelExporter, ExportConfig
 
 app = Flask(__name__)
 CORS(app)
@@ -352,6 +357,141 @@ def vctk_search():
             for s in samples
         ]
     })
+
+# ---- Voice Training Pipeline ----
+@app.route('/v1/training/models', methods=['GET'])
+def training_models():
+    """List available TTS models for training."""
+    selector = ModelSelector()
+    return jsonify({
+        'models': [
+            {
+                'name': name,
+                'model_name': profile.name,
+                'source': profile.source,
+                'license': profile.license,
+                'quality_rating': profile.quality_rating,
+                'languages': profile.languages,
+                'voice_clone': profile.voice_clone,
+                'pros': profile.pros,
+                'cons': profile.cons,
+            }
+            for name, profile in AVAILABLE_MODELS.items()
+        ],
+        'hardware': selector.get_hardware_info(),
+    })
+
+
+@app.route('/v1/training/select', methods=['POST'])
+@require_api_key
+def training_select():
+    """Auto-select best model for training."""
+    try:
+        data = request.json
+        language = data.get('language', 'en')
+        dataset_hours = data.get('dataset_hours', 10.0)
+        voice_clone = data.get('voice_clone', False)
+
+        result = auto_select_model(language, dataset_hours)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/v1/training/compare', methods=['GET'])
+def training_compare():
+    """Compare all suitable models."""
+    language = request.args.get('language', 'en')
+    dataset_hours = float(request.args.get('dataset_hours', 10.0))
+
+    selector = ModelSelector()
+    models = selector.compare_models(language, dataset_hours)
+    return jsonify({'models': models})
+
+
+@app.route('/v1/training/prepare', methods=['POST'])
+@require_api_key
+def training_prepare():
+    """Prepare datasets for training."""
+    try:
+        data = request.json
+        datasets = data.get('datasets', [('en', 'train-clean-100')])
+        speaker_id = data.get('speaker_id')
+        output_dir = data.get('output_dir', './data/training')
+
+        prep = DataPreparator(output_dir=output_dir)
+        stats = prep.prepare(datasets, speaker_id=speaker_id)
+        return jsonify({'status': 'prepared', 'statistics': stats})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/v1/training/start', methods=['POST'])
+@require_api_key
+def training_start():
+    """Start voice training."""
+    try:
+        data = request.json
+        config = TrainingConfig(
+            model_name=data.get('model_name', 'kokoro'),
+            voice_id=data.get('voice_id', 'custom_voice'),
+            language=data.get('language', 'en'),
+            epochs=data.get('epochs', 100),
+            batch_size=data.get('batch_size', 16),
+            learning_rate=data.get('learning_rate', 0.001),
+        )
+
+        trainer = TTSTrainer(config)
+        report = trainer.train(resume=data.get('resume', True))
+        return jsonify({'status': 'complete', 'report': report})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/v1/training/evaluate/<voice_id>', methods=['GET'])
+def training_evaluate(voice_id):
+    """Evaluate a trained voice."""
+    try:
+        language = request.args.get('language', 'en')
+        evaluator = VoiceEvaluator()
+
+        model_path = f'./data/models/{voice_id}'
+        result = evaluator.evaluate(model_path, language)
+        return jsonify({
+            'voice_id': voice_id,
+            'metrics': {
+                'naturalness': result.naturalness,
+                'pronunciation_accuracy': result.pronunciation_accuracy,
+                'intelligibility': result.intelligibility,
+                'stability': result.stability,
+                'speaker_consistency': result.speaker_consistency,
+                'inference_speed': result.inference_speed,
+                'memory_usage_mb': result.memory_usage_mb,
+                'overall_score': result.overall_score,
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/v1/training/export', methods=['POST'])
+@require_api_key
+def training_export():
+    """Export trained model for deployment."""
+    try:
+        data = request.json
+        config = ExportConfig(
+            model_path=data.get('model_path', './data/models/custom_voice'),
+            voice_id=data.get('voice_id', 'custom_voice'),
+            language=data.get('language', 'en'),
+            format=data.get('format', 'onnx'),
+        )
+
+        exporter = ModelExporter()
+        result = exporter.export(config)
+        return jsonify({'status': 'exported', 'result': result})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 def main():
     global engine
