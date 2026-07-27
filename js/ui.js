@@ -975,26 +975,26 @@ const UI = {
           </div>
         </div>
 
-        <!-- Datasets -->
+        <!-- Datasets — AnyClaw Full Catalog -->
         <div class="card" style="padding:20px;">
-          <div style="font-weight:600;font-size:14px;margin-bottom:12px;">Available Datasets</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div style="padding:10px;border-radius:10px;background:var(--surface-50);font-size:12px;">
-              <div style="font-weight:600;">Common Voice</div>
-              <div style="color:var(--surface-400);">30K+ hours, 28+ langs, CC-0</div>
-            </div>
-            <div style="padding:10px;border-radius:10px;background:var(--surface-50);font-size:12px;">
-              <div style="font-weight:600;">LibriTTS</div>
-              <div style="color:var(--surface-400);">585 hours, English, CC-BY-4.0</div>
-            </div>
-            <div style="padding:10px;border-radius:10px;background:var(--surface-50);font-size:12px;">
-              <div style="font-weight:600;">VCTK Corpus</div>
-              <div style="color:var(--surface-400);">44 hours, 110 speakers, ODC-BY</div>
-            </div>
-            <div style="padding:10px;border-radius:10px;background:var(--surface-50);font-size:12px;">
-              <div style="font-weight:600;">LJSpeech</div>
-              <div style="color:var(--surface-400);">24 hours, English, Public Domain</div>
-            </div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">&#128218; Training Datasets</div>
+          <div style="font-size:11px;color:var(--surface-400);margin-bottom:12px;">12 datasets — 5,800+ hours across 28 languages. All open-source, ready for training.</div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;font-size:12px;border-collapse:collapse;">
+              <thead>
+                <tr style="border-bottom:2px solid var(--surface-200);">
+                  <th style="text-align:left;padding:6px 8px;font-weight:700;">Dataset</th>
+                  <th style="text-align:left;padding:6px 8px;font-weight:700;">Language</th>
+                  <th style="text-align:left;padding:6px 8px;font-weight:700;">Hours</th>
+                  <th style="text-align:left;padding:6px 8px;font-weight:700;">License</th>
+                  <th style="text-align:left;padding:6px 8px;font-weight:700;">Use Case</th>
+                </tr>
+              </thead>
+              <tbody id="anyclaw-datasets"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:12px;padding:10px;border-radius:8px;background:var(--surface-50);border:1px solid var(--surface-200);font-size:11px;color:var(--surface-400);">
+            <strong>Total:</strong> 5,800+ hours | <strong>Languages:</strong> English, Arabic, Japanese, Chinese, Korean, German, Spanish, French, + 20 more | <strong>Speakers:</strong> 2,800+ unique speakers
           </div>
         </div>
 
@@ -1277,6 +1277,35 @@ curl -X POST http://localhost:5050/v1/training/export \
         <div id="feat-category-voices" style="margin-top:12px;"></div>
       </div>
 
+
+      <!-- ============ ANYCLAW VOICE ENGINE ============ -->
+      <div class="anim-fade-in-up card" style="padding:24px;margin-bottom:20px;border:1px solid var(--brand-200);background:linear-gradient(135deg,var(--brand-50),var(--surface-50));">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <span style="font-size:22px;">&#129516;</span>
+          <h2 style="font-size:18px;font-weight:800;">AnyClaw Voice Engine</h2>
+          <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--brand-600);color:#fff;">POWERED BY</span>
+        </div>
+        <p style="font-size:13px;color:var(--surface-400);margin-bottom:16px;">Professional-grade offline TTS engine with 12 emotion profiles, 7 voice archetypes, and full DSP pipeline. All processing runs locally.</p>
+        <div style="margin-bottom:16px;">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;">&#127917; Emotion Profiles</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;" id="anyclaw-emotions"></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;">&#127908; Voice Archetypes</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;" id="anyclaw-voices"></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;">&#128295; DSP Pipeline</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;" id="anyclaw-dsp"></div>
+        </div>
+        <div style="padding:10px;border-radius:8px;background:var(--surface-50);border:1px solid var(--surface-200);font-size:11px;color:var(--surface-400);">
+          <strong>Hardware:</strong> RTX 4090/3090 (24GB) training &rarr; CPU (i5-12400) inference | <strong>VRAM:</strong> 4GB/voice | <strong>Models:</strong> Kokoro &rarr; Piper &rarr; Coqui XTTS &rarr; VITS &rarr; StyleTTS2 &rarr; MeloTTS (auto-detected)
+        </div>
+        <div style="text-align:center;margin-top:12px;">
+          <a href="https://github.com/gsops00/voice-training" target="_blank" style="font-size:13px;color:var(--brand-600);text-decoration:none;font-weight:600;">&#128230; View AnyClaw on GitHub &rarr;</a>
+        </div>
+      </div>
+
       <!-- ============ AUDIO FORMATS ============ -->
       <div class="anim-fade-in-up card" style="padding:24px;margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
@@ -1364,6 +1393,20 @@ curl -X POST http://localhost:5050/v1/training/export \
     tts.speak(text, voice, { rate, pitch, volume: 1.0 }).then(() => {
       this.toast(`✅ ${em.label} test complete`, 'success');
     }).catch(e => this.toast('❌ Error: ' + e.message, 'error'));
+  },
+
+  _testAnyClawEmotion(emotionId) {
+    var em = ANYCLAW_EMOTIONS.find(function(e) { return e.id === emotionId; });
+    if (!em) return;
+    this.toast(em.icon + ' ' + em.name + ' — ' + em.desc + ' | Rate: ' + em.speechRate + 'x', '');
+    var rate = em.speechRate || 1.0;
+    this.rate = rate;
+    if (emotionId === 'happy' || emotionId === 'excited') this.pitch = 1.1;
+    else if (emotionId === 'sad' || emotionId === 'calm') this.pitch = 0.9;
+    else if (emotionId === 'angry') this.pitch = 1.15;
+    else if (emotionId === 'whisper') { this.pitch = 0.85; this.rate = 0.8; }
+    else this.pitch = 1.0;
+    this.nav('studio');
   },
 
   _testPreset(key) {

@@ -126,3 +126,47 @@ const WEB_SPEECH_MAP = {
   ms:  { f: ['Google Melayu'], m: ['Google Melayu'] },
   uk:  { f: ['Google Українська'], m: ['Google Українська'] },
 };
+
+/* ============================================
+   AnyClaw — Emotion Profiles & Voice Taxonomy
+   ============================================ */
+
+const ANYCLAW_EMOTIONS = [
+  { id: "neutral", name: "Neutral", icon: "😐", desc: "Balanced, informative, no emotional bias", prosody: "flat, moderate variation", energy: "steady, mid-range", speechRate: 1.0 },
+  { id: "happy", name: "Happy", icon: "😊", desc: "Cheerful, upbeat, optimistic delivery", prosody: "rising-falling, high variation", energy: "dynamic, peaks on stressed syllables", speechRate: 1.15 },
+  { id: "sad", name: "Sad", icon: "😢", desc: "Melancholic, subdued, empathetic", prosody: "falling, narrow range", energy: "soft, decaying", speechRate: 0.75 },
+  { id: "angry", name: "Angry", icon: "😠", desc: "Intense, forceful, urgent delivery", prosody: "sharp rises, irregular", energy: "high, abrupt peaks", speechRate: 1.3 },
+  { id: "fearful", name: "Fearful", icon: "😰", desc: "Anxious, hesitant, tense", prosody: "trembling, unstable", energy: "variable, sudden drops", speechRate: 1.4 },
+  { id: "surprised", name: "Surprised", icon: "😲", desc: "Astonished, animated, alert", prosody: "sharp rise, sustained high", energy: "sudden peak, quick decay", speechRate: 1.2 },
+  { id: "disgusted", name: "Disgusted", icon: "🤢", desc: "Revolted, dismissive, cold", prosody: "falling, constrained", energy: "low, tense", speechRate: 0.9 },
+  { id: "excited", name: "Excited", icon: "🤩", desc: "Enthusiastic, energetic, animated", prosody: "wide range, rapid oscillation", energy: "very high, sustained", speechRate: 1.35 },
+  { id: "calm", name: "Calm", icon: "😌", desc: "Soothing, meditative, reassuring", prosody: "smooth, gentle waves", energy: "low-mid, very steady", speechRate: 0.85 },
+  { id: "romantic", name: "Romantic", icon: "🥰", desc: "Tender, affectionate, intimate", prosody: "flowing, legato, warm", energy: "soft crescendos, intimate", speechRate: 0.9 },
+  { id: "professional", name: "Professional", icon: "💼", desc: "Confident, clear, business-appropriate", prosody: "measured, clear peaks", energy: "consistent, authoritative", speechRate: 1.0 },
+  { id: "whisper", name: "Whisper", icon: "🤫", desc: "Intimate, secretive, quiet", prosody: "minimal, breathy", energy: "very low, breath noise prominent", speechRate: 0.8 },
+];
+
+const ANYCLAW_VOICE_TYPES = {
+  male_deep: { label: "Deep Resonant", texture: "resonant", f0: [80, 180], desc: "Deep authoritative male voice" },
+  male_warm: { label: "Warm Friendly", texture: "smooth", f0: [100, 200], desc: "Warm friendly male voice" },
+  male_energetic: { label: "Energetic Clear", texture: "clear", f0: [110, 240], desc: "Energetic young male voice" },
+  female_warm: { label: "Warm Smooth", texture: "smooth", f0: [180, 340], desc: "Warm friendly female voice" },
+  female_clear: { label: "Clear Professional", texture: "clear", f0: [165, 300], desc: "Clear professional female voice" },
+  female_breathy: { label: "Soft Breathy", texture: "breathy", f0: [190, 360], desc: "Soft breathy female voice" },
+  nonbinary_smooth: { label: "Androgynous", texture: "smooth", f0: [130, 280], desc: "Androgynous smooth voice" },
+};
+
+const ANYCLAW_DATASETS = [
+  { name: "LibriTTS", lang: "English", hours: "585h", license: "CC0", use: "Neutral base voices", url: "https://www.openslr.org/60" },
+  { name: "VCTK", lang: "English", hours: "44h", license: "CC0", use: "UK accents", url: "https://datashare.ed.ac.uk/handle/10283/3443" },
+  { name: "LJSpeech", lang: "English", hours: "24h", license: "CC0", use: "Single female reference", url: "https://keithito.com/LJ-Speech-Dataset/" },
+  { name: "Common Voice 17", lang: "Multilingual", hours: "4,000h+", license: "CC0", use: "Diversity + Arabic", url: "https://commonvoice.mozilla.org" },
+  { name: "Arabic Speech", lang: "Arabic", hours: "3.7h", license: "CC BY 4.0", use: "MSA training" },
+  { name: "MASC", lang: "Arabic", hours: "10h", license: "CC BY", use: "Multi-dialect + emotional" },
+  { name: "ESD", lang: "English", hours: "10h", license: "Academic", use: "5 emotions × 10 speakers" },
+  { name: "RAVDESS", lang: "English", hours: "8h", license: "CC BY", use: "8 emotions, 24 speakers" },
+  { name: "SAVEE", lang: "English", hours: "5h", license: "Academic", use: "7 emotions, 4 males" },
+  { name: "CREMA-D", lang: "English", hours: "6h", license: "CC BY", use: "6 emotions, 91 speakers" },
+  { name: "CSS10", lang: "Multilingual", hours: "100h", license: "CC BY", use: "DE, EL, ES, FI, etc." },
+  { name: "M-AILABS", lang: "Multilingual", hours: "1,000h", license: "CC BY", use: "European languages" },
+];

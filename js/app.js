@@ -150,4 +150,49 @@
   } else {
     buildShell();
   }
+
+
+  // ---- AnyClaw Voice Engine Section ----
+  function populateAnyClaw() {
+    // Emotions
+    var emoEl = document.getElementById('anyclaw-emotions');
+    if (emoEl && typeof ANYCLAW_EMOTIONS !== 'undefined') {
+      emoEl.innerHTML = ANYCLAW_EMOTIONS.map(function(e) {
+        return '<div style="padding:8px;border-radius:8px;background:var(--surface-50);text-align:center;cursor:pointer;border:1px solid var(--surface-200);transition:all 0.2s;" onmouseenter="this.style.borderColor=\'var(--brand-500)\'" onmouseleave="this.style.borderColor=\'var(--surface-200)\'" onclick="UI._testAnyClawEmotion(\'' + e.id + '\')" title="' + e.desc + '"><div style="font-size:20px;">' + e.icon + '</div><div style="font-size:10px;font-weight:600;margin-top:2px;">' + e.name + '</div><div style="font-size:9px;color:var(--surface-400);">' + e.speechRate + 'x</div></div>';
+      }).join('');
+    }
+    // Voice Archetypes
+    var vocEl = document.getElementById('anyclaw-voices');
+    if (vocEl && typeof ANYCLAW_VOICE_TYPES !== 'undefined') {
+      vocEl.innerHTML = Object.entries(ANYCLAW_VOICE_TYPES).map(function(pair) {
+        var k = pair[0], v = pair[1];
+        return '<div style="padding:10px;border-radius:8px;background:var(--surface-50);border:1px solid var(--surface-200);"><div style="font-size:12px;font-weight:600;">' + v.label + '</div><div style="font-size:10px;color:var(--surface-400);">' + v.desc + '</div><div style="font-size:9px;color:var(--brand-600);margin-top:4px;">F0: ' + v.f0[0] + '-' + v.f0[1] + ' Hz | ' + v.texture + '</div></div>';
+      }).join('');
+    }
+    // DSP Pipeline
+    var dspEl = document.getElementById('anyclaw-dsp');
+    if (dspEl) {
+      var steps = ['Loudness Normalization', 'Equalization', 'Compression', 'Limiting', 'De-essing', 'Noise Reduction', 'Silence Trimming', 'Breath Enhancement', 'Sample Rate Conversion', 'WAV Encoding'];
+      dspEl.innerHTML = steps.map(function(p) {
+        return '<span style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:600;background:var(--surface-100);color:var(--surface-600);border:1px solid var(--surface-200);">' + p + '</span>';
+      }).join('');
+    }
+    // Datasets table
+    var dsEl = document.getElementById('anyclaw-datasets');
+    if (dsEl && typeof ANYCLAW_DATASETS !== 'undefined') {
+      dsEl.innerHTML = ANYCLAW_DATASETS.map(function(d, i) {
+        var bg = i % 2 === 0 ? 'background:var(--surface-50);' : '';
+        var licBg = d.license.indexOf('CC0') >= 0 ? 'background:var(--brand-100);color:var(--brand-700)' : d.license.indexOf('CC') >= 0 ? 'background:var(--success-100);color:var(--success-700)' : 'background:var(--surface-200);color:var(--surface-600)';
+        return '<tr style="border-bottom:1px solid var(--surface-100);' + bg + '"><td style="padding:6px 8px;font-weight:600;">' + d.name + '</td><td style="padding:6px 8px;">' + d.lang + '</td><td style="padding:6px 8px;font-weight:600;">' + d.hours + '</td><td style="padding:6px 8px;"><span style="padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;' + licBg + ';">' + d.license + '</span></td><td style="padding:6px 8px;color:var(--surface-500);">' + d.use + '</td></tr>';
+      }).join('');
+    }
+  }
+
+  // Run on every render
+  var origRender = UI.render.bind(UI);
+  UI.render = function() {
+    origRender();
+    setTimeout(populateAnyClaw, 50);
+  };
+
 })();
