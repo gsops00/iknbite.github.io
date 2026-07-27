@@ -113,22 +113,41 @@ const UI = {
     <div class="hero-bg"></div>
     <div style="max-width:1080px;margin:0 auto;padding:40px 20px 80px;">
 
-      <!-- Hero -->
-      <div class="anim-fade-in-up" style="text-align:center;padding:60px 0 48px;">
-        <div style="font-size:56px;margin-bottom:16px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.1));">🎙️</div>
-        <h1 style="font-size:clamp(32px,6vw,56px);font-weight:900;letter-spacing:-0.03em;line-height:1.1;margin-bottom:12px;">
-          iknbite
+      <!-- Hero — AI-Driven Dynamic Pattern -->
+      <div class="anim-fade-in-up" style="text-align:center;padding:80px 0 56px;">
+        <div style="position:relative;display:inline-block;margin-bottom:20px;">
+          <div style="font-size:64px;filter:drop-shadow(0 0 30px var(--accent-glow));animation:pulse 3s ease-in-out infinite;">🎙️</div>
+          <div style="position:absolute;top:-8px;right:-16px;font-size:20px;animation:fadeInUp 1s ease-out 0.3s both;">✨</div>
+          <div style="position:absolute;bottom:-4px;left:-20px;font-size:18px;animation:fadeInUp 1s ease-out 0.5s both;">🔊</div>
+        </div>
+        <h1 style="font-size:clamp(36px,7vw,64px);font-weight:900;letter-spacing:-0.04em;line-height:1.05;margin-bottom:16px;font-family:var(--font-display);">
+          <span style="background:linear-gradient(135deg,var(--brand-500),#a78bfa,var(--brand-400));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">iknbite</span>
         </h1>
-        <p style="font-size:clamp(16px,2.5vw,22px);color:${this.dark ? '#a3a3a3' : '#737373'};max-width:520px;margin:0 auto 32px;font-weight:400;">
-          AI Voice Studio. Generate natural speech in <strong style="color:var(--brand-600)">28+ voices</strong> across <strong style="color:var(--brand-600)">${Object.keys(LANGUAGES).length} languages</strong>. Free forever.
+        <p style="font-size:clamp(16px,2.5vw,20px);color:var(--surface-400);max-width:560px;margin:0 auto 12px;font-weight:400;font-family:var(--font-body);line-height:1.7;">
+          AI Voice Studio — generate <strong style="color:var(--surface-700);">natural speech</strong> in
+          <strong style="color:var(--brand-500);">70+ voices</strong> across
+          <strong style="color:var(--brand-500);">${Object.keys(LANGUAGES).length} languages</strong>.
+          Now with <strong style="color:var(--brand-500);">video avatars</strong>.
         </p>
-        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="UI.nav('studio')" style="padding:14px 32px;font-size:16px;border-radius:14px;">
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;">
+          <button class="btn btn-primary glow-border" onclick="UI.nav('studio')" style="padding:16px 40px;font-size:16px;border-radius:14px;font-family:var(--font-display);font-weight:700;">
             ✨ Start Creating
           </button>
-          <button class="btn btn-secondary" onclick="UI.nav('voices')" style="padding:14px 32px;font-size:16px;border-radius:14px;">
+          <button class="btn btn-secondary" onclick="UI.nav('video')" style="padding:16px 32px;font-size:16px;border-radius:14px;font-family:var(--font-display);font-weight:600;">
+            🎬 Video Avatars
+          </button>
+          <button class="btn btn-secondary" onclick="UI.nav('voices')" style="padding:16px 32px;font-size:16px;border-radius:14px;font-family:var(--font-display);font-weight:600;">
             🎭 Browse Voices
           </button>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;font-size:12px;color:var(--surface-400);">
+          <span>🧠 Smart Recommend</span>
+          <span>•</span>
+          <span>🌐 28 Languages</span>
+          <span>•</span>
+          <span>🎭 12 Emotions</span>
+          <span>•</span>
+          <span>⚡ ElevenLabs + Edge TTS</span>
         </div>
       </div>
 
@@ -500,6 +519,7 @@ const UI = {
       case 'settings': html = this.renderSettings(); break;
       case 'training': html = this.renderTraining(); break;
       case 'features': html = this.renderFeatures(); break;
+      case 'video': html = this.renderVideo(); break;
       default: html = this.renderLanding();
     }
     content.innerHTML = html;
@@ -1445,6 +1465,269 @@ curl -X POST http://localhost:5050/v1/training/export \
       UI.render();
       UI.toast('✅ Recommendation applied to Studio', 'success');
     }, 200);
+  },
+
+
+  // ---- Video Avatar Page (HeyGen Integration) ----
+  renderVideo() {
+    return `
+    <div class="hero-bg"></div>
+    <div style="max-width:900px;margin:0 auto;padding:24px 20px 80px;">
+      <div class="anim-fade-in-up" style="text-align:center;margin-bottom:32px;">
+        <h1 style="font-size:clamp(24px,4vw,36px);font-weight:900;font-family:var(--font-display);">🎬 Video Avatar Studio</h1>
+        <p style="font-size:14px;color:var(--surface-400);margin-top:4px;">Generate talking avatar videos with AI — powered by HeyGen</p>
+      </div>
+
+      <!-- HeyGen API Config -->
+      <div class="anim-fade-in-up card glass" style="padding:24px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <span style="font-size:22px;">🔑</span>
+          <h2 style="font-size:18px;font-weight:800;font-family:var(--font-display);">HeyGen API Setup</h2>
+        </div>
+        <p style="font-size:13px;color:var(--surface-400);margin-bottom:12px;">
+          Connect your HeyGen API key to generate talking avatar videos. Get your key at
+          <a href="https://app.heygen.com/settings?nav=API" target="_blank" style="color:var(--brand-500);font-weight:600;">heygen.com</a>
+        </p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input id="heygen-key-input" type="password" placeholder="Enter your HeyGen API key..."
+            value="${localStorage.getItem('iknbite_heygen_key') || ''}"
+            style="flex:1;min-width:200px;padding:10px 14px;border-radius:8px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:13px;font-family:var(--font-body);"
+          />
+          <button class="btn btn-primary" onclick="UI._saveHeyGen()" style="font-size:13px;">Save Key</button>
+        </div>
+        <div id="heygen-status" style="margin-top:8px;font-size:12px;color:${localStorage.getItem('iknbite_heygen_key') ? 'var(--success)' : 'var(--surface-400)'};">
+          ${localStorage.getItem('iknbite_heygen_key') ? '✅ API key saved — ready to generate videos' : '⚠️ No API key configured'}
+        </div>
+      </div>
+
+      <!-- Avatar Selection -->
+      <div class="anim-fade-in-up card glass" style="padding:24px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <span style="font-size:22px;">🧑</span>
+          <h2 style="font-size:18px;font-weight:800;font-family:var(--font-display);">Choose Avatar</h2>
+        </div>
+        <p style="font-size:13px;color:var(--surface-400);margin-bottom:12px;">Select a HeyGen avatar for your video. These are HeyGen's stock avatars.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:16px;">
+          ${[
+            { id:'Angela-inblackskirt-20220818', name:'Angela', emoji:'👩‍💼', gender:'f' },
+            { id:'Kristin_public_2_20240108', name:'Kristin', emoji:'👩', gender:'f' },
+            { id:'josh_lite3_20230714', name:'Josh', emoji:'👨', gender:'m' },
+            { id:'Anna_public_3_20240108', name:'Anna', emoji:'👩‍🦰', gender:'f' },
+            { id:'Tyler-incasualsuit-20220721', name:'Tyler', emoji:'👨‍💼', gender:'m' },
+            { id:'default', name:'Default', emoji:'🧑', gender:'m' },
+          ].map(a => `
+            <div class="voice-card" onclick="UI._selectHeyGenAvatar('${a.id}','${a.name}')" id="hg-avatar-${a.id}"
+              style="border-color:${this._selectedHeyGenAvatar===a.id?'var(--brand-600)':'var(--surface-200)'};">
+              <div style="font-size:32px;">${a.emoji}</div>
+              <div class="name">${a.name}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="font-size:12px;color:var(--surface-400);">
+          Selected: <strong id="hg-avatar-name" style="color:var(--brand-500);">${this._selectedHeyGenAvatarName || 'None'}</strong>
+          — <a href="https://app.heygen.com/avatars" target="_blank" style="color:var(--brand-500);">Browse more avatars →</a>
+        </div>
+      </div>
+
+      <!-- Text Input -->
+      <div class="anim-fade-in-up card glass" style="padding:24px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <span style="font-size:22px;">✍️</span>
+          <h2 style="font-size:18px;font-weight:800;font-family:var(--font-display);">Script</h2>
+        </div>
+        <textarea id="heygen-text" rows="4" placeholder="Type the script for your avatar to speak..."
+          style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:14px;font-family:var(--font-body);resize:vertical;margin-bottom:12px;">Hello! Welcome to iknbite — your AI voice studio. Create stunning voice content with over 70 voices in 28 languages.</textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <label style="font-size:12px;color:var(--surface-400);">Voice:</label>
+            <select id="heygen-voice-id" style="padding:6px 10px;border-radius:6px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:12px;font-family:var(--font-body);">
+              <option value="en-US-JennyNeural">Jenny (English)</option>
+              <option value="en-US-GuyNeural">Guy (English)</option>
+              <option value="en-US-AriaNeural">Aria (English)</option>
+              <option value="en-US-DavisNeural">Davis (English)</option>
+              <option value="en-GB-SoniaNeural">Sonia (British)</option>
+              <option value="en-GB-RyanNeural">Ryan (British)</option>
+              <option value="fr-FR-DeniseNeural">Denise (French)</option>
+              <option value="de-DE-KatjaNeural">Katja (German)</option>
+              <option value="es-ES-ElviraNeural">Elvira (Spanish)</option>
+              <option value="ja-JP-NanamiNeural">Nanami (Japanese)</option>
+              <option value="ko-KR-SunHiNeural">SunHi (Korean)</option>
+              <option value="zh-CN-XiaoxiaoNeural">Xiaoxiao (Chinese)</option>
+              <option value="ar-SA-ZariyahNeural">Zariyah (Arabic)</option>
+              <option value="hi-IN-SwaraNeural">Swara (Hindi)</option>
+              <option value="pt-BR-FranciscaNeural">Francisca (Portuguese)</option>
+              <option value="it-IT-ElsaNeural">Elsa (Italian)</option>
+              <option value="ru-RU-SvetlanaNeural">Svetlana (Russian)</option>
+              <option value="tr-TR-EmelNeural">Emel (Turkish)</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <label style="font-size:12px;color:var(--surface-400);">Aspect:</label>
+            <select id="heygen-aspect" style="padding:6px 10px;border-radius:6px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:12px;font-family:var(--font-body);">
+              <option value="16:9">16:9 Landscape</option>
+              <option value="9:16">9:16 Portrait</option>
+              <option value="1:1">1:1 Square</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate Button & Result -->
+      <div class="anim-fade-in-up card glass" style="padding:24px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="heygen-generate-btn" onclick="UI._generateHeyGenVideo()" style="padding:14px 36px;font-size:15px;border-radius:14px;">
+            🎬 Generate Video
+          </button>
+        </div>
+        <div id="heygen-result" style="display:none;margin-top:20px;text-align:center;">
+          <div id="heygen-status-text" style="font-size:13px;color:var(--surface-400);margin-bottom:12px;"></div>
+          <div id="heygen-video-container"></div>
+        </div>
+      </div>
+
+      <!-- How it Works -->
+      <div class="anim-fade-in-up card glass" style="padding:24px;margin-bottom:20px;">
+        <h2 style="font-size:18px;font-weight:800;font-family:var(--font-display);margin-bottom:16px;">How It Works</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;">
+          ${[
+            { icon:'🔑', title:'Connect API', desc:'Add your HeyGen API key in Settings' },
+            { icon:'🧑', title:'Pick Avatar', desc:'Choose from stock or custom avatars' },
+            { icon:'✍️', title:'Write Script', desc:'Type what you want the avatar to say' },
+            { icon:'🎬', title:'Generate', desc:'Get a talking avatar video in minutes' },
+          ].map(s => `
+            <div style="text-align:center;">
+              <div style="width:48px;height:48px;border-radius:14px;background:var(--surface-100);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 10px;">${s.icon}</div>
+              <div style="font-weight:600;font-size:13px;margin-bottom:4px;">${s.title}</div>
+              <div style="font-size:11px;color:var(--surface-400);">${s.desc}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+    </div>`;
+  },
+
+  _selectedHeyGenAvatar: null,
+  _selectedHeyGenAvatarName: null,
+
+  _selectHeyGenAvatar(id, name) {
+    this._selectedHeyGenAvatar = id;
+    this._selectedHeyGenAvatarName = name;
+    document.querySelectorAll('[id^="hg-avatar-"]').forEach(el => {
+      el.style.borderColor = el.id === 'hg-avatar-' + id ? 'var(--brand-600)' : 'var(--surface-200)';
+    });
+    const nameEl = document.getElementById('hg-avatar-name');
+    if (nameEl) nameEl.textContent = name;
+  },
+
+  _saveHeyGen() {
+    const input = document.getElementById('heygen-key-input');
+    if (!input) return;
+    const key = input.value.trim();
+    if (key) {
+      localStorage.setItem('iknbite_heygen_key', key);
+      this.toast('✅ HeyGen API key saved!', 'success');
+      const statusEl = document.getElementById('heygen-status');
+      if (statusEl) { statusEl.textContent = '✅ API key saved — ready to generate videos'; statusEl.style.color = 'var(--success)'; }
+    } else {
+      localStorage.removeItem('iknbite_heygen_key');
+      this.toast('🔄 HeyGen API key cleared', 'success');
+    }
+  },
+
+  async _generateHeyGenVideo() {
+    const apiKey = localStorage.getItem('iknbite_heygen_key');
+    if (!apiKey) { this.toast('⚠️ Please add your HeyGen API key first', 'error'); return; }
+    const text = document.getElementById('heygen-text')?.value || '';
+    const voiceId = document.getElementById('heygen-voice-id')?.value || 'en-US-JennyNeural';
+    const aspect = document.getElementById('heygen-aspect')?.value || '16:9';
+    const avatarId = this._selectedHeyGenAvatar || 'default';
+
+    if (!text.trim()) { this.toast('⚠️ Enter a script for the avatar', 'error'); return; }
+
+    const btn = document.getElementById('heygen-generate-btn');
+    const resultEl = document.getElementById('heygen-result');
+    const statusEl = document.getElementById('heygen-status-text');
+    const containerEl = document.getElementById('heygen-video-container');
+
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating...'; }
+    if (resultEl) resultEl.style.display = 'block';
+    if (statusEl) statusEl.textContent = '🎬 Sending to HeyGen API... This may take 1-3 minutes.';
+
+    try {
+      const [w, h] = aspect === '9:16' ? [1080, 1920] : aspect === '1:1' ? [1080, 1080] : [1920, 1080];
+
+      const resp = await fetch('https://api.heygen.com/v2/video/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': apiKey,
+        },
+        body: JSON.stringify({
+          video_inputs: [{
+            character: { type: 'avatar', avatar_id: avatarId, avatar_style: 'normal' },
+            voice: { type: 'text', input_text: text, voice_id: voiceId },
+            background: { type: 'color', value: '#1a1a2e' }
+          }],
+          dimension: { width: w, height: h },
+          aspect_ratio: aspect,
+        })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.text();
+        throw new Error(`HeyGen API error ${resp.status}: ${err}`);
+      }
+
+      const data = await resp.json();
+      const videoId = data.data?.video_id;
+      if (!videoId) throw new Error('No video_id returned from HeyGen');
+
+      if (statusEl) statusEl.textContent = `🎬 Video queued (ID: ${videoId}) — polling for completion...`;
+
+      // Poll for completion
+      let video_url = null;
+      for (let i = 0; i < 60; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        const pollResp = await fetch(`https://api.heygen.com/v1/video_status.get?video_id=${videoId}`, {
+          headers: { 'X-Api-Key': apiKey }
+        });
+        const pollData = await pollResp.json();
+        const status = pollData.data?.status;
+        if (statusEl) statusEl.textContent = `🎬 Status: ${status} (${i * 5}s elapsed)...`;
+        if (status === 'completed') {
+          video_url = pollData.data?.video_url;
+          break;
+        }
+        if (status === 'failed') throw new Error('Video generation failed: ' + (pollData.data?.error || 'Unknown error'));
+      }
+
+      if (video_url) {
+        if (containerEl) {
+          containerEl.innerHTML = `
+            <video controls style="width:100%;max-width:640px;border-radius:12px;box-shadow:var(--shadow-lg);" poster="">
+              <source src="${video_url}" type="video/mp4">
+              Your browser does not support video.
+            </video>
+            <div style="margin-top:12px;">
+              <a href="${video_url}" download="iknbite-video-${Date.now()}.mp4" class="btn btn-success" style="font-size:13px;">
+                📥 Download Video
+              </a>
+            </div>
+          `;
+        }
+        if (statusEl) statusEl.textContent = '✅ Video generated successfully!';
+        this.toast('✅ Video ready!', 'success');
+      } else {
+        throw new Error('Video generation timed out (5 minutes)');
+      }
+    } catch (e) {
+      console.error('HeyGen error:', e);
+      if (statusEl) statusEl.textContent = '❌ Error: ' + e.message;
+      this.toast('❌ ' + e.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🎬 Generate Video'; }
+    }
   },
 
 
