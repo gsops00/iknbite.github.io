@@ -655,6 +655,7 @@ const UI = {
       case 'settings': html = this.renderSettings(); break;
       case 'training': html = this.renderTraining(); break;
       case 'features': html = this.renderFeatures(); break;
+      case 'chat': html = this.renderChat(); break;
       default: html = this.renderLanding();
     }
     content.innerHTML = html;
@@ -897,6 +898,131 @@ const UI = {
   },
 
   // ---- Training Page ----
+
+  // ---- Chat Page (AI Script Generator) ----
+  renderChat() {
+    const templates = Object.entries(ChatBot.TEMPLATES).map(([k, t]) =>
+      `<button class="chat-template ${k === ChatBot.selectedTemplate ? 'active' : ''}" onclick="ChatBot.selectedTemplate='${k}';UI.render()" title="${t.desc}">
+        <span class="chat-template-icon">${t.icon}</span>
+        <span class="chat-template-label">${t.label.replace(/^[^\s]+\s/, '')}</span>
+      </button>`
+    ).join('');
+
+    const messages = ChatBot.messages.map((m, mi) => {
+      if (m.role === 'user') {
+        return `<div class="chat-msg chat-user"><div class="chat-msg-content">${this._escHtml(m.content)}</div></div>`;
+      } else {
+        const badge = m.source === 'AI' ? '<span class="chat-badge chat-badge-ai">AI</span>' : '<span class="chat-badge chat-badge-local">Local</span>';
+        const typeLabel = m.template ? ChatBot.TEMPLATES[m.template]?.icon || '' : '';
+        return `<div class="chat-msg chat-assistant">
+          <div class="chat-msg-header">${typeLabel} ${badge}</div>
+          <div class="chat-msg-content">${this._formatScript(m.content)}</div>
+          <div class="chat-msg-actions">
+            <button class="btn btn-ghost btn-sm" onclick="ChatBot.sendToStudio(ChatBot.messages[mi]?.content||'')" title="Use in Studio">📝 Send to Studio</button>
+            <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(ChatBot.messages[mi]?.content||'').then(function(){UI.toast('Copied!','success')})" title="Copy">📋 Copy</button>
+          </div>
+        </div>`;
+      }
+    }).join('');
+
+    return `
+    <div class="hero-bg"></div>
+    <div class="chat-container">
+      <div class="chat-header">
+        <div>
+          <h1 style="font-size:22px;font-weight:800;margin:0;">🤖 Script Assistant</h1>
+          <p style="font-size:12px;color:var(--surface-400);margin:4px 0 0;">Generate narration scripts, stories, podcasts & more — powered by free open-source AI</p>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="ChatBot.clearChat();UI.render()" title="Clear chat">🗑️ Clear</button>
+        </div>
+      </div>
+
+      <!-- Template Selector -->
+      <div class="chat-templates">${templates}</div>
+
+      <!-- Chat Messages -->
+      <div class="chat-messages" id="chat-messages">
+        ${ChatBot.messages.length === 0 ? `
+          <div class="chat-empty">
+            <div style="font-size:48px;margin-bottom:12px;">🤖</div>
+            <h3 style="font-size:16px;font-weight:700;margin:0 0 8px;">What should I write?</h3>
+            <p style="font-size:13px;color:var(--surface-400);margin:0 0 16px;">Choose a template above, then describe what you need.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chat-input').value='Write a narration about the history of artificial intelligence';UI.render()">AI History</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chat-input').value='Write a podcast script about the future of space exploration';UI.render()">Space Podcast</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chat-input').value='Write an ad script for a new meditation app';UI.render()">Meditation App Ad</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chat-input').value='Write a short story about a robot learning to paint';UI.render()">Robot Story</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chat-input').value='Write a 60-second TikTok script about productivity tips';UI.render()">TikTok Tips</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chat-input').value='Write a guided meditation for better sleep';UI.render()">Sleep Meditation</button>
+            </div>
+          </div>
+        ` : messages}
+      </div>
+
+      <!-- Input -->
+      <div class="chat-input-wrap">
+        <textarea id="chat-input" class="chat-input" rows="2" placeholder="Describe what you want to write..."
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();UI._chatSend()}"
+        ></textarea>
+        <button class="chat-send" onclick="UI._chatSend()" id="chat-send-btn">
+          <span id="chat-send-icon">➤</span>
+        </button>
+      </div>
+    </div>`;
+  },
+
+  _escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  },
+
+  _formatScript(text) {
+    return this._escHtml(text)
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+  },
+
+  async _chatSend() {
+    const input = document.getElementById('chat-input');
+    const btn = document.getElementById('chat-send-btn');
+    const icon = document.getElementById('chat-send-icon');
+    if (!input) return;
+    const msg = input.value.trim();
+    if (!msg || ChatBot.isGenerating) return;
+
+    input.value = '';
+    btn.disabled = true;
+    icon.textContent = '⏳';
+    ChatBot.isGenerating = true;
+
+    // Re-render to show user message
+    this.render();
+    const container = document.getElementById('chat-messages');
+    if (container) container.scrollTop = container.scrollHeight;
+
+    try {
+      const result = await ChatBot.generate(msg);
+      const src = result.source === 'AI' ? 'AI-powered' : 'local templates';
+      this.toast(`✅ Script generated (${src})`, 'success');
+    } catch (e) {
+      this.toast('❌ Generation failed: ' + e.message, 'error');
+    }
+
+    ChatBot.isGenerating = false;
+    btn.disabled = false;
+    icon.textContent = '➤';
+    this.render();
+
+    // Scroll to bottom
+    setTimeout(() => {
+      const c = document.getElementById('chat-messages');
+      if (c) c.scrollTop = c.scrollHeight;
+    }, 100);
+  },
+
+
   renderTraining() {
     return `
     <div class="hero-bg"></div>
