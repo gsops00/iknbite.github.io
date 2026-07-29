@@ -3,6 +3,16 @@
    ============================================ */
 
 const UI = {
+  // Arabic text detection
+  _isArabic(text) {
+    var arabicPattern = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    return arabicPattern.test(text);
+  },
+
+  _rtlClass(text) {
+    return this._isArabic(text) ? ' arabic" dir="rtl"' : '"';
+  },
+
   // State
   dark: localStorage.getItem('iknbite_dark') === 'true',
   view: 'landing',
@@ -910,13 +920,13 @@ const UI = {
 
     const messages = ChatBot.messages.map((m, mi) => {
       if (m.role === 'user') {
-        return `<div class="chat-msg chat-user"><div class="chat-msg-content">${this._escHtml(m.content)}</div></div>`;
+        var rtl = this._rtlClass(m.content); return `<div class="chat-msg chat-user"><div class="chat-msg-content${rtl}>${this._escHtml(m.content)}</div></div>`;
       } else {
         const badge = m.source === 'AI' ? '<span class="chat-badge chat-badge-ai">AI</span>' : '<span class="chat-badge chat-badge-local">Local</span>';
         const typeLabel = m.template ? ChatBot.TEMPLATES[m.template]?.icon || '' : '';
         return `<div class="chat-msg chat-assistant">
           <div class="chat-msg-header">${typeLabel} ${badge}</div>
-          <div class="chat-msg-content">${this._formatScript(m.content)}</div>
+          <div class="chat-msg-content${UI._rtlClass(m.content)}>${this._formatScript(m.content)}</div>
           <div class="chat-msg-actions">
             <button class="btn btn-ghost btn-sm" onclick="ChatBot.sendToStudio(ChatBot.messages[mi]?.content||'')" title="Use in Studio">📝 Send to Studio</button>
             <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(ChatBot.messages[mi]?.content||'').then(function(){UI.toast('Copied!','success')})" title="Copy">📋 Copy</button>
