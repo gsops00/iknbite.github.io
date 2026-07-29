@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { VOICES, LANGUAGES } from "~/data/voices";
+import { VOICES } from "~/data/voices";
 import { WaveformBars } from "~/components/WaveformBars";
 import { tts } from "~/lib/tts/engine";
 
@@ -10,11 +10,12 @@ export default function StudioPage() {
   const [speed, setSpeed] = useState(1.0);
   const [playing, setPlaying] = useState(false);
   const [status, setStatus] = useState("");
+  const [hasAudio, setHasAudio] = useState(false);
 
   const voice = VOICES.find((v) => v.id === voiceId) || VOICES[0];
   const charCount = text.length;
+  const hasKeys = !!(tts.edgeTtsUrl || tts.elevenLabsKey);
 
-  // Configure TTS engine on mount
   useEffect(() => {
     tts.configure({});
   }, []);
@@ -22,10 +23,16 @@ export default function StudioPage() {
   async function handleGenerate() {
     if (!text.trim() || playing) return;
     setPlaying(true);
-    setStatus("Generating...");
+    setStatus("🔊 Generating speech...");
+    setHasAudio(false);
     try {
       await tts.speak(text, voiceId, voice.langCode, voice.gender, speed);
-      setStatus("✅ Done! Use Download or Share");
+      if (tts.canDownload()) {
+        setHasAudio(true);
+        setStatus("✅ Speech ready! Tap Download to save or Play to hear again.");
+      } else {
+        setStatus("✅ Playback complete");
+      }
     } catch (e: any) {
       setStatus("❌ Error: " + (e.message || "Generation failed"));
     }
@@ -39,17 +46,22 @@ export default function StudioPage() {
   }
 
   function handleDownload() {
-    if (!tts.canDownload()) {
+    if (!hasAudio || !tts.canDownload()) {
       setStatus("⚠️ Generate speech first");
       return;
     }
+    setStatus("📥 Starting download...");
     tts.download();
-    setStatus("✅ Downloaded!");
+    setStatus("✅ Downloaded! Check your downloads folder.");
+    setTimeout(() => {
+      if (hasAudio) setStatus("✅ Speech ready! Tap Download to save or Play to hear again.");
+    }, 3000);
   }
 
   async function handleShare() {
-    if (!tts.canDownload()) return;
+    if (!hasAudio) return;
     try {
+      setStatus("📤 Sharing...");
       await tts.share();
       setStatus("✅ Shared!");
     } catch {
@@ -61,8 +73,18 @@ export default function StudioPage() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
         <h1 className="font-heading text-2xl font-bold mb-1">Studio</h1>
-        <p className="text-sm text-[var(--color-text-secondary)]">Write your text, pick a voice, generate speech.</p>
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Type or paste any text, pick a voice, and generate natural speech.
+          {!hasKeys && (
+            <span className="block mt-1">
+              ⚠️ No TTS backend configured. Go to{" "}
+              <Link to="/settings" className="text-[var(--color-coral)] hover:underline">Settings</Link>{" "}
+              to connect Cloudflare Edge TTS or ElevenLabs, or use Web Speech (basic).
+            </span>
+          )}
+        </p>
       </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Editor */}
         <div className="lg:col-span-2">
@@ -80,22 +102,26 @@ export default function StudioPage() {
           <div className="flex items-center gap-2 mt-4 flex-wrap">
             <button
               onClick={playing ? handleStop : handleGenerate}
-              className="px-6 py-2.5 text-sm font-semibold text-white bg-[var(--color-coral)] hover:bg-[var(--color-coral-hover)] rounded-[var(--radius-md)] transition-colors disabled:opacity-50"
+              disabled={!text.trim()}
+              className="px-6 py-2.5 text-sm font-semibold text-white bg-[var(--color-coral)] hover:bg-[var(--color-coral-hover)] rounded-[var(--radius-md)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {playing ? "⏹ Stop" : "▶ Generate"}
             </button>
             <button
               onClick={handleDownload}
-              disabled={!tts.canDownload()}
-              className="px-4 py-2.5 text-sm font-semibold text-[var(--color-text)] border border-[var(--color-border-strong)] hover:bg-[var(--color-surface-alt)] rounded-[var(--radius-md)] transition-colors disabled:opacity-30"
+              disabled={!hasAudio}
+              className="px-4 py-2.5 text-sm font-semibold text-[var(--color-text)] border border-[var(--color-border-strong)] hover:bg-[var(--color-surface-alt)] rounded-[var(--radius-md)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
-              📥 Download
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download
             </button>
             {tts.isMobile() && (
               <button
                 onClick={handleShare}
-                disabled={!tts.canDownload()}
-                className="px-4 py-2.5 text-sm font-semibold text-[var(--color-text)] border border-[var(--color-border-strong)] hover:bg-[var(--color-surface-alt)] rounded-[var(--radius-md)] transition-colors disabled:opacity-30"
+                disabled={!hasAudio}
+                className="px-4 py-2.5 text-sm font-semibold text-[var(--color-text)] border border-[var(--color-border-strong)] hover:bg-[var(--color-surface-alt)] rounded-[var(--radius-md)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 📤 Share
               </button>
@@ -103,10 +129,11 @@ export default function StudioPage() {
           </div>
 
           {status && (
-            <div className="mt-3 text-sm text-[var(--color-text-secondary)]">{status}</div>
+            <div className="mt-3 text-sm text-[var(--color-text-secondary)] bg-[var(--color-surface-alt)] p-3 rounded-[var(--radius-sm)]">
+              {status}
+            </div>
           )}
 
-          {/* Waveform */}
           <div className="mt-6">
             <WaveformBars playing={playing} />
           </div>
@@ -118,9 +145,7 @@ export default function StudioPage() {
           <div className="bg-white border border-[var(--color-border)] rounded-[var(--radius-md)] p-4">
             <h3 className="font-heading text-sm font-semibold mb-3">Selected Voice</h3>
             <div className="flex items-center gap-3 mb-4">
-              <div
-                className="w-12 h-12 rounded-[var(--radius-sm)] overflow-hidden shrink-0 bg-gradient-to-br from-gray-100 to-gray-200"
-              >
+              <div className="w-12 h-12 rounded-[var(--radius-sm)] overflow-hidden shrink-0 bg-gradient-to-br from-gray-100 to-gray-200">
                 <img
                   src={`/img/avatars/${voice.id}.jpg`}
                   alt={voice.name}
@@ -135,11 +160,10 @@ export default function StudioPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold truncate">{voice.name}</div>
-                <div className="text-xs text-[var(--color-text-muted)]">{voice.language} · {voice.gender}</div>
+                <div className="text-xs text-[var(--color-text-muted)]">{voice.language} · {voice.gender} · {voice.style}</div>
               </div>
             </div>
 
-            {/* Voice quick selector */}
             <div className="mb-3">
               <label className="text-xs font-medium text-[var(--color-text-secondary)] block mb-1">Voice</label>
               <select
@@ -156,7 +180,7 @@ export default function StudioPage() {
             </div>
 
             <Link to="/voices" className="block text-center text-xs text-[var(--color-coral)] hover:underline py-1">
-              Browse All Voices →
+              Browse All 76+ Voices →
             </Link>
           </div>
 
@@ -170,11 +194,29 @@ export default function StudioPage() {
             />
           </div>
 
-          {/* Settings */}
+          {/* Engine Status */}
           <div className="bg-white border border-[var(--color-border)] rounded-[var(--radius-md)] p-4 mt-4">
-            <h3 className="font-heading text-sm font-semibold mb-2">⚙️ Engine Settings</h3>
-            <Link to="/settings" className="text-xs text-[var(--color-coral)] hover:underline">
-              Configure API keys →
+            <h3 className="font-heading text-sm font-semibold mb-2">🔌 Engine Status</h3>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span>🔊 Edge TTS</span>
+                <span className={tts.edgeTtsUrl ? "text-[var(--color-success)]" : "text-[var(--color-text-muted)]"}>
+                  {tts.edgeTtsUrl ? "✅ On" : "⚪ Off"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>🎤 ElevenLabs</span>
+                <span className={tts.elevenLabsKey ? "text-[var(--color-success)]" : "text-[var(--color-text-muted)]"}>
+                  {tts.elevenLabsKey ? "✅ On" : "⚪ Off"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>🌐 Web Speech</span>
+                <span className="text-[var(--color-success)]">✅ Always</span>
+              </div>
+            </div>
+            <Link to="/settings" className="block text-center text-xs text-[var(--color-coral)] hover:underline mt-3 pt-2 border-t border-[var(--color-border)]">
+              ⚙️ Configure API keys
             </Link>
           </div>
         </div>
