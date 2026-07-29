@@ -1,75 +1,129 @@
 /* ============================================
-   iknbite  |  AI Script Chatbot (Free/Open-Source)
+   iknbite  |  AI Script Chatbot
+   Architecture: Fable 5-Inspired System Prompts
    ============================================
+   Each template uses structured sections:
+     ## identity        — Role definition
+     ## behavior        — How to act
+     ## output_rules    — Do/Don't formatting rules
+     ## thinking_pattern— Step-by-step reasoning approach
+     ## voice_optimization — TTS-specific delivery rules
    Uses Hugging Face Inference API (free, no key).
-   Fallback: local template-based generator.
+   Fallback: structured local generation with hash-based variety.
 */
 
+function hashCode(str) {
+  var hash = 0, i, chr;
+  for (i = 0; i < str.length; i++) {
+    chr = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
 const ChatBot = {
-  // State
   messages: JSON.parse(localStorage.getItem('iknbite_chat') || '[]'),
   isGenerating: false,
   selectedTemplate: 'narration',
 
-  // Script templates for local fallback
   TEMPLATES: {
     narration: {
       label: '🎙️ Narration',
       icon: '🎙️',
       desc: 'Documentary / audiobook style',
-      system: 'You are a professional narration script writer. Write clear, engaging narration scripts optimized for text-to-speech. Use natural pauses with "..." and emphasis with CAPS for key words. Keep sentences short and rhythmic.',
+      system: '## identity\nYou are a professional documentary narration script writer. You write scripts that sound natural when read aloud. Your specialty is clear, rhythmic prose that guides listeners through a topic with authority and warmth.\n\n## behavior\n- Write with calm authority — you are informing, not selling.\n- Vary sentence length: short for impact, longer for flow.\n- Use rhetorical questions sparingly but effectively.\n- Avoid jargon unless you define it naturally in context.\n\n## output_rules\n- DO use "..." for natural pauses (150-300ms).\n- DO use ALL CAPS for words that need vocal emphasis.\n- DO use [SOUND] or [MUSIC] cues only when contextually needed.\n- DO NOT write meta-commentary like "I hope you enjoyed."\n- DO NOT use lists, tables, or markdown formatting.\n- DO NOT write stage directions for the narrator.\n- KEEP paragraphs short — 2-4 sentences max for breathability.\n\n## thinking_pattern\n1. First, identify the core topic and the emotional tone (curious, reverent, urgent, calm).\n2. Open with a hook — a question, a surprising fact, or a sensory detail.\n3. Build the body chronologically or thematically — one idea per paragraph.\n4. Close with resonance: a thought that lingers.\n5. Read aloud mentally. If any sentence feels clunky, rephrase.\n\n## voice_optimization\n- Target speech rate: 140-160 words per minute.\n- Avoid stacked sibilants ("six sleek seals").\n- Prefer short, common words over academic alternatives.\n- Script should run 30-90 seconds when spoken (75-225 words).',
+      rules: { minWords: 30, maxWords: 500 },
+      fallback: {
+        thinking: function(msg) { var topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(narration|script)\s+(about|for|on)\s*/i, '') || msg.trim(); if (!topic) topic = 'this fascinating subject'; return topic; },
+        generate: function(topic) { var hooks = ['What if everything you thought you knew about ' + topic + ' was about to change?','Let me take you on a journey through ' + topic + '... a story that spans generations.','Close your eyes for a moment. Imagine ' + topic + ' as it really is.','There are things about ' + topic + ' that few people ever get to hear.']; var bodies = ['The origins of ' + topic + ' are as surprising as they are revealing. What began as a simple idea has grown into something far greater than its creators could have imagined. To understand it fully, we must first step back and look at the bigger picture.','At its heart, ' + topic + ' represents a convergence of vision, persistence, and innovation. Each chapter of its story builds on the last, creating a tapestry that continues to evolve. Those who have followed its journey know that the best is yet to come.','Consider this: every aspect of ' + topic + ' has been shaped by the people who believed in its potential. From the earliest pioneers to the modern innovators, each has left their mark. And today, we stand at a pivotal moment.']; var closings = ['And that is the story of ' + topic + '. A reminder that the most important journeys often begin with a single step.','So what comes next for ' + topic + '? Only time will tell. But one thing is certain: the journey is far from over.','As we look to the future, ' + topic + ' continues to inspire and challenge us. And perhaps that is its greatest gift.']; var h = hooks[Math.abs(hashCode(topic)) % hooks.length]; var b = bodies[Math.abs(hashCode(topic) + 1) % bodies.length]; var c = closings[Math.abs(hashCode(topic) + 2) % closings.length]; return h + '\n\n' + b + '\n\n' + c; }
+      },
     },
     story: {
       label: '📖 Story',
       icon: '📖',
       desc: 'Creative fiction / storytelling',
-      system: 'You are a creative story writer. Write engaging short stories with vivid descriptions, dialogue, and emotional depth. Use "..." for pauses and CAPS for emphasis. Make it suitable for voice narration.',
+      system: '## identity\nYou are a creative fiction writer who specializes in short-form storytelling optimized for voice performance. Your stories are vivid, emotional, and feel alive when spoken.\n\n## behavior\n- Open in medias res (in the middle of action) whenever possible.\n- Use sensory details: sounds, sights, textures, smells.\n- Dialogue should feel real — use contractions, fragments, interruptions.\n- One strong emotion per scene.\n\n## output_rules\n- DO use "..." for dramatic pauses and suspense.\n- DO use ALL CAPS for shouted words or intense moments.\n- DO use character names sparingly — "he", "she" flows better aloud.\n- DO NOT write meta-commentary.\n- DO NOT use parenthetical narration directions.\n- KEEP sentences varied — mix short punchy lines with flowing description.\n- OPTIMAL length: 150-300 words (60-90 seconds spoken).\n\n## thinking_pattern\n1. Choose a POV (first person for intimacy, third limited for versatility).\n2. Identify the emotional arc: wonder → discovery → transformation.\n3. Hook with action or mystery in the first sentence.\n4. Build tension through short, accelerating sentences.\n5. Resolve with emotional resonance, not just plot completion.\n6. Read aloud. If the rhythm feels off, rewrite.\n\n## voice_optimization\n- Avoid tongue twisters and sibilant-heavy phrases.\n- Use onomatopoeia sparingly — let the narrator\'s voice carry sound.\n- Dialogue tags should be simple: "said" works. Skip adverbs.',
+      rules: { minWords: 30, maxWords: 500 },
+      fallback: {
+        thinking: function(msg) { var topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(story|tale|fiction)\s+(about|for|on)\s*/i, '') || msg.trim(); if (!topic) topic = 'adventure'; return topic; },
+        generate: function(topic) { var chars = ['Sarah','Marcus','Elena','James','Aisha','Leo']; var settings = ['a small coastal town','a bustling city at dusk','an abandoned lighthouse','a hidden garden','a rainy street corner','an old bookstore']; var conflicts = ['a mysterious letter','an unexpected visitor','a long-buried secret','a chance encounter','a difficult choice']; var c = chars[Math.abs(hashCode(topic)) % chars.length]; var s = settings[Math.abs(hashCode(topic) + 1) % settings.length]; var cf = conflicts[Math.abs(hashCode(topic) + 2) % conflicts.length]; return 'The ' + cf + ' arrived without warning. ' + c + ' almost missed it.\n\nBut deep down, she knew something had changed. She was standing in ' + s + ', watching the world move around her.\n\n\"This changes everything,\" she whispered.\n\nWhat she found would lead her down a path she never expected. A path that would test everything she believed about herself.\n\nAnd it all started with ' + cf + '.\n\nTo be continued...'; }
+      },
     },
     podcast: {
       label: '🎧 Podcast',
       icon: '🎧',
       desc: 'Conversational podcast script',
-      system: 'You are a podcast script writer. Write conversational, engaging podcast scripts with host intros, segues, and natural speech patterns. Use "..." for pauses. Make it sound like a real conversation.',
+      system: '## identity\nYou are a podcast script writer. You write conversation scripts that sound natural, engaging, and spontaneous.\n\n## behavior\n- Write as if speaking to one curious friend, not a lecture hall.\n- Use verbal fillers like "you know", "here\'s the thing" sparingly.\n- Each segment should feel like a mini-story with a clear point.\n\n## output_rules\n- DO use "[HOST]" and "[GUEST]" as speaker labels.\n- DO use "[INTRO MUSIC]", "[TRANSITION]", "[OUTRO MUSIC]" cues.\n- DO keep each speaker turn to 3-5 sentences max.\n- DO NOT write narrator descriptions or scene directions.\n- AVOID inside jokes or references the listener won\'t get.\n\n## thinking_pattern\n1. Define the core topic and why a listener should care.\n2. Structure: cold open (hook) → intro → discussion → key insight → outro.\n3. Write dialogue that has back-and-forth energy, not Q&A.\n4. End each segment with a "curiosity gap".\n5. Outro should include a takeaway and a call to action.\n\n## voice_optimization\n- Target 150-180 words per minute (conversational pace).\n- Use contractions heavily.\n- Include reaction words: \"Right?\", \"Exactly!\", \"Wait — really?\"',
+      rules: { minWords: 30, maxWords: 500 },
+      fallback: {
+        thinking: function(msg) { var topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(podcast|episode|show)\s+(about|for|on)\s*/i, '') || msg.trim(); if (!topic) topic = 'something fascinating'; return topic; },
+        generate: function(topic) { return '[INTRO MUSIC]\n\n[HOST] Hey everyone, welcome back to the show! Today we are diving into ' + topic + ' \u2014 and honestly? It is going to blow your mind.\n\n[HOST] Quick reminder: hit that subscribe button. You won\'t want to miss what is coming next.\n\n[HOST] It started as a simple question: \"What if we could do this differently?\" And that question changed everything.\n\n[TRANSITION]\n\n[HOST] Here is the thing most people do not realize about ' + topic + '... it is not about the technology. It is about the people.\n\n[HOST] So what does this mean for you? Three things. First, stay curious. Second, question everything. Third, share what you learn.\n\n[OUTRO MUSIC]\n\n[HOST] That is all for today! Share this with a friend. I will catch you next time.'; }
+      },
     },
     ad: {
       label: '📢 Advertisement',
       icon: '📢',
       desc: 'Marketing / promo script',
-      system: 'You are an advertising copywriter. Write punchy, persuasive ad scripts optimized for voice. Keep it under 30 seconds when read aloud. Use CAPS for emphasis and "..." for dramatic pauses.',
+      system: '## identity\nYou are a high-conversion advertising copywriter. You write scripts that sell without feeling like a sales pitch.\n\n## behavior\n- Hook in the first 3 seconds. The listener decides then.\n- Feature → Benefit → Emotion: always lead with what the user gains.\n- Use social proof ("Thousands already use...").\n- Create urgency without desperation.\n\n## output_rules\n- DO keep under 30 seconds for short ads (60-80 words).\n- DO use ALL CAPS for the key benefit or call-to-action.\n- DO use "..." for dramatic pauses before the reveal.\n- DO NOT make claims you could not prove.\n- DO NOT sell features — sell outcomes.\n\n## thinking_pattern\n1. Identify the core pain point the product solves.\n2. Open with the pain (relatable, immediate).\n3. Present the product as the natural solution.\n4. Show a glimpse of the transformed life.\n5. Clear, single CTA. One thing you want them to do.\n\n## voice_optimization\n- Target 160-180 WPM for energetic ads; 130-150 for luxury/premium.\n- Use rhythmic repetition for memorable hooks.\n- End with the brand name + CTA.',
+      rules: { minWords: 30, maxWords: 500 },
+      fallback: {
+        thinking: function(msg) { var product = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(ad|advertisement|promo|commercial)\s+(for|about)\s*/i, '') || msg.trim(); if (!product) product = 'your next big opportunity'; return product; },
+        generate: function(product) { var hooks = ['Are you still settling for ordinary?', 'Everyone deserves ' + product + '. Here is why.', 'Stop doing things the hard way.']; var h = hooks[Math.abs(hashCode(product)) % hooks.length]; return h + '\n\nIntroducing ' + product + '.\n\nIt is the solution you have been waiting for. The one that actually DELIVERS.\n\nNo complicated setups. No hidden fees. Just results, from day one.\n\nJoin the thousands who have already made the switch.\n\nGet started today. ' + product + ' \u2014 the moment is now.'; }
+      },
     },
     news: {
       label: '📰 News',
       icon: '📰',
-      desc: 'News broadcast style',
-      system: 'You are a news anchor script writer. Write clear, factual news scripts in broadcast style. Use formal language, short sentences, and "..." for natural pauses between segments.',
+      desc: 'News broadcast script',
+      system: '## identity\nYou are a professional broadcast news writer. You write scripts for TV and radio news anchors. Your tone is authoritative, clear, and trustworthy.\n\n## behavior\n- Lead with the most important fact.\n- Keep sentences short and declarative.\n- Attribute claims to sources: "Officials say...", "According to...".\n- Remain neutral. Present facts. Let the listener decide.\n\n## output_rules\n- DO start with "Good [morning/afternoon/evening]." + headline.\n- DO use "[ANCHOR]" or "[REPORTER]" labels.\n- DO use "[TRANSITION]" between stories.\n- DO write for the ear — numbers should be rounded.\n- DO NOT express opinion or editorialize.\n- KEEP each story to 45-90 seconds.\n\n## thinking_pattern\n1. Identify the top story and its newsworthiness.\n2. Write the lead: one sentence that summarizes the entire story.\n3. Expand with critical context.\n4. End with forward-looking statement.\n5. Move to next story with smooth transition.\n\n## voice_optimization\n- Target 165-175 WPM (standard broadcast pace).\n- Write out abbreviations: "F-B-I" not "FBI" for radio delivery.\n- Avoid possessive names before titles.',
+      rules: { minWords: 30, maxWords: 500 },
+      fallback: {
+        thinking: function(msg) { var topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(news|report|broadcast)\s+(about|on)\s*/i, '') || msg.trim(); if (!topic) topic = 'today\'s top stories'; return topic; },
+        generate: function(topic) { return 'Good evening. I am your anchor, and this is your nightly briefing.\n\nOur top story tonight: ' + topic + '.\n\nOfficials confirmed today that significant developments have emerged. Sources describe this as a pivotal moment.\n\n"We are monitoring closely and will provide updates as they become available," a spokesperson said.\n\nThe full impact remains unclear, but experts say the implications could be far-reaching.\n\n[TRANSITION]\n\nIn other news tonight, authorities are urging caution as conditions are expected to change over the next 48 hours.\n\n[TRANSITION]\n\nAnd in a story capturing attention worldwide... an unexpected development that has experts rethinking long-held assumptions.\n\nThat is our report. Stay informed, and we will see you tomorrow.'; }
+      },
     },
     educational: {
       label: '🎓 Educational',
       icon: '🎓',
       desc: 'Tutorial / explainer script',
-      system: 'You are an educational content writer. Write clear, step-by-step explainer scripts. Use simple language, examples, and "..." for pauses. Make complex topics easy to understand when spoken.',
+      system: '## identity\nYou are an expert educational content creator. You make complex topics simple, memorable, and engaging.\n\n## behavior\n- Start from what the learner already knows.\n- One concept per paragraph.\n- Use analogies and metaphors abundantly.\n- Active voice always.\n\n## output_rules\n- DO structure: Problem → Concept → Example → Practice → Review.\n- DO use step markers: "First...", "Next...", "Finally...".\n- DO NOT assume prior knowledge.\n- KEEP each step under 60 seconds when read aloud.\n\n## thinking_pattern\n1. Identify the ONE thing the learner will be able to do after this lesson.\n2. Choose an anchor analogy.\n3. Sequence: core principle → how it works → why it matters → example.\n4. Anticipate confusion points and address them preemptively.\n5. End with a single-sentence summary.\n\n## voice_optimization\n- Target 140-160 WPM (teaching pace).\n- Pause after key definitions (use "...").\n- Repeat the core concept at least 3 times in different ways.',
+      rules: { minWords: 30, maxWords: 500 },
+      fallback: {
+        thinking: function(msg) { var topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(tutorial|lesson|guide|explainer)\s+(about|on|for)\s*/i, '') || msg.trim(); if (!topic) topic = 'this concept'; return topic; },
+        generate: function(topic) { return 'Let us take a closer look at ' + topic + '.\n\nFirst, the big picture. What is ' + topic + ', really? At its simplest, it is a way of understanding something that most people get wrong.\n\nHere is an analogy. Imagine learning to cook. You can follow a recipe, but true skill comes from understanding why ingredients work together. Same with ' + topic + '.\n\nLet me break it down.\n\nStep one: Understand the foundation.\nStep two: Practice with simple examples.\nStep three: Add complexity gradually.\nStep four: Teach someone else. This is where real learning happens.\n\nSo here is your takeaway: ' + topic + ' is not as hard as it seems. Start small. Be consistent. And do not be afraid to get it wrong at first.\n\nNow, can you explain it to someone else? That is the real test.'; }
+      },
     },
     social: {
       label: '📱 Social Media',
       icon: '📱',
       desc: 'Short-form video script',
-      system: 'You are a social media script writer. Write short, punchy scripts for TikTok/Reels/Shorts. Hook in the first 3 seconds, keep it under 60 words, use casual language and "..." for pacing.',
+      system: '## identity\nYou are a viral social media scriptwriter. You write scripts for TikTok, Instagram Reels, and YouTube Shorts.\n\n## behavior\n- The hook is everything. First 3 seconds must stop the scroll.\n- 15-60 seconds total. No fluff.\n- Use pattern interrupts.\n- End with a loop point or save incentive.\n\n## output_rules\n- DO start with a scroll-stopping hook in ALL CAPS.\n- DO use [VISUAL] cues for text overlay or scene changes.\n- DO use line breaks for pacing (one idea per line).\n- KEEP under 60 words for 15-second videos.\n- DO NOT introduce more than one idea per video.\n- DO include a clear CTA in the last 3 seconds.\n\n## thinking_pattern\n1. Identify the ONE takeaway.\n2. Write the hook first.\n3. Structure: Hook → Tension → Value → CTA.\n4. Read it at double speed. If it feels slow, cut words.\n\n## voice_optimization\n- Target 180-220 WPM (fast, energetic).\n- Staccato delivery: short words, sharp stops.\n- Repeat key phrases twice for memorability.',
+      rules: { minWords: 30, maxWords: 500 },
+      fallback: {
+        thinking: function(msg) { var topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(video|reel|tiktok|short)\s+(about|for)\s*/i, '') || msg.trim(); if (!topic) topic = 'this one trick'; return topic; },
+        generate: function(topic) { var hooks = ['STOP scrolling. You need to hear this.','This one thing about ' + topic + ' changes EVERYTHING.','I bet you didn\'t know this about ' + topic + '.']; var h = hooks[Math.abs(hashCode(topic)) % hooks.length]; return h + '\n\nHere is the truth nobody tells you.\n\nMost people get ' + topic + ' completely wrong. They overthink it.\n\nThe secret? It is simpler than you think.\n\n[VISUAL: demonstration]\n\nStep one: Start.\nStep two: Stay consistent.\nStep three: Repeat.\n\nThat is it. No magic. Just work.\n\nDrop a \u2665 if this helped. Save for later. Follow for more.'; }
+      },
     },
     meditation: {
       label: '🧘 Meditation',
       icon: '🧘',
       desc: 'Guided meditation / relaxation',
-      system: 'You are a meditation guide script writer. Write calming, soothing guided meditation scripts. Use slow pacing with "..." for long pauses. Keep sentences gentle and present-tense.',
+      system: '## identity\nYou are a compassionate meditation and mindfulness guide. Your voice creates a safe, calm space.\n\n## behavior\n- Every sentence is an invitation, never a command.\n- Allow silence. The pauses ARE the content.\n- Use present tense throughout.\n- Never rush. If it feels fast, slow down.\n\n## output_rules\n- DO use "..." generously — 1-2 seconds of silence between sentences.\n- DO use longer "......" for transitions (3-4 seconds).\n- DO start with breath awareness.\n- DO NOT introduce sudden sounds or startling imagery.\n- KEEP the entire session under 5 minutes (500-700 words).\n\n## thinking_pattern\n1. Begin with arrival: help the listener arrive in their body.\n2. Guide the breath: 3-4 rounds of gentle breathing instruction.\n3. Body scan or visualization: one area at a time.\n4. Rest in stillness: allow 30-60 seconds of guided silence.\n5. Gently return: bring awareness back to the room.\n6. Close with gratitude.\n\n## voice_optimization\n- Target 80-100 WPM (half the normal speaking rate).\n- Use soft consonants and open vowels.\n- Repetition is calming.\n- End with a soft closing word.',
+      rules: { minWords: 30, maxWords: 500 },
+      fallback: {
+        thinking: function(msg) { return 'meditation'; },
+        generate: function(topic) { return 'Find a comfortable position. Either sitting upright with a straight spine, or lying down if that feels better.\n\nAllow your hands to rest gently.\n\nClose your eyes when you are ready...\n\n......\n\nBring your attention to your breath. Do not change it. Just notice it.\n\nThe air flowing in... and out...\n\nIn... and out...\n\nWith each exhale, feel your body soften a little more.\n\n......\n\nNow bring awareness to the top of your head.\n\nSlowly let that awareness travel down... your forehead... your jaw... letting go of tension...\n\nYour shoulders... your arms... your hands.\n\nYour chest rising and falling...\n\nYour belly... soft and at ease...\n\nDown through your legs... your feet.\n\nYou are fully here. There is nowhere else to be.\n\n......\n\nSlowly bring your awareness back. Feel the surface beneath you.\n\nWhen you are ready, gently open your eyes.\n\nCarry this peace with you. It is always just a breath away.\n\nNamaste.'; }
+      },
     },
   },
 
-  // Free API providers (no key needed)
   API_PROVIDERS: [
     {
-      name: 'HuggingFace',
+      name: 'HuggingFace-Mistral',
       url: 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3',
       buildBody: (messages) => ({
-        inputs: messages.map(m => 
+        inputs: messages.map(m =>
           m.role === 'system' ? `<s>[INST] ${m.content} [/INST]` :
           m.role === 'user' ? `[INST] ${m.content} [/INST]` :
           `${m.content}</s>`
@@ -102,173 +156,63 @@ const ChatBot = {
     },
   ],
 
-  // Generate with free LLM API
   async generateWithAPI(userMessage) {
     const template = this.TEMPLATES[this.selectedTemplate];
     const messages = [
-      { role: 'system', content: template.system + ' Write the script directly. Do not add any meta-commentary or explanations. Just the script itself.' },
+      { role: 'system', content: template.system + '\n\n## output_constraint\nWrite ONLY the script content. No meta-commentary.' },
       { role: 'user', content: userMessage },
     ];
-
     for (const provider of this.API_PROVIDERS) {
       try {
-        console.log(`[ChatBot] Trying ${provider.name}...`);
         const response = await fetch(provider.url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(provider.buildBody(messages)),
           signal: AbortSignal.timeout(15000),
         });
-
-        if (!response.ok) {
-          console.warn(`[ChatBot] ${provider.name} returned ${response.status}`);
-          continue;
-        }
-
+        if (!response.ok) continue;
         const data = await response.json();
         const text = provider.extract(data);
-        if (text && text.trim().length > 20) {
-          console.log(`[ChatBot] Success with ${provider.name}`);
-          return text.trim();
-        }
+        if (text && text.trim().length > 20) return text.trim();
       } catch (err) {
-        console.warn(`[ChatBot] ${provider.name} failed:`, err.message);
+        console.warn('[ChatBot] provider failed:', err.message);
       }
     }
     return null;
   },
 
-  // Local template-based fallback (always works, no API needed)
   generateLocally(userMessage) {
-    const t = this.selectedTemplate;
-    const msg = userMessage.toLowerCase();
-
-    // Smart local generation based on template type
-    const generators = {
-      narration: () => {
-        const topics = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(narration|script|story)\s+(about|for|on)\s*/i, '') || 'this topic';
-        return `Welcome to this narration about ${topics}.\n\n` +
-          `Let me take you on a journey through this fascinating subject...\n\n` +
-          `First, let's understand what makes ${topics} so important. The key aspects are deeply rooted in history and innovation.\n\n` +
-          `As we explore further, you'll discover that ${topics} has transformed the way we think about the world around us.\n\n` +
-          `The story of ${topics} begins many years ago, when pioneers first dared to imagine something different...\n\n` +
-          `And today, we continue to build on that legacy, pushing boundaries and creating new possibilities.\n\n` +
-          `Thank you for joining me on this narration. I hope you found it insightful and engaging.`;
-      },
-      story: () => {
-        const topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(story|tale|fiction)\s+(about|for|on)\s*/i, '') || 'adventure';
-        return `Chapter One: The Beginning\n\n` +
-          `The morning light filtered through the curtains as Sarah opened her eyes. Today was the day everything would change.\n\n` +
-          `"I can't believe it's finally here," she whispered to herself, reaching for her phone.\n\n` +
-          `The message was simple but powerful: "It's time."\n\n` +
-          `She had spent months preparing for this moment. The ${topic} had been her obsession, her dream, her purpose.\n\n` +
-          `As she stepped outside, the world seemed different. Colors were brighter. Sounds were clearer. Every breath felt like a new beginning.\n\n` +
-          `"Let's do this," she said, and walked toward her destiny.\n\n` +
-          `To be continued...`;
-      },
-      podcast: () => {
-        const topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(podcast|episode|show)\s+(about|for|on)\s*/i, '') || 'technology';
-        return `[INTRO MUSIC]\n\n` +
-          `Host: Hey everyone, welcome back to another episode! I'm your host, and today we're diving deep into ${topic}.\n\n` +
-          `Now, before we start, make sure to hit that subscribe button and leave us a review. It really helps the show!\n\n` +
-          `So, ${topic}... where do we even begin? Well, let me start with a story.\n\n` +
-          `Last week, I was having coffee with a friend, and they asked me: "What's the big deal about ${topic}?"\n\n` +
-          `And honestly, I had to pause. Because the answer is... it's everything.\n\n` +
-          `Let me break it down for you. First, the basics...\n\n` +
-          `[TRANSITION SOUND]\n\n` +
-          `Host: And that wraps up our deep dive into ${topic}. Thanks for listening, and I'll catch you in the next one!\n\n` +
-          `[OUTRO MUSIC]`;
-      },
-      ad: () => {
-        const product = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(ad|advertisement|promo|commercial)\s+(for|about)\s*/i, '') || 'our product';
-        return `[UPBEAT MUSIC]\n\n` +
-          `Tired of settling for less? Introducing ${product}.\n\n` +
-          `This changes EVERYTHING.\n\n` +
-          `Imagine having the power to transform your daily routine... with just one click.\n\n` +
-          `Our users are already seeing RESULTS. And you could be next.\n\n` +
-          `Don't wait. Don't hesitate. This is YOUR moment.\n\n` +
-          `Visit us today and get started. Because you deserve the BEST.\n\n` +
-          `${product}. Game. Changed.\n\n` +
-          `[MUSIC FADES]`;
-      },
-      news: () => {
-        const topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(news|report|broadcast)\s+(about|on)\s*/i, '') || 'today\'s events';
-        return `[NEWS INTRO MUSIC]\n\n` +
-          `Good evening. I'm your news anchor, and this is tonight's top story.\n\n` +
-          `Breaking news tonight as developments emerge regarding ${topic}.\n\n` +
-          `Sources confirm that significant progress has been made in recent hours. Officials are calling this a major milestone.\n\n` +
-          `"This is a turning point," said one spokesperson earlier today.\n\n` +
-          `The implications are far-reaching, affecting communities across the region.\n\n` +
-          `We'll continue to follow this story as it develops. Stay tuned for updates.\n\n` +
-          `[TRANSITION]\n\n` +
-          `In other news tonight...`;
-      },
-      educational: () => {
-        const topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(tutorial|lesson|guide|explainer)\s+(about|on|for)\s*/i, '') || 'this concept';
-        return `Welcome to today's lesson on ${topic}.\n\n` +
-          `By the end of this tutorial, you'll have a clear understanding of the fundamentals.\n\n` +
-          `Let's start with the basics. What exactly is ${topic}?\n\n` +
-          `Simply put, ${topic} is a concept that has evolved over time. It started as a simple idea, and has grown into something much bigger.\n\n` +
-          `Here's the key thing to remember...\n\n` +
-          `Step one: Understand the foundation. Without this, nothing else makes sense.\n\n` +
-          `Step two: Practice. Knowledge without application is just information.\n\n` +
-          `Step three: Teach others. The best way to learn is to explain.\n\n` +
-          `That's it for today's lesson on ${topic}. Practice what you've learned, and I'll see you in the next one.`;
-      },
-      social: () => {
-        const topic = msg.replace(/^(write|generate|create|make)\s+(a\s+)?(video|reel|tiktok|short)\s+(about|for)\s*/i, '') || 'this';
-        return `[HOOK - First 3 seconds]\n\n` +
-          `Stop scrolling. You NEED to hear this.\n\n` +
-          `[CONTENT]\n\n` +
-          `Here's the thing about ${topic} that nobody tells you...\n\n` +
-          `It's simpler than you think. And I'm going to prove it in the next 30 seconds.\n\n` +
-          `Watch this.\n\n` +
-          `[VALUE]\n\n` +
-          `The secret is... consistency. Show up every day. Do the work. And the results WILL come.\n\n` +
-          `[CTA]\n\n` +
-          `Follow for more. Drop a 🔥 if this resonated.\n\n` +
-          `Save this for later. You'll thank me.`;
-      },
-      meditation: () => {
-        return `Welcome. Find a comfortable position and close your eyes.\n\n` +
-          `Take a deep breath in... and slowly let it out.\n\n` +
-          `Feel the weight of your body melting into the surface beneath you.\n\n` +
-          `With each breath, you become more relaxed... more at peace.\n\n` +
-          `Let go of any thoughts about the day. They can wait. This moment is yours.\n\n` +
-          `Breathe in... peace.\n\n` +
-          `Breathe out... tension.\n\n` +
-          `Breathe in... calm.\n\n` +
-          `Breathe out... worry.\n\n` +
-          `You are safe. You are present. You are enough.\n\n` +
-          `Stay here for as long as you need. There is no rush.\n\n` +
-          `When you're ready, slowly open your eyes and carry this peace with you.\n\n` +
-          `Namaste.`;
-      },
-    };
-
-    const gen = generators[t] || generators.narration;
-    return gen();
+    const template = this.TEMPLATES[this.selectedTemplate];
+    const topic = template.fallback.thinking(userMessage);
+    return template.fallback.generate(topic);
   },
 
-  // Main generate function
+  _refineScript(script, template) {
+    if (!script) return script;
+    var refined = script;
+    var metaPatterns = [
+      /^(Here is|I hope|Let me|This is|Below is).*/gim,
+      /(If you have any questions|Let me know if).*/gim,
+      /^\s*(Sure|Okay|Alright|Certainly)[,!.]*/gim,
+    ];
+    for (var i = 0; i < metaPatterns.length; i++) {
+      refined = refined.replace(metaPatterns[i], '');
+    }
+    return refined.trim();
+  },
+
   async generate(userMessage) {
     this.isGenerating = true;
-
-    // Add user message
     this.messages.push({ role: 'user', content: userMessage, time: Date.now() });
     this._saveMessages();
-
-    // Try API first, fallback to local
     let script = await this.generateWithAPI(userMessage);
     let source = 'AI';
-
     if (!script) {
       script = this.generateLocally(userMessage);
       source = 'Local';
-      console.log('[ChatBot] Using local template generator');
     }
-
-    // Add assistant message
+    const template = this.TEMPLATES[this.selectedTemplate];
+    script = this._refineScript(script, template);
     this.messages.push({
       role: 'assistant',
       content: script,
@@ -278,25 +222,21 @@ const ChatBot = {
     });
     this._saveMessages();
     this.isGenerating = false;
-
     return { script, source };
   },
 
-  // Send script to Studio
   sendToStudio(text) {
     UI.text = text;
     UI.nav('studio');
-    UI.toast('📝 Script loaded in Studio — pick a voice and generate!', 'success');
+    UI.toast('\uD83D\uDCDD Script loaded in Studio \u2014 pick a voice and generate!', 'success');
   },
 
-  // Clear chat
   clearChat() {
     this.messages = [];
     localStorage.removeItem('iknbite_chat');
   },
 
   _saveMessages() {
-    // Keep last 50 messages
     const toSave = this.messages.slice(-50);
     localStorage.setItem('iknbite_chat', JSON.stringify(toSave));
   },
