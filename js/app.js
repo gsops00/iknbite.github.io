@@ -10,11 +10,7 @@
   const EV_KEY = localStorage.getItem('iknbite_ev_key') || '';
   const EV_URL = localStorage.getItem('iknbite_ev_url') || 'https://easyvoice.ae';
   const GT_KEY = localStorage.getItem('iknbite_gt_key') || '';
-const EL_KEY = localStorage.getItem('iknbite_el_key') || 'sk_53e45de02cd6b556a14088deddc22e751db4b48fe59a3f1a';
-// Auto-save ElevenLabs key if not already saved
-if (!localStorage.getItem('iknbite_el_key')) {
-  localStorage.setItem('iknbite_el_key', 'sk_53e45de02cd6b556a14088deddc22e751db4b48fe59a3f1a');
-}
+const EL_KEY = localStorage.getItem('iknbite_el_key') || '';
 
   const config = {};
   if (TTS_API_URL && TTS_API_URL.trim()) config.apiUrl = TTS_API_URL.trim();
