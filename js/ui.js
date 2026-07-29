@@ -661,6 +661,7 @@ const UI = {
       case 'landing': html = this.renderLanding(); break;
       case 'studio': html = this.renderStudio(); break;
       case 'voices': html = this.renderVoices(); break;
+      case 'images': html = this.renderImages(); break;
       case 'history': html = this.renderHistory(); break;
       case 'settings': html = this.renderSettings(); break;
       case 'training': html = this.renderTraining(); break;
@@ -1814,7 +1815,135 @@ curl -X POST http://localhost:5050/v1/training/export \
 
 
 
-  _shareAudio() {
+
+  renderImages() {
+    const images = this.generatedImages || [];
+    return \`
+    <div style="max-width:960px;margin:0 auto;padding:24px 16px 100px;">
+      <!-- Header -->
+      <div class="anim-fade-in-up">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+          <span style="font-size:28px;">🖼️</span>
+          <div>
+            <h1 style="margin:0;">AI Image Studio</h1>
+            <p style="color:var(--surface-500);font-size:14px;margin-top:2px;">Turn your ideas into images — powered by Pollinations.ai</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prompt Input -->
+      <div class="card anim-fade-in-up" style="padding:20px;margin-top:16px;">
+        <label style="font-size:14px;font-weight:600;color:var(--surface-700);margin-bottom:8px;display:block;">Describe your image</label>
+        <textarea id="image-prompt" rows="2" style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid var(--surface-200);background:var(--surface-50);font-family:var(--font);font-size:15px;line-height:1.5;resize:vertical;outline:none;transition:border-color 0.15s;color:inherit;" placeholder="A magical forest at sunset with glowing mushrooms...">\${this.lastPrompt || ''}</textarea>
+        
+        <!-- Style Presets -->
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
+          \${['Realistic','Anime','3D Render','Cinematic','Fantasy Art','Pixel Art','Oil Painting','Sketch'].map(s => \`
+            <button class="tag \${this.imageStyle === s ? 'active' : ''}" onclick="UI.imageStyle='\${s}';UI.render()" style="font-size:12px;">\${s}</button>
+          \`).join('')}
+        </div>
+
+        <!-- Size + Generate Row -->
+        <div style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap;">
+          <select id="image-size" style="padding:10px 14px;border-radius:10px;border:1.5px solid var(--surface-200);background:var(--surface-50);font-family:var(--font);font-size:13px;color:inherit;outline:none;">
+            <option value="512x512">Square 512×512</option>
+            <option value="1024x1024" selected>Square 1024×1024</option>
+            <option value="1024x768">Landscape 1024×768</option>
+            <option value="768x1024">Portrait 768×1024</option>
+          </select>
+          <button class="btn btn-primary" onclick="UI._generateImage()" \${this.isGeneratingImage ? 'disabled' : ''} style="padding:10px 28px;font-size:14px;">
+            \${this.isGeneratingImage ? '⏳ Generating...' : '🎨 Generate'}
+          </button>
+        </div>
+      </div>
+
+      <!-- Gallery -->
+      \${images.length > 0 ? \`
+      <div style="margin-top:20px;">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Generated Images (\${images.length})</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+          \${images.map((img, i) => \`
+            <div class="card" style="padding:8px;overflow:hidden;">
+              <img src="\${img.url}" alt="\${img.prompt}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;" loading="lazy" />
+              <div style="padding:6px 4px 2px;font-size:11px;color:var(--surface-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="\${img.prompt}">\${img.prompt}</div>
+              <div style="display:flex;gap:4px;padding:2px 4px 4px;">
+                <button class="btn btn-ghost btn-sm" onclick="window.open('\${img.url}','_blank')" style="font-size:10px;padding:4px 8px;">🔗 Open</button>
+                <button class="btn btn-ghost btn-sm" onclick="UI._downloadImage('\${img.url}', '\${img.prompt.substring(0,30)}')" style="font-size:10px;padding:4px 8px;">📥 Download</button>
+                <button class="btn btn-ghost btn-sm" onclick="UI._removeImage(\${i})" style="font-size:10px;padding:4px 8px;color:var(--error);">🗑️</button>
+              </div>
+            </div>
+          \`).join('')}
+        </div>
+      </div>
+      \` : \`
+      <div class="anim-fade-in-up" style="text-align:center;padding:60px 20px;color:var(--surface-400);">
+        <div style="font-size:64px;margin-bottom:16px;">🎨</div>
+        <p style="font-size:16px;font-weight:600;">No images yet</p>
+        <p style="font-size:13px;">Type a prompt above and click Generate</p>
+      </div>
+      \`}
+    </div>\`;
+  }
+
+  async _generateImage() {
+    const prompt = document.getElementById('image-prompt')?.value?.trim();
+    if (!prompt) { this.toast('Please enter a prompt first', 'error'); return; }
+    
+    this.lastPrompt = prompt;
+    this.isGeneratingImage = true;
+    this.render();
+    
+    try {
+      const sizeSelect = document.getElementById('image-size');
+      const size = sizeSelect?.value || '1024x1024';
+      const style = this.imageStyle || 'Realistic';
+      const stylePrompt = \`\${prompt}, \${style} style, high quality, detailed\`;
+      const encoded = encodeURIComponent(stylePrompt);
+      const imageUrl = \`https://image.pollinations.ai/prompt/\${encoded}?width=\${size.split('x')[0]}&height=\${size.split('x')[1]}&seed=\${Date.now()}&nologo=true\`;
+      
+      // Add to gallery
+      if (!this.generatedImages) this.generatedImages = [];
+      this.generatedImages.unshift({
+        url: imageUrl,
+        prompt: prompt,
+        style: style,
+        time: Date.now()
+      });
+      
+      this.toast('✅ Image generated!', 'success');
+    } catch (e) {
+      console.error('Image generation error:', e);
+      this.toast('❌ Failed to generate: ' + (e.message || 'Unknown error'), 'error');
+    } finally {
+      this.isGeneratingImage = false;
+      this.render();
+    }
+  }
+
+  _downloadImage(url, name) {
+    try {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (name || 'image').replace(/[^a-zA-Z0-9_-]/g, '_') + '.jpg';
+      a.target = '_blank';
+      a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => document.body.removeChild(a), 200);
+      this.toast('✅ Image opened — long-press to save', 'success');
+    } catch (e) {
+      window.open(url, '_blank');
+    }
+  }
+
+  _removeImage(index) {
+    if (this.generatedImages) {
+      this.generatedImages.splice(index, 1);
+      this.render();
+    }
+  }
+
+    _shareAudio() {
     if (!tts.canShareAudio()) {
       this.toast('⚠️ Generate speech first, then share.', 'error');
       return;

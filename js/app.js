@@ -27,6 +27,7 @@ if (!localStorage.getItem('iknbite_el_key')) {
       { id:'landing', icon:'🏠', label:'Home' },
       { id:'studio',  icon:'✨', label:'Studio' },
       { id:'voices',  icon:'🎭', label:'Voices' },
+      { id:'images',  icon:'🖼️', label:'Images' },
       { id:'history', icon:'📜', label:'History' },
       { id:'settings',icon:'⚙️', label:'Settings' },
       { id:'training',icon:'🎓', label:'Training' },
