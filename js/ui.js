@@ -960,6 +960,16 @@ const UI = {
         ` : messages}
       </div>
 
+      <!-- Thinking Indicator -->
+      <div id="chat-thinking" class="chat-thinking" style="display:none;">
+        <div class="chat-thinking-dots">
+          <span class="chat-thinking-dot"></span>
+          <span class="chat-thinking-dot"></span>
+          <span class="chat-thinking-dot"></span>
+        </div>
+        <span class="chat-thinking-label">Thinking...</span>
+      </div>
+
       <!-- Input -->
       <div class="chat-input-wrap">
         <textarea id="chat-input" class="chat-input" rows="2" placeholder="Describe what you want to write..."
