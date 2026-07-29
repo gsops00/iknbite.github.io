@@ -146,18 +146,21 @@ const UI = {
         </p>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;">
           <button class="btn btn-primary glow-border" onclick="UI.nav('studio')" style="padding:16px 40px;font-size:16px;border-radius:14px;font-family:var(--font-display);font-weight:700;">
-            ✨ Start Creating
+            ✨ Voice Studio
+          </button>
+          <button class="btn btn-success" onclick="UI.nav('images')" style="padding:16px 32px;font-size:16px;border-radius:14px;font-family:var(--font-display);font-weight:600;">
+            🖼️ Image Studio
           </button>
           <button class="btn btn-secondary" onclick="UI.nav('voices')" style="padding:16px 32px;font-size:16px;border-radius:14px;font-family:var(--font-display);font-weight:600;">
             🎭 Browse Voices
           </button>
         </div>
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;font-size:12px;color:var(--surface-400);">
-          <span>🧠 Smart Recommend</span>
+          <span>🧠 Smart AI</span>
           <span>•</span>
           <span>🌐 28 Languages</span>
           <span>•</span>
-          <span>🎭 12 Emotions</span>
+          <span>🎭 76 Voices</span>
           <span>•</span>
           <span>⚡ ElevenLabs + Edge TTS</span>
         </div>
@@ -174,12 +177,12 @@ const UI = {
           <div style="font-size:12px;color:var(--surface-400);margin-top:4px;">Languages</div>
         </div>
         <div class="card" style="padding:20px;text-align:center;">
-          <div style="font-size:28px;font-weight:800;color:var(--brand-600);">0</div>
-          <div style="font-size:12px;color:var(--surface-400);margin-top:4px;">API Keys</div>
+          <div style="font-size:28px;font-weight:800;color:var(--brand-600);">28</div>
+          <div style="font-size:12px;color:var(--surface-400);margin-top:4px;">Emotions</div>
         </div>
         <div class="card" style="padding:20px;text-align:center;">
-          <div style="font-size:28px;font-weight:800;color:var(--brand-600);">100%</div>
-          <div style="font-size:12px;color:var(--surface-400);margin-top:4px;">Free</div>
+          <div style="font-size:28px;font-weight:800;color:var(--brand-600);">🖼️</div>
+          <div style="font-size:12px;color:var(--surface-400);margin-top:4px;">Image Studio</div>
         </div>
       </div>
 
@@ -295,7 +298,7 @@ const UI = {
 
           <!-- AI Quick Actions Row -->
           <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-            <button class="btn btn-ghost" onclick="UI._smartRecommend()" title="AI analyzes text and auto-fills voice/emotion/speed" style="font-size:12px;padding:6px 10px;border-radius:8px;">🧠 Smart Recommend</button>
+            <button class="btn btn-ghost" onclick="UI._smartRecommend()" title="AI analyzes text and auto-fills voice/emotion/speed" style="font-size:12px;padding:6px 10px;border-radius:8px;">🧠 Smart AI</button>
             <button class="btn btn-ghost" onclick="UI._improveWriting()" title="Fix grammar, improve punctuation and flow" style="font-size:12px;padding:6px 10px;border-radius:8px;">✨ AI Writing</button>
             <button class="btn btn-ghost" onclick="UI._translateText()" title="Translate text before generation" style="font-size:12px;padding:6px 10px;border-radius:8px;">🌐 Translate</button>
             <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
