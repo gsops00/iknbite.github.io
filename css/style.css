@@ -61,7 +61,7 @@ body {
   font-family: var(--font-body);
   font-size: var(--font-size-base);
   line-height: 1.7;
-  font-weight: 500;
+  font-weight: 600;
   background: var(--bg-deep);
   color: var(--surface-800);
   transition: background var(--transition-base), color var(--transition-base);
@@ -78,11 +78,11 @@ body {
 body.light {
   background: #f8f9fc;
   color: #0a0a15;
-  --surface-400: rgba(0,0,0,0.45);
-  --surface-500: rgba(0,0,0,0.55);
-  --surface-600: rgba(0,0,0,0.70);
-  --surface-700: rgba(0,0,0,0.82);
-  --surface-800: rgba(0,0,0,0.92);
+  --surface-400: rgba(0,0,0,0.60);
+  --surface-500: rgba(0,0,0,0.65);
+  --surface-600: rgba(0,0,0,0.78);
+  --surface-700: rgba(0,0,0,0.90);
+  --surface-800: rgba(0,0,0,0.96);
 }
 body.light .surface-50 { background: rgba(0,0,0,0.03); }
 body.light .surface-100 { background: rgba(0,0,0,0.06); }
@@ -117,7 +117,7 @@ h4 { font-size: clamp(15px, 2.5vw, 20px); line-height: 1.35; font-weight: 700; }
   font-size: var(--font-size-sm);
   color: var(--surface-700);
   line-height: 1.7;
-  font-weight: 500;
+  font-weight: 600;
 }
 .card strong, .card b {
   color: var(--surface-800);
@@ -239,7 +239,7 @@ body.light .voice-card { background: rgba(255,255,255,0.8); }
 body.light .voice-card:hover { border-color: var(--brand-400); }
 body.light .voice-card.active { background: rgba(94,106,210,0.05); }
 body.light .voice-card .name { color: #1a1a2e; text-shadow: none; }
-body.light .voice-card .desc { color: rgba(26,26,46,0.6); text-shadow: none; }
+body.light .voice-card .desc { color: rgba(26,26,46,0.82); text-shadow: none; }
 
 /* ---- Voice Card Text ---- */
 .voice-card .name {
@@ -872,7 +872,7 @@ body.light .vcard-preview:hover { background: var(--brand-600); color: #fff; }
   font-size: 14px;
   line-height: 1.7;
   color: var(--surface-800);
-  font-weight: 500;
+  font-weight: 600;
   white-space: pre-wrap;
 }
 body.dark .chat-assistant .chat-msg-content {
@@ -1005,5 +1005,5 @@ body.dark .chat-input {
 .chat-thinking-label {
   font-size: 11px;
   color: var(--surface-400);
-  font-weight: 500;
+  font-weight: 600;
 }
