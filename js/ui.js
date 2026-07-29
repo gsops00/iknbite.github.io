@@ -883,26 +883,44 @@ const UI = {
       this.toast('⚠️ Generate speech first, then download.', 'error');
       return;
     }
+    this.toast('⏳ Starting download...', 'info');
     try {
-      if (tts.isMobile() && navigator.share && navigator.canShare) {
-        // Try Web Share API on mobile
-        tts.shareAudio().then(result => {
-          if (result === 'shared') {
-            this.toast('✅ Audio shared!', 'success');
-          } else {
-            this.toast('🔊 Audio opened in new tab — tap the menu to save.', 'success');
-          }
-        }).catch(e => {
-          // Fallback to direct download
-          const filename = tts.downloadAudio();
-          this.toast('✅ Downloaded: ' + filename, 'success');
-        });
-      } else {
-        const filename = tts.downloadAudio();
-        this.toast('✅ Downloaded: ' + filename, 'success');
+      if (tts.isMobile()) {
+        // On mobile, try Web Share API first (best UX)
+        if (navigator.share && navigator.canShare) {
+          tts.shareAudio().then(result => {
+            if (result === 'shared') {
+              this.toast('✅ Audio shared!', 'success');
+            } else {
+              this.toast('🔊 Audio opened — tap the menu to save/share.', 'success');
+            }
+          }).catch(() => {
+            // Fallback: direct download
+            try {
+              const filename = tts.downloadAudio();
+              this.toast('✅ Downloaded: ' + filename, 'success');
+            } catch(e2) {
+              this.toast('❌ Download failed. Try the Share button instead.', 'error');
+            }
+          });
+          return;
+        }
       }
+      // Desktop or mobile without Web Share API
+      const filename = tts.downloadAudio();
+      this.toast('✅ Downloaded: ' + filename, 'success');
     } catch (e) {
       console.error('Download error:', e);
+      // Last resort: open in new tab
+      try {
+        if (tts.lastAudioBlob) {
+          const url = URL.createObjectURL(tts.lastAudioBlob);
+          window.open(url, '_blank');
+          this.toast('🔊 Audio opened — long-press to save.', 'success');
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+          return;
+        }
+      } catch(e2) {}
       this.toast('❌ Download failed: ' + (e.message || 'Unknown error'), 'error');
     }
   },

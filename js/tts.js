@@ -625,9 +625,9 @@ class TTSEngine {
     if (!this.lastAudioBlob && !this.lastAudioUrl) throw new Error('No audio available');
     const filename = this._getFilename();
 
-    // Try fetch-based download first (works on mobile Chrome)
     if (this.lastAudioBlob) {
       try {
+        // Strategy 1: Classic blob URL + <a> click (works on desktop, some mobile)
         const url = URL.createObjectURL(this.lastAudioBlob);
         const a = document.createElement('a');
         a.href = url;
@@ -635,19 +635,30 @@ class TTSEngine {
         a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
         document.body.appendChild(a);
         a.click();
-        // Cleanup
         setTimeout(() => {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
-        }, 200);
+        }, 1000);
         return filename;
       } catch (e) {
-        console.warn('Blob download failed, trying fetch:', e);
+        console.warn('Strategy 1 failed:', e);
       }
-      // Fallback: fetch the blob and trigger download via data URL
-      return this._downloadViaFetch(this.lastAudioBlob, filename);
+      try {
+        // Strategy 2: Fetch blob → base64 data URL (better mobile support)
+        const url = URL.createObjectURL(this.lastAudioBlob);
+        return this._downloadViaFetch(this.lastAudioBlob, filename)
+          .then(result => { URL.revokeObjectURL(url); return result; })
+          .catch(e => { URL.revokeObjectURL(url); throw e; });
+      } catch (e) {
+        console.warn('Strategy 2 failed:', e);
+      }
+      // Strategy 3: Open in new tab as last resort
+      const url = URL.createObjectURL(this.lastAudioBlob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return filename;
     }
-    // If only URL available
+    // If only URL available (e.g., external URL from Web Speech)
     if (this.lastAudioUrl) {
       const a = document.createElement('a');
       a.href = this.lastAudioUrl;
