@@ -1883,7 +1883,7 @@ curl -X POST http://localhost:5050/v1/training/export \
       </div>
       `}
     </div>`;
-  }
+  },
 
   async _generateImage() {
     const prompt = document.getElementById('image-prompt')?.value?.trim();
@@ -1918,7 +1918,7 @@ curl -X POST http://localhost:5050/v1/training/export \
       this.isGeneratingImage = false;
       this.render();
     }
-  }
+  },
 
   _downloadImage(url, name) {
     try {
@@ -1934,14 +1934,14 @@ curl -X POST http://localhost:5050/v1/training/export \
     } catch (e) {
       window.open(url, '_blank');
     }
-  }
+  },
 
   _removeImage(index) {
     if (this.generatedImages) {
       this.generatedImages.splice(index, 1);
       this.render();
     }
-  }
+  },
 
     _shareAudio() {
     if (!tts.canShareAudio()) {
