@@ -4,14 +4,14 @@
    ============================================ */
 
 function generateAvatar(voice) {
-  // Return the path to the real character portrait
-  return `img/avatars/${voice.id}.jpg`;
+  if (!voice || !voice.id) return '';
+  return 'img/avatars/' + voice.id + '.jpg';
 }
 
 function getAvatarWithFallback(voice) {
-  // Return the real image path with gradient fallback for loading states
+  if (!voice || !voice.id) return { src: '', fallback: '' };
   return {
-    src: `img/avatars/${voice.id}.jpg`,
-    fallback: `linear-gradient(135deg, ${voice.colors[0]}, ${voice.colors[1]})`
+    src: 'img/avatars/' + voice.id + '.jpg',
+    fallback: 'linear-gradient(135deg, ' + (voice.colors ? voice.colors[0] : '#5E6AD2') + ', ' + (voice.colors ? voice.colors[1] : '#7B8AFF') + ')'
   };
 }

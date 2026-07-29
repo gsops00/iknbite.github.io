@@ -882,40 +882,35 @@ const UI = {
     }
   },
 
-  _downloadAudio() {
+  async _downloadAudio() {
     if (!tts.canDownload()) {
       this.toast('⚠️ Generate speech first, then download.', 'error');
       return;
     }
     this.toast('⏳ Starting download...', 'info');
     try {
-      if (tts.isMobile()) {
-        // On mobile, try Web Share API first (best UX)
-        if (navigator.share && navigator.canShare) {
-          tts.shareAudio().then(result => {
-            if (result === 'shared') {
-              this.toast('✅ Audio shared!', 'success');
-            } else {
-              this.toast('🔊 Audio opened — tap the menu to save/share.', 'success');
-            }
-          }).catch(() => {
-            // Fallback: direct download
-            try {
-              const filename = tts.downloadAudio();
-              this.toast('✅ Downloaded: ' + filename, 'success');
-            } catch(e2) {
-              this.toast('❌ Download failed. Try the Share button instead.', 'error');
-            }
-          });
-          return;
-        }
+      let result;
+      // Mobile: try Web Share API first
+      if (tts.isMobile() && navigator.share && navigator.canShare) {
+        try {
+          result = await tts.shareAudio();
+          if (result === 'shared') {
+            this.toast('✅ Audio shared!', 'success');
+            return;
+          }
+        } catch(_) {}
       }
-      // Desktop or mobile without Web Share API
-      const filename = tts.downloadAudio();
-      this.toast('✅ Downloaded: ' + filename, 'success');
+      // Direct download
+      result = await tts.downloadAudio();
+      if (result === 'saved') {
+        this.toast('✅ File saved successfully!', 'success');
+      } else if (result === 'opened') {
+        this.toast('🔊 Audio opened — long-press to save.', 'success');
+      } else {
+        this.toast('✅ Downloaded: ' + result, 'success');
+      }
     } catch (e) {
       console.error('Download error:', e);
-      // Last resort: open in new tab
       try {
         if (tts.lastAudioBlob) {
           const url = URL.createObjectURL(tts.lastAudioBlob);
@@ -1946,7 +1941,7 @@ curl -X POST http://localhost:5050/v1/training/export \
     }
   },
 
-    _shareAudio() {
+  _shareAudio() {
     if (!tts.canShareAudio()) {
       this.toast('⚠️ Generate speech first, then share.', 'error');
       return;

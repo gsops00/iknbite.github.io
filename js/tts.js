@@ -621,76 +621,95 @@ class TTSEngine {
     return this.lastAudioBlob !== null || this.lastAudioUrl !== null;
   }
 
-  downloadAudio() {
+  async downloadAudio() {
     if (!this.lastAudioBlob && !this.lastAudioUrl) throw new Error('No audio available');
+    const blob = this.lastAudioBlob;
     const filename = this._getFilename();
 
-    if (this.lastAudioBlob) {
-      try {
-        // Strategy 1: Classic blob URL + <a> click (works on desktop, some mobile)
-        const url = URL.createObjectURL(this.lastAudioBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 1000);
-        return filename;
-      } catch (e) {
-        console.warn('Strategy 1 failed:', e);
-      }
-      try {
-        // Strategy 2: Fetch blob → base64 data URL (better mobile support)
-        const url = URL.createObjectURL(this.lastAudioBlob);
-        return this._downloadViaFetch(this.lastAudioBlob, filename)
-          .then(result => { URL.revokeObjectURL(url); return result; })
-          .catch(e => { URL.revokeObjectURL(url); throw e; });
-      } catch (e) {
-        console.warn('Strategy 2 failed:', e);
-      }
-      // Strategy 3: Open in new tab as last resort
-      const url = URL.createObjectURL(this.lastAudioBlob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-      return filename;
-    }
-    // If only URL available (e.g., external URL from Web Speech)
-    if (this.lastAudioUrl) {
+    if (!blob) {
       const a = document.createElement('a');
       a.href = this.lastAudioUrl;
       a.download = filename;
       a.target = '_blank';
-      a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => document.body.removeChild(a), 200);
+      return 'opened';
+    }
+
+    // Strategy 1: File System Access API (Chrome 86+, Android)
+    try {
+      if ('showSaveFilePicker' in window) {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'Audio File', accept: { 'audio/mpeg': ['.mp3'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return 'saved';
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') console.warn('FilePicker failed:', e);
+    }
+
+    // Strategy 2: Classic blob URL + <a> click (desktop)
+    try {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+      return filename;
+    } catch (e) {
+      console.warn('Blob click failed:', e);
+    }
+
+    // Strategy 3: Chunked base64 data URL (mobile Chrome)
+    try {
+      const buffer = await blob.arrayBuffer();
+      const base64 = this._arrayBufferToBase64(buffer);
+      const dataUrl = 'data:' + (blob.type || 'audio/mpeg') + ';base64,' + base64;
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = filename;
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
       setTimeout(() => document.body.removeChild(a), 200);
       return filename;
+    } catch (e) {
+      console.warn('Base64 download failed:', e);
     }
-    throw new Error('No audio available');
+
+    // Strategy 4: Open in new tab
+    const url = URL.createObjectURL(blob);
+    const newWin = window.open(url, '_blank');
+    if (!newWin) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.textContent = 'Tap here to save audio';
+      a.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;padding:16px 32px;background:#5E6AD2;color:#fff;border-radius:14px;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+      document.body.appendChild(a);
+      a.onclick = function() { setTimeout(() => document.body.removeChild(a), 3000); };
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return 'opened';
   }
 
-  async _downloadViaFetch(blob, filename) {
-    try {
-      const url = URL.createObjectURL(blob);
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      const dataUrl = 'data:audio/mpeg;base64,' + base64;
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = filename;
-      a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-      return filename;
-    } catch (e) {
-      throw new Error('Download failed: ' + e.message);
+  _arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
     }
+    return btoa(binary);
   }
 }
 
