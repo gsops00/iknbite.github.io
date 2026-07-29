@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { VOICES, LANGUAGES } from "~/data/voices";
 import { VoiceCard } from "~/components/VoiceCard";
-import { speak } from "~/lib/tts/browser";
+import { tts } from "~/lib/tts/browser";
 
 export default function VoicesPage() {
   const [search, setSearch] = useState("");
@@ -18,7 +17,7 @@ export default function VoicesPage() {
   async function handlePreview(voice: typeof VOICES[0]) {
     if (playing) { window.speechSynthesis?.cancel(); setPlaying(null); return; }
     setPlaying(voice.id);
-    try { await speak(voice.sampleText, voice.langCode, voice.gender); }
+    try { await tts.speak(voice.sampleText, voice.id, voice.langCode, voice.gender, 1.0); }
     catch {}
     setPlaying(null);
   }

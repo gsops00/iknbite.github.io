@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import type { Voice } from "~/data/voices";
 
 interface VoiceCardProps {
@@ -7,7 +8,8 @@ interface VoiceCardProps {
 }
 
 export function VoiceCard({ voice, onPlay, isActive }: VoiceCardProps) {
-  const initials = voice.name.slice(0, 2).toUpperCase();
+  const avatarSrc = `/img/avatars/${voice.id}.jpg`;
+  const [imgError, setImgError] = useState(false);
 
   return (
     <div
@@ -15,11 +17,23 @@ export function VoiceCard({ voice, onPlay, isActive }: VoiceCardProps) {
       onClick={() => onPlay?.(voice)}
     >
       <div className="flex items-start gap-3">
-        <div
-          className="w-10 h-10 rounded-[var(--radius-sm)] flex items-center justify-center text-white text-sm font-semibold shrink-0"
-          style={{ background: `linear-gradient(135deg, ${voice.avatarColor[0]}, ${voice.avatarColor[1]})` }}
-        >
-          {initials}
+        <div className="w-11 h-11 rounded-[var(--radius-sm)] overflow-hidden shrink-0 bg-gradient-to-br from-gray-100 to-gray-200">
+          {!imgError ? (
+            <img
+              src={avatarSrc}
+              alt={voice.name}
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+              loading="lazy"
+            />
+          ) : (
+            <div
+              className="w-full h-full flex items-center justify-center text-white text-sm font-semibold"
+              style={{ background: `linear-gradient(135deg, ${voice.avatarColor[0]}, ${voice.avatarColor[1]})` }}
+            >
+              {voice.name.slice(0, 2).toUpperCase()}
+            </div>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
@@ -41,6 +55,7 @@ export function VoiceCard({ voice, onPlay, isActive }: VoiceCardProps) {
         <button
           className="w-8 h-8 rounded-full bg-[var(--color-surface-alt)] hover:bg-[var(--color-coral)] hover:text-white flex items-center justify-center transition-colors shrink-0 opacity-0 group-hover:opacity-100"
           onClick={(e) => { e.stopPropagation(); onPlay?.(voice); }}
+          aria-label="Preview voice"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
             <path d="M3 1.5v9l7.5-4.5L3 1.5z" />

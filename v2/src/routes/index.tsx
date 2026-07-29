@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { VOICES } from "~/data/voices";
 import { VoiceCard } from "~/components/VoiceCard";
 import { WaveformBars } from "~/components/WaveformBars";
-import { speak } from "~/lib/tts/browser";
+import { tts } from "~/lib/tts/browser";
 
 export default function IndexPage() {
   const [playing, setPlaying] = useState<string | null>(null);
@@ -12,14 +12,14 @@ export default function IndexPage() {
   async function handlePreview(voice: typeof VOICES[0]) {
     if (playing) { window.speechSynthesis?.cancel(); setPlaying(null); return; }
     setPlaying(voice.id);
-    try { await speak(voice.sampleText, voice.langCode, voice.gender); }
-    catch {}
+    try {
+      await tts.speak(voice.sampleText, voice.id, voice.langCode, voice.gender, 1.0);
+    } catch {}
     setPlaying(null);
   }
 
   return (
     <div>
-      {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-coral-light)] to-transparent opacity-40" />
         <div className="relative max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
@@ -43,14 +43,12 @@ export default function IndexPage() {
               </Link>
             </div>
           </div>
-
           <div className="mt-12 flex justify-center">
             <WaveformBars playing={!!playing} barCount={24} />
           </div>
         </div>
       </section>
 
-      {/* Featured Voices */}
       <section className="max-w-6xl mx-auto px-4 py-16">
         <h2 className="font-heading text-2xl font-bold text-center mb-2">Featured Voices</h2>
         <p className="text-sm text-[var(--color-text-secondary)] text-center mb-8">Try a sample — click any card to hear it</p>
@@ -61,7 +59,6 @@ export default function IndexPage() {
         </div>
       </section>
 
-      {/* How It Works */}
       <section className="bg-[var(--color-surface-alt)] py-16">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="font-heading text-2xl font-bold text-center mb-8">How It Works</h2>
@@ -77,7 +74,6 @@ export default function IndexPage() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="max-w-4xl mx-auto px-4 py-20 text-center">
         <h2 className="font-heading text-3xl font-bold mb-3">Ready to create?</h2>
         <p className="text-[var(--color-text-secondary)] mb-6">Start generating natural AI speech in seconds.</p>
