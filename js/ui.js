@@ -612,8 +612,8 @@ const UI = {
             For real AI voices (male + female, 300+ voices), connect an Edge TTS backend.
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Status</span><span style="color:${(tts.elevenLabsKey||tts.easyVoiceKey||tts.edgeTTSApiUrl)?'#10b981':'#f59e0b'}">${tts.elevenLabsKey ? '✅ ElevenLabs Connected' : tts.easyVoiceKey ? '✅ EasyVoice Connected' : tts.edgeTTSApiUrl ? '✅ Edge TTS Connected' : '⚠️ Using Web Speech API (limited)'}</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Voices available</span><span>${tts.edgeTTSApiUrl ? '300+ (Edge TTS)' : tts.getVoices().length + ' (browser)'}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Status</span><span><span style="color:${(tts.elevenLabsKey||tts.googleTTSKey||tts.easyVoiceKey||tts.edgeTTSApiUrl)?'#10b981':'#f59e0b'}">${tts.elevenLabsKey ? '✅ ElevenLabs Connected' : tts.googleTTSKey ? '✅ Google Cloud TTS Connected' : tts.easyVoiceKey ? '✅ EasyVoice Connected' : tts.edgeTTSApiUrl ? '✅ Edge TTS Connected' : '⚠️ Using Web Speech API (limited)'}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Voices available</span><span>${tts.edgeTTSApiUrl ? '300+ (Edge TTS)' : tts.googleTTSKey ? '220+ (Google WaveNet)' : tts.getVoices().length + ' (browser)'}</span></div>
             <div style="margin-top:8px;">
               <label style="font-size:12px;color:var(--surface-400);display:block;margin-bottom:4px;">Edge TTS API URL</label>
               <div style="display:flex;gap:6px;">
@@ -632,6 +632,31 @@ const UI = {
           </div>
         </div>
 
+        <!-- Google Cloud TTS -->
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:8px;">🔊 Google Cloud TTS</div>
+          <div style="font-size:12px;color:var(--surface-400);margin-bottom:12px;">
+            Free tier: 1M characters/month. No server needed — direct API calls from browser.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Status</span><span style="color:${tts.googleTTSKey?'#10b981':'#f59e0b'}">${tts.googleTTSKey ? '✅ Connected' : '⚠️ Not connected'}</span></div>
+            <div>
+              <label style="font-size:12px;color:var(--surface-400);display:block;margin-bottom:4px;">Google Cloud API Key</label>
+              <div style="display:flex;gap:6px;">
+                <input id="gt-key-input" type="text" placeholder="AIzaSy..."
+                  value="${localStorage.getItem('iknbite_gt_key') || ''}"
+                  style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:13px;font-family:var(--font);"
+                />
+                <button class="btn btn-primary" onclick="UI._saveGoogleTTS()" style="padding:8px 16px;font-size:13px;border-radius:8px;">Save</button>
+              </div>
+              <div style="font-size:11px;color:var(--surface-400);margin-top:6px;line-height:1.5;">
+                Enable Google Cloud Text-to-Speech API in your Google Cloud Console.<br>
+                Free quota: 1M characters/month. <a href="https://console.cloud.google.com/apis/library/texttospeech.googleapis.com" target="_blank" style="color:var(--brand-600);">Enable API →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- About -->
         <div class="card" style="padding:20px;">
           <div style="font-weight:600;font-size:14px;margin-bottom:8px;">About iknbite</div>
@@ -641,6 +666,114 @@ const UI = {
           <a href="https://github.com/gsops00/iknbite.github.io" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--brand-600);text-decoration:none;font-weight:500;">
             View on GitHub →
           </a>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // ---- Blog Page ----
+  renderBlog() {
+    return `
+    <div class="hero-bg"></div>
+    <div style="max-width:720px;margin:0 auto;padding:24px 20px 40px;">
+      <div class="anim-fade-in-up" style="margin-bottom:24px;">
+        <h1 style="font-size:28px;font-weight:800;">📝 AI Voice Blog</h1>
+        <p style="color:var(--surface-400);font-size:14px;">Tips, tutorials, and news about AI voice technology</p>
+      </div>
+      <div class="anim-stagger" style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card" style="padding:20px;">
+          <div style="font-size:11px;color:var(--surface-400);margin-bottom:6px;">July 29, 2026</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:6px;">🎯 How to Choose the Perfect AI Voice for Your Project</div>
+          <p style="font-size:13px;color:var(--surface-400);margin-bottom:8px;">From podcast narration to e-learning, picking the right voice matters. Learn how to match voice styles to your content type.</p>
+          <span style="font-size:12px;color:var(--brand-600);">Read more →</span>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:11px;color:var(--surface-400);margin-bottom:6px;">July 28, 2026</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:6px;">🌍 Free Text-to-Speech in 28 Languages: A Complete Guide</div>
+          <p style="font-size:13px;color:var(--surface-400);margin-bottom:8px;">iknbite supports 28 languages with 76+ voices. Discover how to generate natural speech in Arabic, Japanese, Hindi, and more.</p>
+          <span style="font-size:12px;color:var(--brand-600);">Read more →</span>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:11px;color:var(--surface-400);margin-bottom:6px;">July 25, 2026</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:6px;">🤖 AI Voice Cloning: The Future of Content Creation</div>
+          <p style="font-size:13px;color:var(--surface-400);margin-bottom:8px;">Voice cloning technology is transforming content creation. Learn about the possibilities and ethical considerations.</p>
+          <span style="font-size:12px;color:var(--brand-600);">Read more →</span>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:11px;color:var(--surface-400);margin-bottom:6px;">July 22, 2026</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:6px;">🎬 Best AI Voice Generators for Video Narration in 2026</div>
+          <p style="font-size:13px;color:var(--surface-400);margin-bottom:8px;">Compare the top AI voice generators for video content. Find out which one suits your production workflow.</p>
+          <span style="font-size:12px;color:var(--brand-600);">Read more →</span>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:11px;color:var(--surface-400);margin-bottom:6px;">July 20, 2026</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:6px;">📖 SSML Guide: Make Your AI Voice Sound More Human</div>
+          <p style="font-size:13px;color:var(--surface-400);margin-bottom:8px;">Speech Synthesis Markup Language (SSML) lets you control pauses, emphasis, and pronunciation. Master SSML with our guide.</p>
+          <span style="font-size:12px;color:var(--brand-600);">Read more →</span>
+        </div>
+        <div class="card" style="padding:20px;text-align:center;">
+          <p style="font-size:13px;color:var(--surface-400);">📬 Subscribe for more AI voice tips and updates</p>
+          <div style="display:flex;gap:8px;max-width:400px;margin:0 auto;">
+            <input type="email" placeholder="your@email.com" style="flex:1;padding:10px 14px;border-radius:8px;border:1px solid var(--surface-200);background:var(--surface-50);font-size:14px;" />
+            <button class="btn btn-primary" style="padding:10px 20px;border-radius:8px;" onclick="UI.toast('📬 Subscribe feature coming soon!', 'info')">Subscribe</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // ---- About Page ----
+  renderAbout() {
+    return `
+    <div class="hero-bg"></div>
+    <div style="max-width:640px;margin:0 auto;padding:24px 20px 40px;">
+      <div class="anim-fade-in-up" style="margin-bottom:24px;">
+        <h1 style="font-size:28px;font-weight:800;">ℹ️ About iknbite</h1>
+      </div>
+      <div class="anim-stagger" style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card" style="padding:24px;">
+          <h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">🎙️ Free AI Voice Studio for Everyone</h2>
+          <p style="font-size:14px;color:var(--surface-400);line-height:1.6;margin-bottom:12px;">
+            iknbite is a <strong>free, open-source AI voice studio</strong> that lets you generate natural speech in over 76 voices across 28 languages. 
+            No API keys required, no credit cards, no limits.
+          </p>
+          <p style="font-size:14px;color:var(--surface-400);line-height:1.6;margin-bottom:12px;">
+            Built with passion for content creators, educators, developers, and anyone who needs high-quality AI voice generation.
+          </p>
+        </div>
+        <div class="card" style="padding:24px;">
+          <h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">✨ Features</h2>
+          <ul style="font-size:14px;color:var(--surface-400);line-height:2;">
+            <li>🎭 76+ voices across 28 languages</li>
+            <li>🧠 Emotion control for expressive speech</li>
+            <li>📝 SSML editor for fine-grained control</li>
+            <li>🤖 AI script assistant</li>
+            <li>🖼️ AI image generation</li>
+            <li>🔊 Multiple TTS engines: ElevenLabs, Google Cloud, Edge TTS</li>
+            <li>🌐 Works in all modern browsers</li>
+          </ul>
+        </div>
+        <div class="card" style="padding:24px;">
+          <h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">🛠️ Our Technology</h2>
+          <p style="font-size:14px;color:var(--surface-400);line-height:1.6;">
+            iknbite uses a hybrid TTS engine that tries multiple providers in order of quality:
+            <strong>ElevenLabs</strong> → <strong>Google Cloud WaveNet</strong> → <strong>Edge TTS</strong> → <strong>Web Speech API</strong>.
+            This ensures the best possible voice quality for every user.
+          </p>
+        </div>
+        <div class="card" style="padding:24px;">
+          <h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">🔒 Privacy First</h2>
+          <p style="font-size:14px;color:var(--surface-400);line-height:1.6;">
+            Your text stays in your browser. We don't log, store, or share your generated content.
+            iknbite is fully open-source — check our code on GitHub.
+          </p>
+        </div>
+        <div class="card" style="padding:24px;">
+          <h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">📬 Contact</h2>
+          <p style="font-size:14px;color:var(--surface-400);line-height:1.6;">
+            Open-source project maintained by the iknbite team.<br>
+            GitHub: <a href="https://github.com/gsops00/iknbite.github.io" target="_blank" style="color:var(--brand-600);">github.com/gsops00/iknbite.github.io</a>
+          </p>
         </div>
       </div>
     </div>`;
@@ -668,6 +801,8 @@ const UI = {
       case 'history': html = this.renderHistory(); break;
       case 'settings': html = this.renderSettings(); break;
       case 'training': html = this.renderTraining(); break;
+      case 'blog': html = this.renderBlog(); break;
+      case 'about': html = this.renderAbout(); break;
       case 'features': html = this.renderFeatures(); break;
       case 'chat': html = this.renderChat(); break;
       default: html = this.renderLanding();
@@ -864,6 +999,21 @@ const UI = {
       localStorage.removeItem('iknbite_tts_api');
       tts.configure({ apiUrl: '' });
       this.toast('🔄 TTS API cleared — using Web Speech API', 'success');
+    }
+  },
+
+  _saveGoogleTTS() {
+    const input = document.getElementById('gt-key-input');
+    if (!input) return;
+    const key = input.value.trim();
+    if (key) {
+      localStorage.setItem('iknbite_gt_key', key);
+      tts.configure({ googleTTSKey: key });
+      this.toast('✅ Google Cloud TTS saved — WaveNet voices active!', 'success');
+    } else {
+      localStorage.removeItem('iknbite_gt_key');
+      tts.configure({ googleTTSKey: '' });
+      this.toast('🔄 Google Cloud TTS cleared', 'success');
     }
   },
 

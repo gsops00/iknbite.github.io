@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f18"/>
+      <stop offset="100%" style="stop-color:#1a1a3e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <text x="600" y="240" font-family="Arial" font-size="80" font-weight="bold" fill="#7B8AFF" text-anchor="middle">🎙️ iknbite</text>
+  <text x="600" y="340" font-family="Arial" font-size="30" fill="#ffffff" text-anchor="middle" opacity="0.9">AI Voice Studio</text>
+  <text x="600" y="400" font-family="Arial" font-size="22" fill="rgba(255,255,255,0.6)" text-anchor="middle">76+ Voices · 28 Languages · Free</text>
+  <text x="600" y="460" font-family="Arial" font-size="18" fill="rgba(255,255,255,0.4)" text-anchor="middle">Generate natural AI speech — ElevenLabs + Edge TTS</text>
+</svg>

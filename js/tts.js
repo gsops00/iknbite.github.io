@@ -263,6 +263,84 @@ const VOICE_OFFSETS = {
   maria: {pitch:1.12,rate:1.00},
 };
 
+// Google Cloud TTS voice mapping — maps iknbite IDs to Google TTS voice names
+const GOOGLE_TTS_VOICE_MAP = {
+  // English
+  "ava": "en-US-Wavenet-F",     "andrew": "en-US-Wavenet-D",
+  "brian": "en-US-Wavenet-M",   "emma": "en-US-Wavenet-F",
+  "jenny": "en-US-Neural2-F",   "guy": "en-US-Neural2-M",
+  "aria": "en-US-Neural2-F",    "davis": "en-US-Neural2-M",
+  "sonia": "en-GB-Neural2-F",   "ryan": "en-GB-Neural2-M",
+  "natasha": "en-AU-Neural2-B", "neerja": "en-IN-Neural2-C",
+  "tony": "en-US-Neural2-J",    "michelle": "en-US-Neural2-E",
+  "jason": "en-US-Neural2-D",   "sara": "en-US-Neural2-F",
+  // Japanese
+  "nanami": "ja-JP-Neural2-B",  "keita": "ja-JP-Neural2-C",
+  "mayu": "ja-JP-Standard-A",
+  // Chinese
+  "xiaoxiao": "zh-CN-Neural2-A", "yunxi": "zh-CN-Neural2-C",
+  "xiaohan": "zh-CN-Neural2-B",
+  // Korean
+  "sunhi": "ko-KR-Neural2-A",   "injoon": "ko-KR-Neural2-C",
+  "hyejin": "ko-KR-Standard-B",
+  // French
+  "denise": "fr-FR-Neural2-A",  "henri": "fr-FR-Neural2-B",
+  // Spanish
+  "elvira": "es-ES-Neural2-A",  "alvaro": "es-ES-Neural2-B",
+  "dalia": "es-ES-Standard-A",
+  // German
+  "katja": "de-DE-Neural2-A",   "conrad": "de-DE-Neural2-B",
+  // Portuguese
+  "francisca": "pt-BR-Neural2-A", "antonio": "pt-BR-Neural2-B",
+  // Italian
+  "elsa": "it-IT-Neural2-A",    "diego": "it-IT-Neural2-B",
+  // Russian
+  "svetlana": "ru-RU-Wavenet-B", "dmitry": "ru-RU-Wavenet-E",
+  // Arabic
+  "zariyah": "ar-XA-Wavenet-A",  "hamed": "ar-XA-Wavenet-B",
+  // Turkish
+  "emel": "tr-TR-Wavenet-B",    "ahmet": "tr-TR-Wavenet-A",
+  // Polish
+  "agnieszka": "pl-PL-Wavenet-A", "marek": "pl-PL-Wavenet-B",
+  // Dutch
+  "colette": "nl-NL-Wavenet-A", "daan": "nl-NL-Wavenet-D",
+  // Swedish
+  "sofie": "sv-SE-Wavenet-A",   "erik_sv": "sv-SE-Wavenet-C",
+  // Greek
+  "athina": "el-GR-Wavenet-A",  "nikos": "el-GR-Wavenet-C",
+  // Indonesian
+  "gadis": "id-ID-Wavenet-A",   "budi": "id-ID-Wavenet-B",
+  // Czech
+  "eliska": "cs-CZ-Wavenet-A",  "ondrej": "cs-CZ-Wavenet-B",
+  // Thai
+  "premw": "th-TH-Wavenet-A",   "somsak": "th-TH-Wavenet-C",
+  // Vietnamese
+  "hoai": "vi-VN-Wavenet-A",    "tuan": "vi-VN-Wavenet-D",
+  // Hindi
+  "swara": "hi-IN-Neural2-A",   "madhur": "hi-IN-Neural2-B",
+  // Finnish
+  "mikko": "fi-FI-Wavenet-A",   "aino": "fi-FI-Wavenet-B",
+  "fenna": "fi-FI-Wavenet-A",
+  // Norwegian
+  "erling": "nb-NO-Wavenet-D",  "inger": "nb-NO-Wavenet-E",
+  "noemi": "nb-NO-Wavenet-E",   "finn": "nb-NO-Wavenet-D",
+  // Danish
+  "lars": "da-DK-Wavenet-C",    "freja": "da-DK-Wavenet-A",
+  "helena": "da-DK-Wavenet-A",  "jeppe": "da-DK-Wavenet-C",
+  // Hungarian
+  "zoltan": "hu-HU-Wavenet-B",  "eva": "hu-HU-Wavenet-A",
+  "gudje": "hu-HU-Wavenet-A",
+  // Romanian
+  "radu": "ro-RO-Wavenet-A",    "alina": "ro-RO-Wavenet-A",
+  "edyta": "ro-RO-Wavenet-A",
+  // Ukrainian
+  "taras": "uk-UA-Wavenet-A",   "polina": "uk-UA-Wavenet-B",
+  // Malay
+  "yusof": "ms-MY-Wavenet-A",   "nurul": "ms-MY-Wavenet-B",
+  // Filipino
+  "rafael": "tl-PH-Wavenet-A",  "maria": "tl-PH-Wavenet-B",
+};
+
 class TTSEngine {
   constructor() {
     this.synth = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
@@ -280,6 +358,7 @@ class TTSEngine {
     this.edgeTTSApiUrl = null;
     this.easyVoiceKey = null;
     this.easyVoiceUrl = null;
+    this.googleTTSKey = null;
     this.elevenLabsKey = null;
     this._currentAudio = null;
     this._init();
@@ -291,6 +370,7 @@ class TTSEngine {
     if (options.easyVoiceKey) this.easyVoiceKey = options.easyVoiceKey;
     if (options.easyVoiceUrl) this.easyVoiceUrl = options.easyVoiceUrl.replace(/\/$/, '');
     if (options.elevenLabsKey) this.elevenLabsKey = options.elevenLabsKey;
+    if (options.googleTTSKey) this.googleTTSKey = options.googleTTSKey;
   }
 
   isMobile() {
@@ -430,6 +510,54 @@ class TTSEngine {
     }
   }
 
+
+  // ---- Google Cloud TTS ----
+  async _fetchGoogleCloudTTS(text, voiceName) {
+    if (!this.googleTTSKey) return null;
+    try {
+      // Extract language code from voice name (e.g., "en-US-Wavenet-F" -> "en-US")
+      const langCode = voiceName.split("-").slice(0, 2).join("-");
+      const resp = await fetch(
+        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(this.googleTTSKey)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input: { text },
+            voice: {
+              languageCode: langCode,
+              name: voiceName
+            },
+            audioConfig: {
+              audioEncoding: "MP3",
+              speakingRate: 1.0,
+              pitch: 0
+            }
+          })
+        }
+      );
+      if (!resp.ok) {
+        const errBody = await resp.text();
+        throw new Error(`Google TTS API error ${resp.status}: ${errBody}`);
+      }
+      const data = await resp.json();
+      if (!data.audioContent) throw new Error("No audio content received");
+
+      // Decode base64 audio content to blob
+      const audioStr = atob(data.audioContent);
+      const arrayBuffer = new ArrayBuffer(audioStr.length);
+      const view = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < audioStr.length; i++) {
+        view[i] = audioStr.charCodeAt(i);
+      }
+      const blob = new Blob([arrayBuffer], { type: "audio/mpeg" });
+      if (blob.size < 100) throw new Error("Audio too small");
+      return blob;
+    } catch (e) {
+      console.warn("Google Cloud TTS failed:", e.message);
+      return null;
+    }
+  }
   // ---- Web Speech API (fallback) ----
   findSpeechVoice(voiceDef) {
     if (!this.synth) return null;
@@ -526,6 +654,19 @@ class TTSEngine {
       }
     }
 
+
+    // 2. Try Google Cloud TTS (WaveNet/Neural2 -- high quality, free tier)
+    const gtVoiceId = GOOGLE_TTS_VOICE_MAP[voiceDef.id];
+    if (gtVoiceId && this.googleTTSKey) {
+      const blob = await this._fetchGoogleCloudTTS(text, gtVoiceId);
+      if (blob) {
+        this.lastAudioBlob = blob;
+        this.lastAudioUrl = URL.createObjectURL(blob);
+        await this._playBlob(blob);
+        this.isGenerating = false;
+        return;
+      }
+    }
     // 2. Try Edge TTS API (neural voices)
     const edgeVoiceId = EDGE_VOICE_MAP[voiceDef.id];
     if (edgeVoiceId) {
@@ -614,7 +755,7 @@ class TTSEngine {
   }
 
   isSupported() {
-    return !!(this.elevenLabsKey || this.edgeTTSApiUrl || this.easyVoiceKey || (typeof speechSynthesis !== 'undefined'));
+    return !!(this.elevenLabsKey || this.edgeTTSApiUrl || this.easyVoiceKey || this.googleTTSKey || (typeof speechSynthesis !== 'undefined'));
   }
 
   canDownload() {

@@ -9,7 +9,8 @@
   const TTS_API_URL = localStorage.getItem('iknbite_tts_api') || '';
   const EV_KEY = localStorage.getItem('iknbite_ev_key') || '';
   const EV_URL = localStorage.getItem('iknbite_ev_url') || 'https://easyvoice.ae';
-  const EL_KEY = localStorage.getItem('iknbite_el_key') || 'sk_53e45de02cd6b556a14088deddc22e751db4b48fe59a3f1a';
+  const GT_KEY = localStorage.getItem('iknbite_gt_key') || '';
+const EL_KEY = localStorage.getItem('iknbite_el_key') || 'sk_53e45de02cd6b556a14088deddc22e751db4b48fe59a3f1a';
 // Auto-save ElevenLabs key if not already saved
 if (!localStorage.getItem('iknbite_el_key')) {
   localStorage.setItem('iknbite_el_key', 'sk_53e45de02cd6b556a14088deddc22e751db4b48fe59a3f1a');
@@ -18,6 +19,7 @@ if (!localStorage.getItem('iknbite_el_key')) {
   const config = {};
   if (TTS_API_URL && TTS_API_URL.trim()) config.apiUrl = TTS_API_URL.trim();
   if (EV_KEY && EV_KEY.trim()) { config.easyVoiceKey = EV_KEY.trim(); config.easyVoiceUrl = (EV_URL || 'https://easyvoice.ae').trim(); }
+  if (GT_KEY && GT_KEY.trim()) config.googleTTSKey = GT_KEY.trim();
   if (EL_KEY && EL_KEY.trim()) config.elevenLabsKey = EL_KEY.trim();
   if (Object.keys(config).length) tts.configure(config);
 
@@ -32,6 +34,8 @@ if (!localStorage.getItem('iknbite_el_key')) {
       { id:'settings',icon:'⚙️', label:'Settings' },
       { id:'training',icon:'🎓', label:'Training' },
       { id:'features',icon:'⚡', label:'Features' },
+      { id:'blog',    icon:'📝', label:'Blog' },
+      { id:'about',   icon:'ℹ️', label:'About' },
       { id:'chat',    icon:'🤖', label:'Chat' },
     ];
     return items.map(it => `
@@ -158,6 +162,10 @@ if (!localStorage.getItem('iknbite_el_key')) {
     buildShell();
   }
 
+
+  // Hide loading indicator
+  var ld = document.getElementById('app-loading');
+  if (ld) { ld.style.display = 'none'; }
 
   // ---- AnyClaw Voice Engine Section ----
   function populateAnyClaw() {
